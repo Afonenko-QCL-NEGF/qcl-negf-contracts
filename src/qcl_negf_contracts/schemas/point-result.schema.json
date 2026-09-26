@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QCL-NEGF persisted point result v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "point_id",
+    "status",
+    "result",
+    "artifacts"
+  ],
+  "properties": {
+    "schema": {
+      "const": "qcl-point-result-v1"
+    },
+    "point_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "result": {
+      "type": "object",
+      "properties": {
+        "quality": {
+          "enum": [
+            "strict",
+            "approximate",
+            "unconverged",
+            "invalid"
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object"
+    }
+  }
+}

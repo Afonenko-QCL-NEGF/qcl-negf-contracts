@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Final scientific validation diagnostics v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "quality",
+    "evaluated",
+    "strict_passed",
+    "approximate_enabled",
+    "approximate_passed",
+    "messages",
+    "metrics"
+  ],
+  "properties": {
+    "schema": {
+      "const": "qcl-negf-validation-diagnostics-v1"
+    },
+    "status": {
+      "type": "string"
+    },
+    "quality": {
+      "enum": [
+        "strict",
+        "approximate",
+        "unconverged",
+        "invalid"
+      ]
+    },
+    "evaluated": {
+      "type": "boolean"
+    },
+    "strict_passed": {
+      "type": "boolean"
+    },
+    "approximate_enabled": {
+      "type": "boolean"
+    },
+    "approximate_passed": {
+      "type": "boolean"
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "metric",
+          "value",
+          "strict_threshold",
+          "approximate_threshold",
+          "strict_passed",
+          "approximate_passed"
+        ],
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "strict_threshold": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "approximate_threshold": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "strict_passed": {
+            "type": "boolean"
+          },
+          "approximate_passed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

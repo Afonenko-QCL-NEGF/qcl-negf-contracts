@@ -1,0 +1,421 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QCL-NEGF immutable scientific plan v2",
+  "type": "object",
+  "required": [
+    "schema",
+    "model_revision",
+    "root_definition_id",
+    "root_kind",
+    "name",
+    "fingerprint",
+    "scientific_fingerprint",
+    "maximum_solver_runs",
+    "computation_count",
+    "inclusions",
+    "executions",
+    "points",
+    "resources",
+    "campaign",
+    "nodes",
+    "science_archive_preflight"
+  ],
+  "properties": {
+    "schema": {
+      "const": "qcl-negf-scientific-plan-v2"
+    },
+    "model_revision": {
+      "const": "transport-contract-v2"
+    },
+    "root_definition_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "root_kind": {
+      "enum": [
+        "study",
+        "meta"
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "scientific_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "maximum_solver_runs": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "computation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "inclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "definition_id",
+          "parent_id",
+          "path",
+          "execution_ids",
+          "label"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "definition_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "execution_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            }
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "executions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "definition_id",
+          "variant_id",
+          "method_id",
+          "label",
+          "point_ids",
+          "resolved_configuration",
+          "provenance",
+          "policies",
+          "outputs",
+          "estimated_peak_bytes",
+          "purpose",
+          "repetition",
+          "operation",
+          "effective_inputs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "definition_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "variant_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "method_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "label": {
+            "type": "string"
+          },
+          "point_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            },
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "resolved_configuration": {
+            "$ref": "run.schema.json"
+          },
+          "provenance": {
+            "type": "object"
+          },
+          "policies": {
+            "type": "object"
+          },
+          "outputs": {
+            "type": "object"
+          },
+          "estimated_peak_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "purpose": {
+            "enum": [
+              "research",
+              "diagnostic",
+              "reproducibility",
+              "benchmark"
+            ]
+          },
+          "repetition": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "operation": {
+            "enum": [
+              "stationary",
+              "operator_algebra",
+              "operator_metrics",
+              "operator_representation",
+              "operator_continuum",
+              "operator_cavity",
+              "operator_lo_equilibrium",
+              "operator_spectral_resolution",
+              "structure_spectrum"
+            ]
+          },
+          "effective_inputs": {
+            "type": "object",
+            "required": [
+              "seed",
+              "energy_shift",
+              "energy_nodes",
+              "energy_min_eV",
+              "energy_max_eV"
+            ],
+            "properties": {
+              "seed": {
+                "type": "object"
+              },
+              "energy_shift": {
+                "type": "string"
+              },
+              "energy_nodes": {
+                "type": "integer",
+                "minimum": 3
+              },
+              "energy_min_eV": {
+                "type": "number"
+              },
+              "energy_max_eV": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "execution_id",
+          "temperature_K",
+          "voltage_per_period_V",
+          "branch",
+          "order",
+          "predecessor_id",
+          "initialization",
+          "effective_inputs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "execution_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "temperature_K": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "voltage_per_period_V": {
+            "type": "number",
+            "minimum": 0
+          },
+          "branch": {
+            "type": "string",
+            "minLength": 1
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "predecessor_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "initialization": {
+            "enum": [
+              "cold",
+              "predecessor"
+            ]
+          },
+          "effective_inputs": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "temperature_K",
+              "voltage_per_period_V",
+              "configuration_hash",
+              "hash_encoding",
+              "axes_applied"
+            ],
+            "properties": {
+              "temperature_K": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "voltage_per_period_V": {
+                "type": "number"
+              },
+              "configuration_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "hash_encoding": {
+                "const": "qcl-negf-canonical-bytes-v1"
+              },
+              "axes_applied": {
+                "const": true
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": [
+        "maximum_active_executions",
+        "estimated_peak_bytes",
+        "minimum_output_bytes"
+      ]
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "execution_id",
+          "stage_id",
+          "depends_on",
+          "required_evidence",
+          "priority",
+          "reserve",
+          "estimated_memory_bytes",
+          "comparison_reference",
+          "comparison_kind",
+          "controlled_paths",
+          "comparable_fingerprint",
+          "forbidden_evidence"
+        ],
+        "properties": {
+          "execution_id": {
+            "type": "string"
+          },
+          "stage_id": {
+            "const": "standalone"
+          },
+          "depends_on": {
+            "const": []
+          },
+          "required_evidence": {
+            "const": []
+          },
+          "priority": {
+            "const": 0
+          },
+          "reserve": {
+            "const": false
+          },
+          "estimated_memory_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "comparison_reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "comparison_kind": {
+            "enum": [
+              "controlled_axis",
+              "discretization",
+              "representation",
+              "boundary_model",
+              "physical_model",
+              "physical_parameter",
+              "initialization"
+            ]
+          },
+          "controlled_paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "comparable_fingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "forbidden_evidence": {
+            "const": []
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "campaign": {
+      "const": null
+    },
+    "science_archive_preflight": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

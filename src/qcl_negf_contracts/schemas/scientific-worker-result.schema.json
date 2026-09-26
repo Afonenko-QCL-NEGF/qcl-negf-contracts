@@ -1,0 +1,443 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QCL-NEGF Julia execution result v2",
+  "type": "object",
+  "required": [
+    "schema",
+    "plan_fingerprint",
+    "plan_scientific_fingerprint",
+    "root_definition_id",
+    "name",
+    "status",
+    "model_version",
+    "inclusions",
+    "executions",
+    "expected_point_count",
+    "available_point_count",
+    "points",
+    "contract_set"
+  ],
+  "properties": {
+    "schema": {
+      "const": "qcl-negf-series-result-v3"
+    },
+    "plan_fingerprint": {
+      "type": "string"
+    },
+    "plan_scientific_fingerprint": {
+      "type": "string"
+    },
+    "root_definition_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "running",
+        "completed",
+        "completed_with_warnings",
+        "failed",
+        "cancelled",
+        "paused"
+      ]
+    },
+    "model_version": {
+      "type": "string"
+    },
+    "inclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "definition_id",
+          "parent_id",
+          "path",
+          "execution_ids",
+          "label"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "definition_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "execution_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            }
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "executions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "definition_id": {
+            "type": "string"
+          },
+          "variant_id": {
+            "type": "string"
+          },
+          "method_id": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "point_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "repetition": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "id",
+          "definition_id",
+          "variant_id",
+          "method_id",
+          "purpose",
+          "label",
+          "operation",
+          "point_ids",
+          "repetition"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "expected_point_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "available_point_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "execution_id",
+          "attempt",
+          "coordinates",
+          "initialization",
+          "status",
+          "quality",
+          "converged",
+          "warnings",
+          "observables",
+          "data",
+          "postprocessing"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "execution_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "coordinates": {
+            "type": "object",
+            "required": [
+              "temperature_K",
+              "voltage_per_period_V",
+              "branch",
+              "order"
+            ],
+            "properties": {
+              "temperature_K": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "voltage_per_period_V": {
+                "type": "number",
+                "minimum": 0
+              },
+              "branch": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "initialization": {
+            "type": "object",
+            "required": [
+              "kind",
+              "source_point_id",
+              "checkpoint",
+              "fallback_reason"
+            ]
+          },
+          "status": {
+            "enum": [
+              "saving",
+              "completed",
+              "failed",
+              "skipped",
+              "cancelled",
+              "completed_with_warnings",
+              "paused"
+            ]
+          },
+          "quality": {
+            "enum": [
+              "strict",
+              "approximate",
+              "unconverged",
+              "invalid",
+              "unresolved",
+              "strictly_converged",
+              "not_evaluated"
+            ]
+          },
+          "converged": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "observables": {
+            "type": "object"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "properties": {
+              "checkpoint_source_attempt": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "dependentRequired": {
+              "checkpoint_source_attempt": [
+                "result_commit",
+                "pause_reason",
+                "resume_kind",
+                "recovery_origin"
+              ]
+            }
+          },
+          "postprocessing": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "attempt_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "execution_id",
+          "attempt",
+          "coordinates",
+          "initialization",
+          "status",
+          "quality",
+          "converged",
+          "warnings",
+          "observables",
+          "data",
+          "postprocessing"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "execution_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "coordinates": {
+            "type": "object",
+            "required": [
+              "temperature_K",
+              "voltage_per_period_V",
+              "branch",
+              "order"
+            ],
+            "properties": {
+              "temperature_K": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "voltage_per_period_V": {
+                "type": "number",
+                "minimum": 0
+              },
+              "branch": {
+                "type": "string",
+                "minLength": 1
+              },
+              "order": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          "initialization": {
+            "type": "object",
+            "required": [
+              "kind",
+              "source_point_id",
+              "checkpoint",
+              "fallback_reason"
+            ]
+          },
+          "status": {
+            "enum": [
+              "saving",
+              "completed",
+              "failed",
+              "skipped",
+              "cancelled",
+              "completed_with_warnings",
+              "paused"
+            ]
+          },
+          "quality": {
+            "enum": [
+              "strict",
+              "approximate",
+              "unconverged",
+              "invalid",
+              "unresolved",
+              "strictly_converged",
+              "not_evaluated"
+            ]
+          },
+          "converged": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "observables": {
+            "type": "object"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "properties": {
+              "checkpoint_source_attempt": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "dependentRequired": {
+              "checkpoint_source_attempt": [
+                "result_commit",
+                "pause_reason",
+                "resume_kind",
+                "recovery_origin"
+              ]
+            }
+          },
+          "postprocessing": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "selected_execution_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v1"
+    }
+  },
+  "additionalProperties": false
+}

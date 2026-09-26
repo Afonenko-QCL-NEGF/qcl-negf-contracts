@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QCL-NEGF scientific execution result",
+  "$ref": "scientific-worker-result.schema.json"
+}

@@ -1,0 +1,515 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QCL-NEGF scientific definition v2",
+  "type": "object",
+  "required": [
+    "schema",
+    "kind",
+    "id"
+  ],
+  "properties": {
+    "schema": {
+      "const": "qcl-negf-study-v2"
+    },
+    "kind": {
+      "enum": [
+        "study",
+        "meta"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "purpose": {
+      "enum": [
+        "research",
+        "diagnostic",
+        "reproducibility",
+        "benchmark"
+      ]
+    },
+    "operation": {
+      "enum": [
+        "stationary",
+        "operator_algebra",
+        "operator_metrics",
+        "operator_representation",
+        "operator_continuum",
+        "operator_cavity",
+        "operator_lo_equilibrium",
+        "operator_spectral_resolution",
+        "structure_spectrum"
+      ]
+    },
+    "repetitions": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "overrides": {
+          "type": "object"
+        }
+      }
+    },
+    "variants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "method_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+          },
+          "overrides": {
+            "type": "object"
+          },
+          "controlled_paths": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$"
+            }
+          },
+          "comparison_kind": {
+            "enum": [
+              "controlled_axis",
+              "discretization",
+              "representation",
+              "boundary_model",
+              "physical_model",
+              "physical_parameter",
+              "initialization"
+            ]
+          }
+        }
+      }
+    },
+    "axes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "temperatures": {
+          "type": "object",
+          "properties": {
+            "values": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "number"
+              }
+            },
+            "start": {
+              "type": "number"
+            },
+            "stop": {
+              "type": "number"
+            },
+            "step": {
+              "type": "number",
+              "not": {
+                "const": 0
+              }
+            },
+            "unit": {
+              "enum": [
+                "K",
+                "V",
+                "mV"
+              ]
+            },
+            "question": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "unit"
+          ],
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "required": [
+                "values"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "start"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "stop"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "step"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "required": [
+                "start",
+                "stop",
+                "step"
+              ],
+              "not": {
+                "required": [
+                  "values"
+                ]
+              }
+            }
+          ]
+        },
+        "voltages": {
+          "type": "object",
+          "properties": {
+            "values": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "number"
+              }
+            },
+            "start": {
+              "type": "number"
+            },
+            "stop": {
+              "type": "number"
+            },
+            "step": {
+              "type": "number",
+              "not": {
+                "const": 0
+              }
+            },
+            "unit": {
+              "enum": [
+                "K",
+                "V",
+                "mV"
+              ]
+            },
+            "question": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "unit"
+          ],
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "required": [
+                "values"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "start"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "stop"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "step"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "required": [
+                "start",
+                "stop",
+                "step"
+              ],
+              "not": {
+                "required": [
+                  "values"
+                ]
+              }
+            }
+          ]
+        },
+        "branches": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "voltages"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$"
+              },
+              "voltages": {
+                "type": "object",
+                "properties": {
+                  "values": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "start": {
+                    "type": "number"
+                  },
+                  "stop": {
+                    "type": "number"
+                  },
+                  "step": {
+                    "type": "number",
+                    "not": {
+                      "const": 0
+                    }
+                  },
+                  "unit": {
+                    "enum": [
+                      "K",
+                      "V",
+                      "mV"
+                    ]
+                  },
+                  "question": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "unit"
+                ],
+                "additionalProperties": false,
+                "oneOf": [
+                  {
+                    "required": [
+                      "values"
+                    ],
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "start"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "stop"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "step"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "required": [
+                      "start",
+                      "stop",
+                      "step"
+                    ],
+                    "not": {
+                      "required": [
+                        "values"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "not": {
+        "required": [
+          "voltages",
+          "branches"
+        ]
+      }
+    },
+    "policies": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scba_to_poisson": {
+          "enum": [
+            "research_continue",
+            "strict_fail_fast",
+            "adaptive_working"
+          ]
+        },
+        "voltage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "enum": [
+                "independent",
+                "strict",
+                "research"
+              ]
+            },
+            "invalid_predecessor": {
+              "enum": [
+                "stop_branch",
+                "skip",
+                "cold_start"
+              ]
+            }
+          }
+        },
+        "on_child_failure": {
+          "enum": [
+            "continue",
+            "stop"
+          ]
+        }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "full_state": {
+          "type": "boolean"
+        },
+        "projections": {
+          "type": "boolean"
+        },
+        "optical": {
+          "type": "boolean"
+        },
+        "intermediate_history": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "includes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "required": [
+              "source"
+            ],
+            "properties": {
+              "source": {
+                "type": "string"
+              },
+              "overrides": {
+                "type": "object"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "meta"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "includes"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "configuration"
+              ]
+            },
+            {
+              "required": [
+                "axes"
+              ]
+            },
+            {
+              "required": [
+                "variants"
+              ]
+            },
+            {
+              "required": [
+                "repetitions"
+              ]
+            }
+          ]
+        }
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "includes"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

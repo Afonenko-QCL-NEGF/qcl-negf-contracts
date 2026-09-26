@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Derived artifact manifest v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "snapshots",
+    "retention"
+  ],
+  "properties": {
+    "schema": {
+      "const": "qcl-negf-artifacts-v1"
+    },
+    "snapshots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "stage",
+          "iteration",
+          "quality",
+          "warnings",
+          "data_path",
+          "metadata_path",
+          "artifacts"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "iteration": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "quality": {
+            "enum": [
+              "strict",
+              "approximate",
+              "unconverged",
+              "invalid"
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "data_path": {
+            "type": "string"
+          },
+          "metadata_path": {
+            "type": "string"
+          },
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "path",
+                "media_type"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string",
+                  "pattern": "^derived/snapshots/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$"
+                },
+                "media_type": {
+                  "enum": [
+                    "image/svg+xml",
+                    "image/png",
+                    "text/csv",
+                    "application/json",
+                    "application/yaml"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "terminal": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "retention": {
+      "type": "object",
+      "required": [
+        "maximum_snapshots",
+        "policy",
+        "hdf5_included"
+      ],
+      "properties": {
+        "maximum_snapshots": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "policy": {
+          "type": "string"
+        },
+        "hdf5_included": {
+          "const": false
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

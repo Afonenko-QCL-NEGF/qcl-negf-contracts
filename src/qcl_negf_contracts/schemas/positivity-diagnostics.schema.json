@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Full-grid normalized and raw PSD diagnostics",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "quality",
+    "sampling",
+    "definition",
+    "matrix_definitions",
+    "matrices"
+  ],
+  "properties": {
+    "schema": {
+      "enum": [
+        "qcl-negf-positivity-diagnostics-v1",
+        "qcl-negf-positivity-diagnostics-v2",
+        "qcl-negf-positivity-diagnostics-v3"
+      ]
+    },
+    "status": {
+      "type": "string"
+    },
+    "quality": {
+      "type": "string"
+    },
+    "sampling": {
+      "type": "string"
+    },
+    "definition": {
+      "type": "string"
+    },
+    "matrix_definitions": {
+      "type": "object",
+      "required": [
+        "spectral",
+        "occupied",
+        "unoccupied",
+        "broadening"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "matrices": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": [
+          "matrix_kind",
+          "energy_index",
+          "momentum_index",
+          "energy_eV",
+          "momentum_per_nm",
+          "minimum_eigenvalue_scaled",
+          "block_norm_scaled",
+          "floor_scaled",
+          "minimum_eigenvalue",
+          "block_norm",
+          "unit",
+          "ratio",
+          "strict_threshold",
+          "strict_passed"
+        ],
+        "properties": {
+          "matrix_kind": {
+            "enum": [
+              "spectral",
+              "occupied",
+              "unoccupied",
+              "broadening",
+              "raw_occupied",
+              "raw_unoccupied"
+            ]
+          },
+          "energy_index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "momentum_index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "energy_eV": {
+            "type": "number"
+          },
+          "momentum_per_nm": {
+            "type": "number"
+          },
+          "minimum_eigenvalue_scaled": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "block_norm_scaled": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "floor_scaled": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "minimum_eigenvalue": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "block_norm": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "unit": {
+            "enum": [
+              "eV",
+              "1/eV"
+            ]
+          },
+          "ratio": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "strict_threshold": {
+            "type": "number",
+            "minimum": 0
+          },
+          "strict_passed": {
+            "type": "boolean"
+          },
+          "absolute_defect": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "relative_defect": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "backward_error": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "hermiticity_defect": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "construction_scale": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "strict_absolute_threshold": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

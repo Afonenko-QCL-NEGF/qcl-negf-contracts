@@ -1,0 +1,404 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Light physics snapshot v1",
+  "type": "object",
+  "required": [
+    "z_nm",
+    "potential_structure_eV",
+    "potential_external_eV",
+    "potential_hartree_eV",
+    "potential_total_eV",
+    "density_per_m3",
+    "schema",
+    "id",
+    "stage",
+    "iteration",
+    "quality",
+    "warnings",
+    "status",
+    "units",
+    "sampling",
+    "wavefunctions",
+    "populations",
+    "spectral",
+    "occupied_spectral"
+  ],
+  "properties": {
+    "z_nm": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "potential_structure_eV": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "potential_external_eV": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "potential_hartree_eV": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "potential_total_eV": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "density_per_m3": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "schema": {
+      "const": "qcl-negf-physics-snapshot-v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "stage": {
+      "type": "string"
+    },
+    "iteration": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "quality": {
+      "enum": [
+        "strict",
+        "approximate",
+        "unconverged",
+        "invalid"
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "status": {
+      "type": "string"
+    },
+    "units": {
+      "type": "object"
+    },
+    "sampling": {
+      "type": "object",
+      "required": [
+        "method",
+        "original_shape",
+        "stored_shape"
+      ]
+    },
+    "wavefunctions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "energy_eV",
+          "amplitude_per_sqrt_nm",
+          "imaginary_per_sqrt_nm"
+        ],
+        "properties": {
+          "state": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "energy_eV": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "amplitude_per_sqrt_nm": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "imaginary_per_sqrt_nm": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "basis": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "populations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "sheet_density_per_m2",
+          "fraction"
+        ],
+        "properties": {
+          "state": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sheet_density_per_m2": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "fraction": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "spectral": {
+      "type": "object",
+      "required": [
+        "energy_eV",
+        "k_per_nm",
+        "values",
+        "quantity",
+        "unit"
+      ],
+      "properties": {
+        "energy_eV": {
+          "type": "array",
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "k_per_nm": {
+          "type": "array",
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "unit": {
+          "const": "1/eV"
+        }
+      }
+    },
+    "occupied_spectral": {
+      "type": "object",
+      "required": [
+        "energy_eV",
+        "k_per_nm",
+        "values",
+        "quantity",
+        "unit"
+      ],
+      "properties": {
+        "energy_eV": {
+          "type": "array",
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "k_per_nm": {
+          "type": "array",
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        },
+        "quantity": {
+          "type": "string"
+        },
+        "unit": {
+          "const": "1/eV"
+        }
+      }
+    },
+    "localized_wavefunctions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "energy_eV",
+          "amplitude_per_sqrt_nm",
+          "imaginary_per_sqrt_nm"
+        ],
+        "properties": {
+          "state": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "energy_eV": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "amplitude_per_sqrt_nm": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "imaginary_per_sqrt_nm": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          },
+          "basis": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "population_basis": {
+      "type": "string"
+    },
+    "model_capabilities": {
+      "type": "object"
+    },
+    "figure_specs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "effective_populations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "sheet_density_per_m2",
+          "fraction"
+        ],
+        "properties": {
+          "state": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sheet_density_per_m2": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "fraction": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "effective_population_basis": {
+      "type": "string"
+    },
+    "spatial_energy_density": {
+      "type": "object",
+      "required": [
+        "energy_eV",
+        "z_nm",
+        "values",
+        "unit",
+        "quantity",
+        "axis_order"
+      ]
+    },
+    "data_identity": {
+      "type": "object"
+    },
+    "coordinates": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

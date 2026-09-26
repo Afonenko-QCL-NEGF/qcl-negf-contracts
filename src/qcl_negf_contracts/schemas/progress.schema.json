@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QCL-NEGF progress snapshot v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "stage",
+    "iteration",
+    "total",
+    "metrics"
+  ],
+  "properties": {
+    "schema": {
+      "const": "qcl-negf-progress-v1"
+    },
+    "stage": {
+      "type": "string"
+    },
+    "iteration": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "total": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "outer_iteration": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "point_ordinal": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "value"
+        ]
+      }
+    }
+  }
+}
