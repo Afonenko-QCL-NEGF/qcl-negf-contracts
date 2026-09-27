@@ -8,8 +8,8 @@ license = "MIT"
 requires-python = ">=3.14,<3.15"
 
 [project.urls]
-Repository = "https://github.com/AfonenkoA/qcl-negf-contracts"
-Issues = "https://github.com/AfonenkoA/qcl-negf-contracts/issues"
+Repository = "https://github.com/Afonenko-QCL-NEGF/qcl-negf-contracts"
+Issues = "https://github.com/Afonenko-QCL-NEGF/qcl-negf-contracts/issues"
 
 [project.optional-dependencies]
 validation = ["jsonschema>=4.23,<5"]

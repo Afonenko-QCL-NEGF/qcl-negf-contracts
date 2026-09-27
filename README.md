@@ -42,7 +42,7 @@ Schemas are distributed inside the wheel under `qcl_negf_contracts/schemas`; `lo
 
 The result contract is `qcl-negf.results.v1`, native HDF5 layout is `4.0`, and the maximum independently readable export part is 200,000,000 decimal bytes. Readers reject missing or different contract sets. A successful transport or export does not establish scientific acceptance.
 
-The [scientific runner](https://github.com/AfonenkoA/QCLNEGFRunner.jl) vendors the configuration schema and registry with a checksum manifest so Julia does not need a Python runtime. Changes to a vendored schema require a coordinated runner update.
+The [scientific runner](https://github.com/Afonenko-QCL-NEGF/QCLNEGFRunner.jl) vendors the configuration schema and registry with a checksum manifest so Julia does not need a Python runtime. Changes to a vendored schema require a coordinated runner update.
 
 ## Development
 
@@ -50,4 +50,4 @@ Tests check schema validity, reference closure, artifact boundaries and hostile 
 
 ## Integrated environment
 
-The [qcl-negf](https://github.com/AfonenkoA/qcl-negf) superproject owns the shared dependency lock. From its root, run `uv sync --locked --all-packages --all-extras --group test`. The package remains independently buildable and testable from its native metadata.
+The [qcl-negf](https://github.com/Afonenko-QCL-NEGF/qcl-negf) superproject owns the shared dependency lock. From its root, run `uv sync --locked --all-packages --all-extras --group test`. The package remains independently buildable and testable from its native metadata.
