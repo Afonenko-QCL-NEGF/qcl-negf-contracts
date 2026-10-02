@@ -11,7 +11,9 @@ from .messages import ContractError
 CONTRACT_SET = "qcl-negf.results.v1"
 COMMIT_SCHEMA = "qcl-negf.artifact-commit.v2"
 POINTER_SCHEMA = "qcl-negf.artifact-pointer.v2"
-EXPORT_SCHEMA = "qcl-negf.science-export.v2"
+EXPORT_SCHEMA = "qcl-negf.science-export.v3"
+EXPORT_TRANSPORT_SCHEMA = "qcl-negf.export-archive.v1"
+DIAGNOSTIC_EXPORT_SCHEMA = "qcl-negf.operational-evidence.v2"
 NATIVE_SCHEMA_VERSION = "4.0"
 MODEL_SCHEMA = "qcl-negf-resolved-configuration-v3"
 RECOVERY_SCHEMA = "qcl-negf-recovery-reference-v1"
@@ -30,7 +32,7 @@ ARTIFACT_SCHEMA_CONTRACTS = {
         "qcl-negf-operator-diagnostics-v4"}),
 }
 SCHEMA_BOUND_ROLES = frozenset(role for role, _ in ARTIFACT_SCHEMA_CONTRACTS)
-# Decimal bytes: applies to every independently readable export part, all profiles.
+# Legacy multipart read/verification only. New exports have no archive byte cap.
 EXPORT_PART_MAX_BYTES = 200_000_000
 SCIENCE_MAX_BYTES = EXPORT_PART_MAX_BYTES
 SCIENCE_ROLES = frozenset({"physics.analysis", "science.history", "performance.summary",
@@ -59,6 +61,36 @@ def relative_path(value: object) -> str:
 def digest_value(value: object) -> str:
     if not isinstance(value, str) or not re.fullmatch("[0-9a-f]{64}", value):
         raise ContractError("artifact SHA256 is invalid", "corrupt_result")
+    return value
+
+
+def validate_export_receipt(value: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Validate the identity of one finalized archive, without a size ceiling.
+
+    The receipt establishes transport identity, never scientific acceptance.
+    Legacy multipart receipts are consumed by their independent legacy reader.
+    """
+    require_contract_set(value)
+    if value.get("schema") not in {EXPORT_SCHEMA, DIAGNOSTIC_EXPORT_SCHEMA}:
+        raise ContractError("unsupported export receipt schema", "incompatible_contract")
+    if value.get("transport_schema") != EXPORT_TRANSPORT_SCHEMA:
+        raise ContractError("unsupported export transport schema", "incompatible_contract")
+    profile = value.get("profile")
+    if profile not in {"science", "full-state", "diagnostic"} or (
+        (value["schema"] == DIAGNOSTIC_EXPORT_SCHEMA) != (profile == "diagnostic")
+    ):
+        raise ContractError("export receipt profile is invalid", "corrupt_result")
+    digest_value(value.get("sha256"))
+    digest_value(value.get("snapshot_identity"))
+    size = value.get("bytes")
+    if not isinstance(size, int) or isinstance(size, bool) or size < 0:
+        raise ContractError("export archive byte length is invalid", "corrupt_result")
+    for key in ("filename", "archive"):
+        name = relative_path(value.get(key))
+        if "/" in name or not name.endswith(".tar.xz") or any(ord(char) < 32 or ord(char) == 127 for char in name):
+            raise ContractError("export archive filename is invalid", "corrupt_result")
+    if any(key in value for key in ("parts", "multipart", "part_count", "maximum_part_bytes")):
+        raise ContractError("single archive receipt cannot describe multipart output", "corrupt_result")
     return value
 
 

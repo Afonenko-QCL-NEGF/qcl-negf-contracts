@@ -39,6 +39,24 @@ def test_result_registry_matches_python_contracts():
             for row in registry["artifacts"]} == ARTIFACT_SCHEMA_CONTRACTS
 
 
+def test_single_archive_receipt_validates_unbounded_size_and_confined_filename():
+    from qcl_negf_contracts import schema_validator
+    from qcl_negf_contracts.artifacts import validate_export_receipt
+    value = {"schema": "qcl-negf.science-export.v3", "contract_set": CONTRACT_SET,
+             "transport_schema": "qcl-negf.export-archive.v1", "profile": "science",
+             "snapshot_identity": "a" * 64, "sha256": "b" * 64,
+             "bytes": 300_000_000, "filename": "job-science-a.tar.xz", "archive": "b.tar.xz"}
+    assert validate_export_receipt(value) == value
+    validator = schema_validator("export-receipt.schema.json")
+    validator.validate(value)
+    for invalid in ({"bytes": True}, {"bytes": -1}, {"sha256": "missing"},
+                    {"filename": "../escape.tar.xz"}, {"filename": "subdir/archive.tar.xz"},
+                    {"parts": []}, {"snapshot_identity": None}):
+        with pytest.raises(ContractError):
+            validate_export_receipt({**value, **invalid})
+        assert not validator.is_valid({**value, **invalid})
+
+
 @pytest.mark.parametrize("payload", [b'{"x":NaN}', b'{"x":Infinity}', b'{"x":1,"x":2}',
     b'[]', b'{"x":', b'\xff', b'{"x":' + b'[' * 70 + b'0' + b']' * 70 + b'}'])
 def test_json_boundary_rejects_ambiguous_or_invalid_inputs(payload):
