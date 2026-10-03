@@ -17,6 +17,11 @@
   "packed_witnesses": "qcl-negf-psd-selected-packed-v2",
   "artifacts": [
     {
+      "role": "execution.progress",
+      "media_type": "application/json",
+      "schemas": ["qcl-negf-execution-progress-v1"]
+    },
+    {
       "role": "model",
       "media_type": "application/json",
       "schemas": [

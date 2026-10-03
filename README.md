@@ -33,6 +33,7 @@ plan = scientific_plan(decode(plan_bytes))
 | `schemas/run.schema.json` | Fully resolved solver configuration |
 | `schemas/scientific-definition.schema.json` | Declarative study and meta definitions |
 | `schemas/scientific-plan.schema.json` | Frozen scientific plan |
+| `schemas/output-policy.schema.json` | Canonical archive/recovery/telemetry settings |
 | `schemas/scientific-worker-result.schema.json` | Solver execution results |
 | `schemas/results-contract-set.json` | Native and serialized artifact versions |
 | `artifacts.py` | Artifact roles, paths, checksums and immutable commit validation |
@@ -53,5 +54,14 @@ Tests check schema validity, reference closure, artifact boundaries and hostile 
 The [qcl-negf](https://github.com/Afonenko-QCL-NEGF/qcl-negf) superproject owns the shared dependency lock. From its root, run `uv sync --locked --all-packages --all-extras --group test`. The package remains independently buildable and testable from its native metadata.
 
 ## Export transport
+
+The canonical scientific key is `output`, with `archive`, `recovery` and
+`telemetry` sections. `archive.full_final` must be true in this release.
+Legacy `outputs` is accepted only as explicit runner migration; specifying both
+keys is rejected. Operational retention never certifies scientific quality.
+New commits bind `state_id`/`state_sequence` to their identity; progress artifacts
+declare prior final receipts and file hashes for portable multi-point recovery.
+`validate_execution_progress` checks reference structure, while consumers must
+also verify referenced archive bytes.
 
 New `qcl-negf.science-export.v3` and `qcl-negf.operational-evidence.v2` receipts describe one `.tar.xz` using `qcl-negf.export-archive.v1`. `validate_export_receipt` and the bundled `export-receipt.schema.json` check filename confinement, bytes, SHA256, profile and snapshot identity. Bytes have no fixed upper bound. Successful transport does not assert convergence or scientific acceptance. The legacy 200,000,000-byte constants and registry entries apply only to reading archived `qcl-negf.export-parts.v1` sets; new exporters do not generate them.
