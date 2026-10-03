@@ -26,6 +26,7 @@ def test_definition_accepts_one_output_policy_and_rejects_conflicting_sources():
     ("archive", "full_final", False), ("recovery", "byte_budget", 0),
     ("recovery", "byte_budget", True), ("recovery", "reserve_bytes", -1),
     ("recovery", "retain_generations", 0), ("recovery", "interval_seconds", 0),
+    ("recovery", "retain_generations", 1),
     ("telemetry", "buffer_events", 0), ("archive", "unexpected", True),
 ])
 def test_output_policy_rejects_unbounded_or_unsupported_settings(section, field, value):

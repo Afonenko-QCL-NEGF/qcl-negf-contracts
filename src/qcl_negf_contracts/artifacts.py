@@ -181,10 +181,13 @@ def validate_execution_progress(value: Mapping[str, Any]) -> tuple[Mapping[str, 
         raise ContractError("unsupported execution progress schema", "incompatible_contract")
     identity = value.get("identity")
     if (not isinstance(identity, dict) or not value.get("execution_id")
+            or type(identity.get("attempt")) is not int or identity["attempt"] < 1
             or identity.get("execution_id") != value["execution_id"]
             or identity.get("point_id") != value.get("active_point_id")):
         raise ContractError("execution progress identity differs", "corrupt_result")
     digest_value(value.get("plan_fingerprint"))
+    if identity.get("plan_fingerprint") != value["plan_fingerprint"]:
+        raise ContractError("execution progress frozen plan identity differs", "corrupt_result")
     rows = value.get("completed_points")
     if not isinstance(rows, list):
         raise ContractError("execution progress requires completed point inventory", "corrupt_result")
@@ -213,6 +216,16 @@ def validate_execution_progress(value: Mapping[str, Any]) -> tuple[Mapping[str, 
         for field in ("state_id", "state_sequence"):
             if field in prior_identity and prior_identity[field] != receipt[field]:
                 raise ContractError("prior final state coordinates differ", "corrupt_result")
+        point = row["point"]
+        if (point.get("id") != point_id or point.get("execution_id") != value["execution_id"]
+                or type(point.get("attempt")) is not int or point["attempt"] < 1
+                or point["attempt"] != prior_identity.get("attempt")
+                or point["attempt"] > identity.get("attempt", 0)
+                or point.get("status") not in ("completed", "completed_with_warnings")
+                or not isinstance(point.get("coordinates"), dict)
+                or not isinstance(point.get("data"), dict)
+                or point["data"].get("result_commit") != "archive/" + path):
+            raise ContractError("completed point metadata differs from its final receipt", "corrupt_result")
         files = row.get("files")
         if not isinstance(files, list) or not files:
             raise ContractError("prior final dependencies are absent", "corrupt_result")
