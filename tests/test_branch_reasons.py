@@ -260,3 +260,30 @@ def test_independent_owner_cannot_claim_valid_foreign_branch_source():
     owner.update(id='ip1', coordinates={'temperature_K': 70,
                  'voltage_per_period_V': 0, 'branch': 'forward', 'order': 1})
     corrupt(ctx)
+
+
+@pytest.mark.parametrize('location', ['attached_warning', 'opaque_snapshot_data'])
+def test_integer_encoding_limit_is_normalized_to_contract_error(location):
+    import sys
+    limit = sys.get_int_max_str_digits()
+    print(f'runtime_int_digit_limit={limit}; boundary={location}')
+    if limit == 0 or limit >= 5001:
+        pytest.skip('active integer digit limit does not reject hand-literal 5001-digit int')
+    ctx = context()
+    huge = 10 ** 5000
+    if location == 'attached_warning':
+        ctx['owner_point']['warnings'][0]['source_attempt'] = huge
+    else:
+        ctx['source_points']['points'][0]['data']['opaque'] = huge
+    corrupt(ctx)
+
+
+@pytest.mark.parametrize('self_source', [False, True])
+def test_present_exact_future_source_attempt_is_refused(self_source):
+    ctx = context(self_source)
+    source = deepcopy(ctx['source_points']['points'][0])
+    source['attempt'] = 2 if self_source else 3
+    ctx['source_points']['attempt_history'].append(source)
+    ctx['owner_point']['warnings'][0]['source_attempt'] = 2 if self_source else 3
+    # The exact claimed tuple exists; its attempt bound must cause the refusal.
+    corrupt(ctx)

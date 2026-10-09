@@ -355,6 +355,6 @@ def branch_reason(record: object, *, plan: object, owner_point: object,
             raise
         raise ContractError('branch reason: invalid or unavailable JSON provenance',
                             'corrupt_result') from error
-    except (KeyError, TypeError, UnicodeError, RecursionError, OverflowError) as error:
+    except (KeyError, TypeError, ValueError, UnicodeError, RecursionError, OverflowError) as error:
         raise ContractError('branch reason: invalid or unavailable JSON provenance',
                             'corrupt_result') from error
