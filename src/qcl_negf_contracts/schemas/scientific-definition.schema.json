@@ -458,6 +458,9 @@
           }
         ]
       }
+    },
+    "output": {
+      "$ref": "output-policy.schema.json"
     }
   },
   "additionalProperties": false,
@@ -509,6 +512,14 @@
             }
           ]
         }
+      }
+    },
+    {
+      "not": {
+        "required": [
+          "output",
+          "outputs"
+        ]
       }
     }
   ]
