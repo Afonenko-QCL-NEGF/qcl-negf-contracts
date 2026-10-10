@@ -133,3 +133,42 @@ Targeted metadata checks with the already available Python/test runtime:
 ```console
 PYTHONPATH=src python3.14 -m pytest -q tests/test_branch_reasons.py
 ```
+
+## Agent report file format
+
+```python
+from qcl_negf_contracts.agent_reports import validate_agent_report
+
+report = validate_agent_report(raw_report_bytes)
+# Retain raw_report_bytes when storing the file; do not re-encode report.
+```
+
+`validate_agent_report(raw: bytes) -> dict` validates a separate
+`agent-report.json` file with schema `qcl-negf-agent-report-v1`. The exact
+seven fields are `schema`, `anchor`, `question_snapshot`, `used_runs`,
+`conclusion`, `reasoning`, and `limitations`. The four prose fields are
+nonempty UTF-8 text with no lone surrogates; text and whitespace are not
+normalized. The raw file is limited to 262144 bytes and must be strict UTF-8
+JSON. UTF-8 BOMs, UTF-16/32 (including BOM-less forms), malformed JSON,
+unknown or duplicate keys, and nonfinite JSON numbers are rejected with
+`ContractError`. The decoded UTF-8 string is syntax-checked before the
+existing duplicate-key decoder; general message decoding is unchanged.
+
+`anchor` has exactly `run_uuid`, `root_definition_id`, `root_kind`, and
+`plan_fingerprint`. Kind is `study` or `meta`. `used_runs` contains zero to
+16 objects, each with exactly `run_uuid`, `plan_fingerprint`, `execution_id`,
+`definition_id`, `variant_id`, `attempt`, and `calcjob_uuid`. UUIDs use their
+full canonical lowercase form; fingerprints are 64 lowercase hexadecimal
+digits. All IDs start with an ASCII letter or digit and contain only ASCII
+letters, digits, `.`, `_`, or `-`, with a maximum length of 128 characters.
+Attempts are integers at least one, excluding Boolean values. Duplicate
+complete seven-field used tuples are rejected; distinct tuples are allowed.
+An empty `used_runs` explicitly means no attempts were referenced.
+
+This pure format API does not access files, ORM, plans, results or scientific
+assessments. Consumers must separately check frozen plan identity and exact
+run/variant/attempt/CalcJob membership before storing the original bytes.
+`question_snapshot` is author text, not proof of the canonical research
+question. The anchor identifies a run view, not a stable research card;
+full R12 acceptance still depends on the R01 card/catalog relation. A valid
+report, including its conclusion, does not establish scientific acceptance.
