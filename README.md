@@ -172,3 +172,36 @@ run/variant/attempt/CalcJob membership before storing the original bytes.
 question. The anchor identifies a run view, not a stable research card;
 full R12 acceptance still depends on the R01 card/catalog relation. A valid
 report, including its conclusion, does not establish scientific acceptance.
+
+## Research card file format
+
+```python
+from qcl_negf_contracts.research_cards import validate_research_card
+
+card = validate_research_card(raw_card_bytes)
+# Store raw_card_bytes unchanged; do not re-encode card.
+```
+
+`validate_research_card(raw: bytes) -> dict` validates `research-card.json`
+with exactly `schema`, `title`, `goal`, and `question`. Schema is
+`qcl-negf-research-card-v1`. Title is limited to 128 Unicode code points;
+goal and question are each limited to 16384 code points. Each text value
+must contain a non-whitespace character according to Python `str.strip()`
+and encode as strict UTF-8 without lone surrogates. Validation preserves
+text, leading/trailing whitespace and combining characters without
+normalization. The raw file limit is 65536 bytes, including JSON syntax,
+escapes and whitespace; the encoded-byte limit also applies to multibyte text.
+
+Input must be bytes containing strict UTF-8 JSON. UTF-8 BOMs, UTF-16/32
+with or without BOMs, invalid UTF-8, malformed JSON, missing/surplus fields,
+duplicate keys and nonfinite numbers raise `ContractError`. UTF-8 string
+syntax is checked before the existing duplicate-key/finite-number decoder;
+general message and agent-report decoding remain unchanged.
+
+The native card UUID is assigned by the owning storage service and is absent
+from this raw format, as is a self-hash. Equal title/goal/question values do
+not prescribe merging cards. Consumers retain original bytes and separately
+bind their digest, native UUID and immutable frozen-plan ownership. This pure
+format API performs no storage, ORM access, process execution, plan lookup or
+ScientificAssessment construction. A valid card does not establish scientific
+acceptance; agent-report `question_snapshot` remains separate author text.
