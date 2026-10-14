@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QCL-NEGF archive, recovery and telemetry policy",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "archive": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "full_final": {
+          "const": true
+        },
+        "optical": {
+          "type": "boolean"
+        },
+        "projections": {
+          "type": "boolean"
+        },
+        "intermediate_history": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "interval_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "retain_generations": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "byte_budget": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reserve_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "buffer_events": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

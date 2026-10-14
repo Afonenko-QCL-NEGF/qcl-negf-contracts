@@ -122,7 +122,6 @@
           "resolved_configuration",
           "provenance",
           "policies",
-          "outputs",
           "estimated_peak_bytes",
           "purpose",
           "repetition",
@@ -227,9 +226,38 @@
               }
             },
             "additionalProperties": false
+          },
+          "output": {
+            "$ref": "output-policy.schema.json"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "oneOf": [
+              {
+                "required": [
+                  "output"
+                ],
+                "not": {
+                  "required": [
+                    "outputs"
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "outputs"
+                ],
+                "not": {
+                  "required": [
+                    "output"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
       }
     },
     "points": {
