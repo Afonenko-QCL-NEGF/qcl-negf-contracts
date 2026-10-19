@@ -36,6 +36,7 @@ plan = scientific_plan(decode(plan_bytes))
 | `schemas/output-policy.schema.json` | Canonical archive/recovery/telemetry settings |
 | `schemas/scientific-worker-result.schema.json` | Solver execution results |
 | `schemas/results-contract-set.json` | Native and serialized artifact versions |
+| `schemas/final-fixed-point-audit.schema.json` | Bounded final raw measurement record; pure `final_audit.py` helpers validate status, identity and native/commit equality, without scientific acceptance |
 | `artifacts.py` | Artifact roles, paths, checksums and immutable commit validation |
 | `telemetry.py` | Typed fields and units for performance tables |
 
