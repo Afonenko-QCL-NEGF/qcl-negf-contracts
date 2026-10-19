@@ -41,7 +41,7 @@ plan = scientific_plan(decode(plan_bytes))
 
 Schemas are distributed inside the wheel under `qcl_negf_contracts/schemas`; `load_schema(name)` is the supported resource accessor. Install `qcl-negf-contracts[validation]` and call `schema_validator(name).validate(document)` for full offline validation. The adapter registers all bundled schemas for relative `$ref` resolution and performs no network retrieval. Schemas follow JSON Schema 2020-12. `results-contract-set.json` is a registry, not a validation schema.
 
-The result contract is `qcl-negf.results.v1`, native HDF5 layout is `4.0`, and the maximum independently readable export part is 200,000,000 decimal bytes. Readers reject missing or different contract sets. A successful transport or export does not establish scientific acceptance.
+The result contract is `qcl-negf.results.v1`, and native HDF5 layout is `4.0`. The maximum independently readable part in legacy archived `qcl-negf.export-parts.v1` sets is 200,000,000 decimal bytes. Current single-archive export receipts have no fixed byte ceiling. Readers reject missing or different contract sets. A successful transport or export does not establish scientific acceptance.
 
 The [scientific runner](https://github.com/Afonenko-QCL-NEGF/QCLNEGFRunner.jl) vendors the configuration schema and registry with a checksum manifest so Julia does not need a Python runtime. Changes to a vendored schema require a coordinated runner update.
 
