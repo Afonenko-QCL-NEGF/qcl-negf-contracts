@@ -1,0 +1,943 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Final fixed-point raw measurement record v1",
+  "description": "Structural schema. final_audit.py additionally enforces UTF-8 byte/depth/member budgets, status/context/row/identity rules and exact semantic equality. Format validity is not scientific acceptance.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf-final-fixed-point-audit-v1"
+    },
+    "record_status": {
+      "enum": [
+        "measured",
+        "partial_error",
+        "unavailable"
+      ]
+    },
+    "reason": {
+      "enum": [
+        null,
+        "measurement_error",
+        "map_unavailable"
+      ]
+    },
+    "detail": {
+      "type": "string",
+      "maxLength": 512
+    },
+    "detail_truncated": {
+      "type": "boolean"
+    },
+    "state_identity": {
+      "$ref": "#/$defs/identity"
+    },
+    "shape": {
+      "type": "object",
+      "properties": {
+        "NE": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "Nk": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "Nb": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "required": [
+        "NE",
+        "Nk",
+        "Nb"
+      ],
+      "additionalProperties": false
+    },
+    "units": {
+      "type": "object",
+      "properties": {
+        "native": {
+          "const": "1"
+        },
+        "energy_scale": {
+          "const": "eV"
+        },
+        "length_scale": {
+          "const": "m"
+        },
+        "index": {
+          "const": "1-based"
+        }
+      },
+      "required": [
+        "native",
+        "energy_scale",
+        "length_scale",
+        "index"
+      ],
+      "additionalProperties": false
+    },
+    "context": {
+      "$ref": "#/$defs/context"
+    },
+    "history": {
+      "type": "object",
+      "properties": {
+        "inner_last": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "inner_previous": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outer_last": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previous_lambda": {
+          "$ref": "#/$defs/measure"
+        }
+      },
+      "required": [
+        "inner_last",
+        "inner_previous",
+        "outer_last",
+        "previous_lambda"
+      ],
+      "additionalProperties": false
+    },
+    "dyson": {
+      "type": "object",
+      "properties": {
+        "ratio": {
+          "$ref": "#/$defs/measure"
+        },
+        "global_abs_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "max_abs_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "ratio_witness": {
+          "$ref": "#/$defs/witness"
+        },
+        "absolute_witness": {
+          "$ref": "#/$defs/witness"
+        }
+      },
+      "required": [
+        "ratio",
+        "global_abs_F",
+        "max_abs_F",
+        "ratio_witness",
+        "absolute_witness"
+      ],
+      "additionalProperties": false
+    },
+    "spectral": {
+      "$ref": "#/$defs/norm"
+    },
+    "keldysh": {
+      "$ref": "#/$defs/norm"
+    },
+    "selfenergy": {
+      "type": "object",
+      "properties": {
+        "rows": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 27,
+          "items": {
+            "type": "object",
+            "properties": {
+              "family": {
+                "enum": [
+                  "LO",
+                  "acoustic",
+                  "impurity",
+                  "IFR",
+                  "alloy",
+                  "electron_electron",
+                  "embedding_total",
+                  "embedding_plus",
+                  "embedding_minus"
+                ]
+              },
+              "component": {
+                "enum": [
+                  "R",
+                  "L",
+                  "G"
+                ]
+              },
+              "numerator_F": {
+                "$ref": "#/$defs/measure"
+              },
+              "scale_F": {
+                "$ref": "#/$defs/measure"
+              },
+              "denominator": {
+                "$ref": "#/$defs/measure"
+              },
+              "ratio": {
+                "$ref": "#/$defs/measure"
+              }
+            },
+            "required": [
+              "family",
+              "component",
+              "numerator_F",
+              "scale_F",
+              "denominator",
+              "ratio"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "winner": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "family": {
+                  "enum": [
+                    "LO",
+                    "acoustic",
+                    "impurity",
+                    "IFR",
+                    "alloy",
+                    "electron_electron",
+                    "embedding_total",
+                    "embedding_plus",
+                    "embedding_minus"
+                  ]
+                },
+                "component": {
+                  "enum": [
+                    "R",
+                    "L",
+                    "G"
+                  ]
+                }
+              },
+              "required": [
+                "family",
+                "component"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_ratio": {
+          "$ref": "#/$defs/measure"
+        },
+        "floor": {
+          "const": 1e-14
+        }
+      },
+      "required": [
+        "rows",
+        "winner",
+        "max_ratio",
+        "floor"
+      ],
+      "additionalProperties": false
+    },
+    "charge": {
+      "type": "object",
+      "properties": {
+        "target_sheet": {
+          "$ref": "#/$defs/measure"
+        },
+        "stored_raw_sheet": {
+          "$ref": "#/$defs/measure"
+        },
+        "normalized_sheet": {
+          "$ref": "#/$defs/measure"
+        },
+        "candidate_raw_sheet": {
+          "$ref": "#/$defs/measure"
+        },
+        "stored_lambda": {
+          "$ref": "#/$defs/measure"
+        },
+        "candidate_lambda": {
+          "$ref": "#/$defs/measure"
+        },
+        "stored_constraint": {
+          "$ref": "#/$defs/measure"
+        },
+        "candidate_constraint": {
+          "$ref": "#/$defs/measure"
+        },
+        "normalized_residual": {
+          "$ref": "#/$defs/measure"
+        },
+        "lambda_change": {
+          "$ref": "#/$defs/measure"
+        }
+      },
+      "required": [
+        "target_sheet",
+        "stored_raw_sheet",
+        "normalized_sheet",
+        "candidate_raw_sheet",
+        "stored_lambda",
+        "candidate_lambda",
+        "stored_constraint",
+        "candidate_constraint",
+        "normalized_residual",
+        "lambda_change"
+      ],
+      "additionalProperties": false
+    },
+    "poisson": {
+      "type": "object",
+      "properties": {
+        "residual_ratio": {
+          "$ref": "#/$defs/measure"
+        },
+        "residual_numerator_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "rhs_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "additive_floor": {
+          "$ref": "#/$defs/measure"
+        },
+        "denominator": {
+          "$ref": "#/$defs/measure"
+        },
+        "border_scale": {
+          "$ref": "#/$defs/measure"
+        },
+        "zeta_signed": {
+          "$ref": "#/$defs/measure"
+        },
+        "neutrality_signed": {
+          "$ref": "#/$defs/measure"
+        },
+        "neutrality_abs": {
+          "$ref": "#/$defs/measure"
+        },
+        "target_sheet": {
+          "$ref": "#/$defs/measure"
+        },
+        "neutrality_ratio": {
+          "$ref": "#/$defs/measure"
+        },
+        "rU_max": {
+          "$ref": "#/$defs/measure"
+        }
+      },
+      "required": [
+        "residual_ratio",
+        "residual_numerator_F",
+        "rhs_F",
+        "additive_floor",
+        "denominator",
+        "border_scale",
+        "zeta_signed",
+        "neutrality_signed",
+        "neutrality_abs",
+        "target_sheet",
+        "neutrality_ratio",
+        "rU_max"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "record_status",
+    "reason",
+    "detail",
+    "detail_truncated",
+    "state_identity",
+    "shape",
+    "units",
+    "context",
+    "history",
+    "dyson",
+    "spectral",
+    "keldysh",
+    "selfenergy",
+    "charge",
+    "poisson"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "measure": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "measured",
+            "error",
+            "unavailable",
+            "not_applicable"
+          ]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nonfinite": {
+          "enum": [
+            null,
+            "nan",
+            "+inf",
+            "-inf"
+          ]
+        },
+        "reason": {
+          "enum": [
+            null,
+            "map_unavailable",
+            "nonfinite_measurement",
+            "nonpositive_target",
+            "nonpositive_stored_raw",
+            "invalid_prerequisite",
+            "history_unavailable",
+            "no_previous_inner_iteration"
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "value",
+        "nonfinite",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "properties": {
+            "status": {
+              "const": "measured"
+            },
+            "value": {
+              "type": "number"
+            },
+            "nonfinite": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "status": {
+              "const": "error"
+            },
+            "reason": {
+              "enum": [
+                "nonfinite_measurement",
+                "nonpositive_target",
+                "nonpositive_stored_raw",
+                "invalid_prerequisite"
+              ]
+            }
+          },
+          "anyOf": [
+            {
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "nonfinite": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "properties": {
+                "value": {
+                  "type": "null"
+                },
+                "nonfinite": {
+                  "enum": [
+                    "nan",
+                    "+inf",
+                    "-inf"
+                  ]
+                },
+                "reason": {
+                  "const": "nonfinite_measurement"
+                }
+              }
+            },
+            {
+              "properties": {
+                "value": {
+                  "type": "null"
+                },
+                "nonfinite": {
+                  "type": "null"
+                },
+                "reason": {
+                  "const": "invalid_prerequisite"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "properties": {
+            "status": {
+              "enum": [
+                "unavailable",
+                "not_applicable"
+              ]
+            },
+            "value": {
+              "type": "null"
+            },
+            "nonfinite": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "execution_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "point_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "state_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state_sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "plan_fingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "execution_id",
+        "point_id",
+        "state_id",
+        "attempt",
+        "state_sequence",
+        "plan_fingerprint"
+      ],
+      "additionalProperties": false
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "known",
+            "unknown"
+          ]
+        },
+        "reason": {
+          "enum": [
+            null,
+            "missing_executed_context"
+          ]
+        },
+        "unknown_fields": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "backend",
+              "energy_shift",
+              "hilbert",
+              "contraction",
+              "kernel_build",
+              "embedding",
+              "electron_electron_mode",
+              "embedding_periods",
+              "E0_eV",
+              "L0_m",
+              "lambda_P",
+              "map_kernels_shared_with_solver"
+            ]
+          },
+          "uniqueItems": true,
+          "maxItems": 12
+        },
+        "backend": {
+          "enum": [
+            "production",
+            "educational",
+            null
+          ]
+        },
+        "energy_shift": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hilbert": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contraction": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kernel_build": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "embedding": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "electron_electron_mode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "embedding_periods": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "enabled_scattering": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "LO",
+              "acoustic",
+              "impurity",
+              "IFR",
+              "alloy",
+              "electron_electron"
+            ]
+          },
+          "uniqueItems": true,
+          "maxItems": 6
+        },
+        "E0_eV": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "L0_m": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lambda_P": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "map_kernels_shared_with_solver": {
+          "enum": [
+            true,
+            null
+          ]
+        },
+        "independent_physics_oracle": {
+          "const": false
+        },
+        "state_alignment": {
+          "enum": [
+            "producer_aligned",
+            "reconstruction_checked",
+            "unknown"
+          ]
+        },
+        "alignment_reason": {
+          "enum": [
+            null,
+            "producer_precondition_unverified"
+          ]
+        },
+        "source_owner_role": {
+          "const": "physics.full"
+        },
+        "source_paths": {
+          "type": "object",
+          "properties": {
+            "U": {
+              "const": "/state_dimensionless/UH"
+            },
+            "n": {
+              "const": "/state_dimensionless/density"
+            },
+            "GR": {
+              "const": "/state_dimensionless/GR"
+            },
+            "GL": {
+              "const": "/state_dimensionless/GL"
+            },
+            "GG": {
+              "const": "/state_dimensionless/GG"
+            },
+            "A": {
+              "const": "/state_dimensionless/A"
+            }
+          },
+          "required": [
+            "U",
+            "n",
+            "GR",
+            "GL",
+            "GG",
+            "A"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "status",
+        "reason",
+        "unknown_fields",
+        "backend",
+        "energy_shift",
+        "hilbert",
+        "contraction",
+        "kernel_build",
+        "embedding",
+        "electron_electron_mode",
+        "embedding_periods",
+        "enabled_scattering",
+        "E0_eV",
+        "L0_m",
+        "lambda_P",
+        "map_kernels_shared_with_solver",
+        "independent_physics_oracle",
+        "state_alignment",
+        "alignment_reason",
+        "source_owner_role",
+        "source_paths"
+      ],
+      "additionalProperties": false
+    },
+    "witness": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "measured",
+            "error",
+            "unavailable"
+          ]
+        },
+        "e_index": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "k_index": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "numerator_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "D_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "GR_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "identity_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "denominator": {
+          "$ref": "#/$defs/measure"
+        },
+        "ratio": {
+          "$ref": "#/$defs/measure"
+        }
+      },
+      "required": [
+        "status",
+        "e_index",
+        "k_index",
+        "numerator_F",
+        "D_F",
+        "GR_F",
+        "identity_F",
+        "denominator",
+        "ratio"
+      ],
+      "additionalProperties": false
+    },
+    "norm": {
+      "type": "object",
+      "properties": {
+        "numerator_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "scale_F": {
+          "$ref": "#/$defs/measure"
+        },
+        "denominator": {
+          "$ref": "#/$defs/measure"
+        },
+        "ratio": {
+          "$ref": "#/$defs/measure"
+        },
+        "floor": {
+          "const": 1e-14
+        }
+      },
+      "required": [
+        "numerator_F",
+        "scale_F",
+        "denominator",
+        "ratio",
+        "floor"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
