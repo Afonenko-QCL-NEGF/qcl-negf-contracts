@@ -278,6 +278,61 @@ class _Evidence:
         return {"container": container,
                 "sha256": self.retained["metadata"][container]["sha256"], "selector": selector}
 
+    def actual_plan(self):
+        """Select only the exact actual schema; malformed schemas are not legacy."""
+        plan = self.metadata("frozen_plan")
+        if "schema" not in plan:
+            return False
+        _require(plan["schema"] == "qcl-negf-scientific-plan-v2", "unsupported frozen plan schema")
+        return True
+
+    def actual_point(self, execution_id=None, point_id=None):
+        """Return exact rows/positions after checking the whole membership relation."""
+        _require(self.actual_plan(), "actual point requires scientific-plan-v2")
+        execution_id = self.context.get("execution_id") if execution_id is None else execution_id
+        point_id = self.context.get("point_id") if point_id is None else point_id
+        plan = self.metadata("frozen_plan")
+        executions, points = plan["executions"], plan["points"]
+        _require(isinstance(executions, list) and isinstance(points, list), "malformed frozen membership")
+        indexed_executions = _keyed(executions, "id", "frozen execution")
+        indexed_points = _keyed(points, lambda row: (row["execution_id"], row["id"]), "frozen point")
+        _require(all(row["execution_id"] in indexed_executions for row in points),
+                 "frozen point has no execution")
+        for execution in executions:
+            members = execution["point_ids"]
+            _require(isinstance(members, list) and all(isinstance(member, str) for member in members),
+                     "malformed frozen point_ids")
+            _require(len(members) == len(set(members)), "duplicate frozen point_ids membership")
+            expected = {row["id"] for row in points if row["execution_id"] == execution["id"]}
+            _require(set(members) == expected, "frozen execution membership mismatch")
+        _require(execution_id in indexed_executions and (execution_id, point_id) in indexed_points,
+                 "point is not a member of frozen execution")
+        return (indexed_executions[execution_id], indexed_points[(execution_id, point_id)],
+                next(i for i, row in enumerate(executions) if row["id"] == execution_id),
+                next(i for i, row in enumerate(points)
+                     if row["execution_id"] == execution_id and row["id"] == point_id))
+
+    def point_identity(self, execution_id=None, point_id=None):
+        """Stored identity equality only; never reproduce Runner canonical bytes."""
+        if not self.actual_plan():
+            configuration, _ = self.point_configuration(execution_id, point_id)
+            return _hash(encode(configuration))
+        _, point, _, _ = self.actual_point(execution_id, point_id)
+        if "effective_inputs" not in point:
+            raise _MissingProof("frozen point identity passport is missing")
+        passport = point["effective_inputs"]
+        _require(isinstance(passport, dict), "malformed frozen point identity passport")
+        _require(passport.get("hash_encoding") == "qcl-negf-canonical-bytes-v1" and
+                 passport.get("axes_applied") is True, "unsupported frozen point passport encoding or axes")
+        for axis in ("temperature_K", "voltage_per_period_V"):
+            _require(axis in passport and axis in point and
+                     isinstance(point[axis], (int, float)) and not isinstance(point[axis], bool) and
+                     _equal(passport[axis], point[axis]), "frozen point passport axes mismatch")
+        digest = passport.get("configuration_hash")
+        _require(isinstance(digest, str) and re.fullmatch(r"[a-f0-9]{64}", digest) is not None,
+                 "malformed frozen point configuration hash")
+        return digest
+
     def point_configuration(self, execution_id=None, point_id=None):
         """Exact frozen passport and pointer, without choosing an endpoint sibling.
 
@@ -286,6 +341,10 @@ class _Evidence:
         public format. The key, actual point membership, pointer, and bytes must
         all agree; a sibling's matching numeric value cannot substitute.
         """
+        if self.actual_plan():
+            self.point_identity(execution_id, point_id)
+            # G2-I provides no G2-L declared map or invented configuration pointer.
+            raise _MissingProof("actual declared projection proof is missing")
         execution_id = self.context.get("execution_id") if execution_id is None else execution_id
         point_id = self.context.get("point_id") if point_id is None else point_id
         plan = self.metadata("frozen_plan")
@@ -324,6 +383,13 @@ class _Evidence:
         frozen = self.retained["metadata"]["frozen_plan"]
         _require(context["plan_fingerprint"] == plan.get("fingerprint", frozen["sha256"]),
                  "frozen plan fingerprint mismatch")
+        if self.actual_plan():
+            for key in ("fingerprint", "scientific_fingerprint", "model_revision"):
+                context_key = "plan_fingerprint" if key == "fingerprint" else key
+                _require(key in plan and _equal(context[context_key], plan[key]), "frozen " + key + " mismatch")
+            _require(context["configuration_hash"] == self.point_identity(
+                context["execution_id"], context["point_id"]), "declared point passport digest mismatch")
+            return
         try:
             configuration, _ = self.point_configuration(context["execution_id"], context["point_id"])
         except _MissingProof:
@@ -814,7 +880,7 @@ def _index(document, session):
         _require(all(_equal(entry[key], context.get(key)) for key in ("execution_id", "attempt")),
                  "index entry differs from selected execution and child attempt")
         # Index-wide point membership differs from endpoint point selection.
-        session.point_configuration(entry["execution_id"], entry["point_id"])
+        session.point_identity(entry["execution_id"], entry["point_id"])
         files = session.retained.get("snapshot_files")
         if files is not None:
             record = files.get(entry["path"])
