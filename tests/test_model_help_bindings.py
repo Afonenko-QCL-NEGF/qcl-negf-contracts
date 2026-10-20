@@ -1198,3 +1198,199 @@ def test_e1_redacted_projection_cannot_fabricate_known_source_or_assignment(muta
                                 "path": "/private/operator/assignment.json"}
     with pytest.raises(ContractError):
         validate(c)
+
+
+def actual_identity_case(selected="P-1"):
+    """Authored actual-shaped identity control, never a solver/archive capture.
+
+    The stored Julia passport digest is opaque; it deliberately differs from
+    Python JSON hashes. No declared projection or source origin is supplied.
+    """
+    c = two_point_index_case(selected)
+    r = c["retained"]
+    plan = {"schema": "qcl-negf-scientific-plan-v2", "fingerprint": "1" * 64,
+            "scientific_fingerprint": "2" * 64, "model_revision": "transport-contract-v2",
+            "executions": [{"id": "E-1", "point_ids": ["P-1", "P-2"],
+                "resolved_configuration": {"physical": {"lattice_temperature": "80 K",
+                    "voltage_per_period": "56 mV", "interface_roughness_height": "0.10 nm"}}}],
+            "points": []}
+    for position, point_id in enumerate(("P-1", "P-2")):
+        axes = {"temperature_K": 70.0 + position, "voltage_per_period_V": 0.0}
+        plan["points"].append({"id": point_id, "execution_id": "E-1", **axes,
+            "effective_inputs": {**axes, "configuration_hash": str(position + 3) * 64,
+                "hash_encoding": "qcl-negf-canonical-bytes-v1", "axes_applied": True}})
+    r["metadata"]["frozen_plan"] = blob(plan)
+    del r["point_passports"]  # Actual plan contains the identity, never /configuration.
+    for entry, point in zip(c["index"]["entries"], plan["points"]):
+        snap = json.loads(r["snapshot_files"][entry["path"]]["bytes"])
+        snap["context"].update(plan_fingerprint=plan["fingerprint"],
+            scientific_fingerprint=plan["scientific_fingerprint"], model_revision=plan["model_revision"],
+            configuration_hash=point["effective_inputs"]["configuration_hash"])
+        for leaf in snap["inputs"]:
+            leaf["declared"] = {"status": "unknown", "atom": None}
+        record = blob(snap)
+        inventory = {"bytes": len(record["bytes"]), "sha256": record["sha256"]}
+        r["snapshot_files"][entry["path"]] = {**record, "inventory": inventory}
+        entry.update(inventory)
+        if point["id"] == selected:
+            c["snapshot"] = snap
+    r["metadata"]["execution_input"] = blob(c["snapshot"])
+    context = {**r["selection"]["context"], **c["snapshot"]["context"]}
+    r["selection"]["context"] = deepcopy(context)
+    c["view"]["context"] = deepcopy(context)
+    receipt = json.loads(r["metadata"]["release_receipt"]["bytes"])
+    receipt["context"] = deepcopy(context)
+    r["metadata"]["release_receipt"] = blob(receipt)
+    item = c["view"]["inputs"][0]
+    item["declared"] = {"status": "unknown", "atom": None, "evidence": None}
+    item["used"]["evidence"] = evidence(r, "execution_input", "/inputs/0/used/atom")
+    item["value_origin"] = {"declared": unknown_origin(), "used": unknown_origin()}
+    return c
+
+
+@pytest.mark.parametrize("selected", ["P-1", "P-2"])
+def test_actual_identity_keeps_declared_unknown_and_retained_used(selected):
+    c = actual_identity_case(selected)
+    validate(c, "index")
+    validate(c, "snapshot")
+    validate(c)
+    assert c["snapshot"]["inputs"][0]["declared"]["status"] == "unknown"
+    assert c["view"]["inputs"][0]["value_origin"]["used"]["status"] == "unknown"
+    # Endpoint validation must not open any sibling snapshot bytes.
+    del c["retained"]["snapshot_files"]
+    validate(c, "snapshot")
+    validate(c)
+
+
+@pytest.mark.parametrize("mutation", ["duplicate_execution", "duplicate_point", "orphan_point",
+    "foreign_membership", "duplicate_membership", "missing_membership", "extra_membership",
+    "temperature", "voltage", "axes_false", "encoding", "absent_passport", "malformed_passport",
+    "malformed_hash", "hash", "fingerprint", "scientific_fingerprint", "model_revision",
+    "unknown_schema", "null_schema"])
+def test_actual_identity_rejects_contradictory_or_missing_plan_proof(mutation):
+    c = actual_identity_case()
+    r = c["retained"]
+    plan = json.loads(r["metadata"]["frozen_plan"]["bytes"])
+    row = plan["points"][0]
+    if mutation == "duplicate_execution":
+        plan["executions"].append(deepcopy(plan["executions"][0]))
+    elif mutation == "duplicate_point":
+        plan["points"].append(deepcopy(row))
+    elif mutation == "orphan_point":
+        row["execution_id"] = "E-2"
+    elif mutation == "foreign_membership":
+        plan["executions"].append({"id": "E-2", "point_ids": ["P-1"]})
+    elif mutation == "duplicate_membership":
+        plan["executions"][0]["point_ids"].append("P-1")
+    elif mutation == "missing_membership":
+        plan["executions"][0]["point_ids"].remove("P-1")
+    elif mutation == "extra_membership":
+        plan["executions"][0]["point_ids"].append("P-3")
+    elif mutation in {"temperature", "voltage"}:
+        row["effective_inputs"]["temperature_K" if mutation == "temperature" else "voltage_per_period_V"] += 1
+    elif mutation == "axes_false":
+        row["effective_inputs"]["axes_applied"] = False
+    elif mutation == "encoding":
+        row["effective_inputs"]["hash_encoding"] = "json"
+    elif mutation == "absent_passport":
+        del row["effective_inputs"]
+    elif mutation == "malformed_passport":
+        row["effective_inputs"] = []
+    elif mutation in {"malformed_hash", "hash"}:
+        row["effective_inputs"]["configuration_hash"] = "invalid" if mutation == "malformed_hash" else "9" * 64
+    elif mutation in {"fingerprint", "scientific_fingerprint", "model_revision"}:
+        plan[mutation] = "9" * 64
+    else:
+        plan["schema"] = "unsupported-plan" if mutation == "unknown_schema" else None
+    r["metadata"]["frozen_plan"] = blob(plan)
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+@pytest.mark.parametrize("field,value", [("execution_id", "E-2"), ("point_id", "P-2"),
+                                        ("attempt", 2)])
+def test_actual_snapshot_cannot_select_sibling_or_retry(field, value):
+    c = actual_identity_case()
+    c["snapshot"]["context"][field] = value
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+def test_actual_known_declared_requires_separate_projection_proof():
+    c = actual_identity_case()
+    c["snapshot"]["inputs"][0]["declared"] = {"status": "known", "atom": atom()}
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+def test_actual_raw_plan_digest_remains_exact_despite_identity_equality():
+    c = actual_identity_case()
+    r = c["retained"]
+    original = r["metadata"]["frozen_plan"]["sha256"]
+    plan = json.loads(r["metadata"]["frozen_plan"]["bytes"])
+    payload = json.dumps(plan, indent=2).encode("utf-8")
+    r["metadata"]["frozen_plan"] = {"bytes": payload, "sha256": digest(payload)}
+    assert digest(payload) != original
+    validate(c, "snapshot")  # Fingerprint/passport equality does not reserialize plan.
+    # A caller cannot keep an old raw digest after changing bytes.
+    r["metadata"]["frozen_plan"]["sha256"] = original
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+@pytest.mark.parametrize("mutation", ["retry", "sibling_context", "sibling_hash", "raw_size", "raw_hash"])
+def test_actual_full_index_retains_each_sibling_and_original_byte_contract(mutation):
+    c = actual_identity_case()
+    r = c["retained"]
+    entry = c["index"]["entries"][1]
+    record = r["snapshot_files"][entry["path"]]
+    snapshot = json.loads(record["bytes"])
+    if mutation == "retry":
+        snapshot["context"]["attempt"] = 2
+    elif mutation == "sibling_context":
+        snapshot["context"]["point_id"] = "P-1"
+    elif mutation == "sibling_hash":
+        snapshot["context"]["configuration_hash"] = c["snapshot"]["context"]["configuration_hash"]
+    elif mutation == "raw_size":
+        entry["bytes"] += 1
+    else:
+        entry["sha256"] = "9" * 64
+    if mutation in {"retry", "sibling_context", "sibling_hash"}:
+        # Rehash/reinventory excludes stale outer bytes as the failure oracle.
+        replacement = blob(snapshot)
+        inventory = {"bytes": len(replacement["bytes"]), "sha256": replacement["sha256"]}
+        r["snapshot_files"][entry["path"]] = {**replacement, "inventory": inventory}
+        entry.update(inventory)
+    with pytest.raises(ContractError):
+        validate(c, "index")
+
+
+def test_actual_matching_sibling_values_do_not_authorize_wrong_identity():
+    c = actual_identity_case()
+    c["snapshot"]["context"]["point_id"] = "P-2"
+    # Used values matching another point cannot change selected child authority.
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+def test_actual_identity_does_not_authorize_known_view_declaration():
+    c = actual_identity_case()
+    c["view"]["inputs"][0]["declared"] = {
+        "status": "known", "atom": atom(),
+        "evidence": evidence(c["retained"], "frozen_plan",
+                             "/executions/0/resolved_configuration/physical/interface_roughness_height")}
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_actual_repeated_passport_key_is_not_silently_last_wins():
+    c = actual_identity_case()
+    r = c["retained"]
+    payload = r["metadata"]["frozen_plan"]["bytes"]
+    payload = payload.replace(b'"effective_inputs":{', b'"effective_inputs":{},"effective_inputs":{', 1)
+    r["metadata"]["frozen_plan"] = {"bytes": payload, "sha256": digest(payload)}
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
