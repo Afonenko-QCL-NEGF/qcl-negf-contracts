@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model help documents v1",
+  "$comment": "DOC03/DOC07 shape contract. Exact bytes, finite JSON, source/release/context bindings, allowlists, keyed uniqueness and scientific provenance require separate owning validation.",
+  "oneOf": [
+    {"$ref": "#/$defs/Bundle"},
+    {"$ref": "#/$defs/Fragment"},
+    {"$ref": "#/$defs/View"},
+    {"$ref": "#/$defs/Snapshot"},
+    {"$ref": "#/$defs/Index"}
+  ],
+  "$defs": {
+    "Sha1": {"type": "string", "pattern": "^[0-9a-f]{40}(?![\\s\\S])"},
+    "Sha256": {"type": "string", "pattern": "^[0-9a-f]{64}(?![\\s\\S])"},
+    "Id": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{0,127}(?![\\s\\S])"},
+    "ScientificId": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}(?![\\s\\S])"},
+    "Uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])"},
+    "NonemptyString": {"type": "string", "minLength": 1},
+    "Pointer": {"type": "string", "pattern": "^(?:/(?:[^~/]|~[01])*)*$"},
+    "LeafPath": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*(?![\\s\\S])"},
+    "RelativePath": {"type": "string", "minLength": 1, "pattern": "^[^/\\\\]+(?:/[^/\\\\]+)*$"},
+    "Selector": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "value"],
+      "properties": {"kind": {"enum": ["symbol", "anchor", "json_pointer", "file"]}, "value": {"type": "string"}},
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "file"}}}, "then": {"properties": {"value": {"const": ""}}}},
+        {"if": {"properties": {"kind": {"const": "json_pointer"}}}, "then": {"properties": {"value": {"$ref": "#/$defs/Pointer"}}}}
+      ]
+    },
+    "PublicRef": {
+      "type": "object", "additionalProperties": false,
+      "required": ["component", "revision", "path", "selector", "sha256"],
+      "properties": {
+        "component": {"$ref": "#/$defs/RelativePath"}, "revision": {"$ref": "#/$defs/Sha1"},
+        "path": {"$ref": "#/$defs/RelativePath"}, "selector": {"$ref": "#/$defs/Selector"}, "sha256": {"$ref": "#/$defs/Sha256"}
+      }
+    },
+    "PointerRef": {"allOf": [{"$ref": "#/$defs/PublicRef"}, {"properties": {"selector": {"properties": {"kind": {"const": "json_pointer"}}}}}]},
+    "FileRef": {"allOf": [{"$ref": "#/$defs/PublicRef"}, {"properties": {"selector": {"properties": {"kind": {"const": "file"}}}}}]},
+    "NullableRef": {"anyOf": [{"$ref": "#/$defs/PublicRef"}, {"type": "null"}]},
+    "NullableRule": {"anyOf": [{"$ref": "#/$defs/NonemptyString"}, {"type": "null"}]},
+    "DocRef": {
+      "type": "object", "additionalProperties": false, "required": ["section", "path", "anchor"],
+      "properties": {
+        "section": {"enum": ["core", "runner", "research", "operator"]},
+        "path": {"allOf": [{"$ref": "#/$defs/RelativePath"}, {"pattern": "\\.html(?![\\s\\S])"}]},
+        "anchor": {"type": ["string", "null"]}
+      }
+    },
+    "Locator": {
+      "type": "object", "additionalProperties": false, "required": ["title", "uri", "location"],
+      "properties": {"title": {"type": "string"}, "uri": {"type": "string", "pattern": "^(?:https:|doi:)"}, "location": {"type": "string"}},
+      "$comment": "Query-free public URI policy, credentials, controls and reviewed-source provenance are checked separately with URI parsing; a prefix is not public-source proof."
+    },
+    "Origin": {
+      "type": "object", "additionalProperties": false, "required": ["status", "kind", "locators", "note"],
+      "properties": {
+        "status": {"enum": ["known", "unknown", "not_applicable"]},
+        "kind": {"enum": ["publication", "measurement", "interpolation", "fit", "research_assumption", "code_policy", "unknown", "not_applicable"]},
+        "locators": {"type": "array", "items": {"$ref": "#/$defs/Locator"}}, "note": {"type": "string"}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "known"}}}, "then": {"properties": {"kind": {"enum": ["publication", "measurement", "interpolation", "fit", "research_assumption", "code_policy"]}}}},
+        {"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"properties": {"kind": {"const": "unknown"}, "locators": {"maxItems": 0}, "note": {"minLength": 1}}}},
+        {"if": {"properties": {"status": {"const": "not_applicable"}}}, "then": {"properties": {"kind": {"const": "not_applicable"}, "locators": {"maxItems": 0}}}},
+        {"if": {"properties": {"status": {"const": "known"}, "kind": {"const": "research_assumption"}, "locators": {"maxItems": 0}}}, "then": {"properties": {"note": {"minLength": 1}}}}
+      ]
+    },
+    "Atom": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "value", "unit"],
+      "properties": {"kind": {"enum": ["quantity", "integer", "number", "boolean", "enum", "null"]}, "value": {"type": ["number", "boolean", "string", "null"]}, "unit": {"type": ["string", "null"]}},
+      "oneOf": [
+        {"properties": {"kind": {"const": "quantity"}, "value": {"type": "number"}, "unit": {"type": "string", "minLength": 1}}},
+        {"properties": {"kind": {"const": "integer"}, "value": {"type": "integer"}}},
+        {"properties": {"kind": {"const": "number"}, "value": {"type": "number"}}},
+        {"properties": {"kind": {"const": "boolean"}, "value": {"type": "boolean"}}},
+        {"properties": {"kind": {"const": "enum"}, "value": {"type": "string"}}},
+        {"properties": {"kind": {"const": "null"}, "value": {"type": "null"}}}
+      ]
+    },
+    "Fact": {
+      "type": "object", "additionalProperties": false, "required": ["name", "status", "text", "sources"],
+      "properties": {
+        "name": {"enum": ["signature", "units", "default", "constraint", "effects", "errors", "formula_origin", "value_origin", "assigning_origin", "effective_origin"]},
+        "status": {"enum": ["known", "partial", "unknown", "not_assigned", "not_applicable"]},
+        "text": {"type": ["string", "null"]}, "sources": {"type": "array", "items": {"$ref": "#/$defs/PublicRef"}}
+      }
+    },
+    "Facts": {
+      "type": "array", "items": {"$ref": "#/$defs/Fact"},
+      "allOf": [
+        {"contains": {"properties": {"name": {"const": "signature"}}, "required": ["name"]}},
+        {"contains": {"properties": {"name": {"const": "units"}}, "required": ["name"]}},
+        {"contains": {"properties": {"name": {"const": "default"}}, "required": ["name"]}},
+        {"contains": {"properties": {"name": {"const": "constraint"}}, "required": ["name"]}},
+        {"contains": {"properties": {"name": {"const": "effects"}}, "required": ["name"]}},
+        {"contains": {"properties": {"name": {"const": "errors"}}, "required": ["name"]}},
+        {"contains": {"properties": {"name": {"const": "formula_origin"}}, "required": ["name"]}},
+        {"contains": {"properties": {"name": {"const": "value_origin"}}, "required": ["name"]}},
+        {"contains": {"properties": {"name": {"const": "assigning_origin"}}, "required": ["name"]}},
+        {"contains": {"properties": {"name": {"const": "effective_origin"}}, "required": ["name"]}}
+      ]
+    },
+    "Evidence": {
+      "type": "object", "additionalProperties": false, "required": ["container", "sha256", "selector"],
+      "properties": {"container": {"enum": ["frozen_plan", "execution_input", "execution_strategy", "release_receipt", "value_origin_receipt"]}, "sha256": {"$ref": "#/$defs/Sha256"}, "selector": {"$ref": "#/$defs/Pointer"}}
+    },
+    "NullableEvidence": {"anyOf": [{"$ref": "#/$defs/Evidence"}, {"type": "null"}]},
+    "ApplicabilityCondition": {
+      "type": "object", "additionalProperties": false, "required": ["id", "path", "relation", "atom", "source"],
+      "properties": {"id": {"$ref": "#/$defs/Id"}, "path": {"$ref": "#/$defs/LeafPath"}, "relation": {"const": "equal"}, "atom": {"$ref": "#/$defs/Atom"}, "source": {"$ref": "#/$defs/PublicRef"}}
+    },
+    "Applicability": {
+      "type": "object", "additionalProperties": false, "required": ["status", "conditions", "note"],
+      "properties": {"status": {"enum": ["specified", "unknown"]}, "conditions": {"type": "array", "maxItems": 12, "items": {"$ref": "#/$defs/ApplicabilityCondition"}}, "note": {"type": "string"}},
+      "allOf": [{"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"properties": {"note": {"minLength": 1}}}}]
+    },
+    "ReferenceValueOrigin": {
+      "type": "object", "additionalProperties": false, "required": ["id", "parameter", "atom", "applicability", "origin"],
+      "properties": {"id": {"$ref": "#/$defs/Id"}, "parameter": {"$ref": "#/$defs/PointerRef"}, "atom": {"$ref": "#/$defs/Atom"}, "applicability": {"$ref": "#/$defs/Applicability"}, "origin": {"$ref": "#/$defs/Origin"}}
+    },
+    "ValueOriginBinding": {
+      "type": "object", "additionalProperties": false, "required": ["reference_id", "annotation", "parameter", "phase", "value", "assignment", "conditions", "receipt"],
+      "properties": {
+        "reference_id": {"$ref": "#/$defs/Id"}, "annotation": {"$ref": "#/$defs/PublicRef"}, "parameter": {"$ref": "#/$defs/PointerRef"}, "phase": {"enum": ["declared", "used"]},
+        "value": {"$ref": "#/$defs/Evidence"}, "assignment": {"$ref": "#/$defs/Evidence"}, "conditions": {"type": "array", "items": {"$ref": "#/$defs/Evidence"}}, "receipt": {"$ref": "#/$defs/Evidence"}
+      }
+    },
+    "ValueOriginView": {
+      "type": "object", "additionalProperties": false, "required": ["status", "origin", "binding", "reason"],
+      "properties": {
+        "status": {"enum": ["bound", "unknown", "not_applicable"]}, "origin": {"$ref": "#/$defs/Origin"},
+        "binding": {"anyOf": [{"$ref": "#/$defs/ValueOriginBinding"}, {"type": "null"}]},
+        "reason": {"enum": ["ok", "origin_not_recorded", "override_unbound", "conditions_unbound", "source_unbound", "value_unavailable", "not_applicable"]}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "bound"}}}, "then": {"properties": {"origin": {"properties": {"status": {"const": "known"}}}, "binding": {"$ref": "#/$defs/ValueOriginBinding"}, "reason": {"const": "ok"}}}},
+        {"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"properties": {"origin": {"properties": {"status": {"const": "unknown"}}}, "binding": {"type": "null"}, "reason": {"enum": ["origin_not_recorded", "override_unbound", "conditions_unbound", "source_unbound", "value_unavailable"]}}}},
+        {"if": {"properties": {"status": {"const": "not_applicable"}}}, "then": {"properties": {"origin": {"properties": {"status": {"const": "not_applicable"}}}, "binding": {"type": "null"}, "reason": {"const": "not_applicable"}}}}
+      ]
+    },
+    "ValueOrigins": {
+      "type": "object", "additionalProperties": false, "required": ["declared", "used"],
+      "properties": {"declared": {"$ref": "#/$defs/ValueOriginView"}, "used": {"$ref": "#/$defs/ValueOriginView"}}
+    },
+    "AssignmentReceipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source", "source_sha256", "leaf_pointer", "capture", "plan_fingerprint", "execution_id", "point_id", "attempt"],
+      "properties": {
+        "source": {"$ref": "#/$defs/PublicRef"}, "source_sha256": {"$ref": "#/$defs/Sha256"}, "leaf_pointer": {"$ref": "#/$defs/Pointer"}, "capture": {"const": "retained_public_source_binding"},
+        "plan_fingerprint": {"$ref": "#/$defs/Sha256"}, "execution_id": {"$ref": "#/$defs/ScientificId"}, "point_id": {"$ref": "#/$defs/ScientificId"}, "attempt": {"type": "integer", "minimum": 1}
+      }
+    },
+    "ClaimCondition": {
+      "type": "object", "additionalProperties": false, "required": ["id", "input_path", "phase"],
+      "properties": {"id": {"$ref": "#/$defs/Id"}, "input_path": {"$ref": "#/$defs/LeafPath"}, "phase": {"enum": ["declared", "used"]}}
+    },
+    "OriginBindingClaim": {
+      "type": "object", "additionalProperties": false, "required": ["reference_id", "annotation", "parameter", "phase", "assignment_receipt", "conditions"],
+      "properties": {
+        "reference_id": {"$ref": "#/$defs/Id"}, "annotation": {"$ref": "#/$defs/PublicRef"}, "parameter": {"$ref": "#/$defs/PointerRef"}, "phase": {"enum": ["declared", "used"]},
+        "assignment_receipt": {"$ref": "#/$defs/AssignmentReceipt"}, "conditions": {"type": "array", "items": {"$ref": "#/$defs/ClaimCondition"}}
+      }
+    },
+    "GraphComponent": {
+      "type": "object", "additionalProperties": false, "required": ["path", "revision", "url"],
+      "properties": {"path": {"$ref": "#/$defs/RelativePath"}, "revision": {"$ref": "#/$defs/Sha1"}, "url": {"type": "string"}}
+    },
+    "SourceGraph": {
+      "type": "object", "additionalProperties": false, "required": ["format", "revision", "components"],
+      "properties": {"format": {"const": "qcl-negf.git-graph.v1"}, "revision": {"$ref": "#/$defs/Sha1"}, "components": {"type": "array", "items": {"$ref": "#/$defs/GraphComponent"}}}
+    },
+    "Generator": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "version", "uuid", "git_tree_sha1", "julia_version", "project_sha256", "manifest_sha256", "recipes", "toolchain_lock"],
+      "properties": {
+        "name": {"const": "Documenter"}, "version": {"const": "1.17.0"}, "uuid": {"const": "e30172f5-a6a5-5a46-863b-614d45cd2de4"}, "git_tree_sha1": {"const": "56e9c37b5e7c3b4f080ab1da18d72d5c290e184a"}, "julia_version": {"const": "1.13.0"},
+        "project_sha256": {"$ref": "#/$defs/Sha256"}, "manifest_sha256": {"$ref": "#/$defs/Sha256"}, "recipes": {"type": "array", "items": {"$ref": "#/$defs/PublicRef"}}, "toolchain_lock": {"$ref": "#/$defs/PublicRef"}
+      }
+    },
+    "FragmentDescriptor": {
+      "type": "object", "additionalProperties": false, "required": ["id", "file", "sha256"],
+      "properties": {"id": {"$ref": "#/$defs/Id"}, "file": {"type": "string", "pattern": "^help/fragments/[a-z][a-z0-9._-]{0,127}\\.json(?![\\s\\S])"}, "sha256": {"$ref": "#/$defs/Sha256"}}
+    },
+    "PayloadFile": {
+      "type": "object", "additionalProperties": false, "required": ["path", "media_type", "bytes", "sha256"],
+      "properties": {"path": {"$ref": "#/$defs/RelativePath"}, "media_type": {"type": "string"}, "bytes": {"type": "integer", "minimum": 0}, "sha256": {"$ref": "#/$defs/Sha256"}}
+    },
+    "Alias": {
+      "type": "object", "additionalProperties": false, "required": ["from", "to"],
+      "properties": {"from": {"$ref": "#/$defs/DocRef"}, "to": {"$ref": "#/$defs/DocRef"}}
+    },
+    "Bundle": {
+      "type": "object", "additionalProperties": false, "required": ["format", "sources", "schema", "generator", "fragments", "files", "aliases"],
+      "properties": {
+        "format": {"const": "qcl-negf.docs-bundle.v1"}, "sources": {"$ref": "#/$defs/SourceGraph"}, "schema": {"$ref": "#/$defs/FileRef"}, "generator": {"$ref": "#/$defs/Generator"},
+        "fragments": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/FragmentDescriptor"}}, "files": {"type": "array", "items": {"$ref": "#/$defs/PayloadFile"}}, "aliases": {"type": "array", "items": {"$ref": "#/$defs/Alias"}}
+      }
+    },
+    "Equation": {
+      "type": "object", "additionalProperties": false, "required": ["id", "doc"],
+      "properties": {"id": {"$ref": "#/$defs/NonemptyString"}, "doc": {"$ref": "#/$defs/DocRef"}}
+    },
+    "FragmentInput": {
+      "type": "object", "additionalProperties": false, "required": ["path", "schema_source", "facts", "reference_value_origin"],
+      "properties": {"path": {"$ref": "#/$defs/LeafPath"}, "schema_source": {"$ref": "#/$defs/PointerRef"}, "facts": {"$ref": "#/$defs/Facts"}, "reference_value_origin": {"$ref": "#/$defs/ReferenceValueOrigin"}}
+    },
+    "FragmentApi": {
+      "type": "object", "additionalProperties": false, "required": ["symbol", "source", "doc", "facts"],
+      "properties": {"symbol": {"$ref": "#/$defs/NonemptyString"}, "source": {"$ref": "#/$defs/PublicRef"}, "doc": {"$ref": "#/$defs/DocRef"}, "facts": {"$ref": "#/$defs/Facts"}}
+    },
+    "ShortNotes": {"type": "array", "maxItems": 12, "items": {"type": "string", "maxLength": 400}},
+    "Fragment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["format", "id", "source_revision", "title", "summary", "scope", "meaning_source", "full", "related", "equations", "inputs", "api", "assumptions", "limitations"],
+      "properties": {
+        "format": {"const": "qcl-negf.model-help-fragment.v1"}, "id": {"$ref": "#/$defs/Id"}, "source_revision": {"$ref": "#/$defs/Sha1"},
+        "title": {"type": "string", "maxLength": 160}, "summary": {"type": "string", "maxLength": 1600}, "scope": {"enum": ["baseline", "variant", "operator_only", "outside_study"]},
+        "meaning_source": {"$ref": "#/$defs/PublicRef"}, "full": {"$ref": "#/$defs/DocRef"}, "related": {"type": "array", "maxItems": 12, "items": {"$ref": "#/$defs/DocRef"}},
+        "equations": {"type": "array", "items": {"$ref": "#/$defs/Equation"}}, "inputs": {"type": "array", "items": {"$ref": "#/$defs/FragmentInput"}}, "api": {"type": "array", "items": {"$ref": "#/$defs/FragmentApi"}},
+        "assumptions": {"$ref": "#/$defs/ShortNotes"}, "limitations": {"$ref": "#/$defs/ShortNotes"}
+      }
+    },
+    "LocalContext": {
+      "type": "object", "additionalProperties": false, "required": ["plan_fingerprint", "scientific_fingerprint", "model_revision", "execution_id", "point_id", "attempt", "configuration_hash"],
+      "properties": {
+        "plan_fingerprint": {"$ref": "#/$defs/Sha256"}, "scientific_fingerprint": {"$ref": "#/$defs/Sha256"}, "model_revision": {"$ref": "#/$defs/NonemptyString"},
+        "execution_id": {"$ref": "#/$defs/ScientificId"}, "point_id": {"$ref": "#/$defs/ScientificId"}, "attempt": {"type": "integer", "minimum": 1}, "configuration_hash": {"anyOf": [{"$ref": "#/$defs/Sha256"}, {"type": "null"}]}
+      }
+    },
+    "ViewContext": {
+      "type": "object", "additionalProperties": false, "required": ["run_uuid", "execution_id", "point_id", "attempt", "calcjob_uuid", "plan_fingerprint", "scientific_fingerprint", "configuration_hash", "model_revision"],
+      "properties": {
+        "run_uuid": {"$ref": "#/$defs/Uuid"}, "calcjob_uuid": {"$ref": "#/$defs/Uuid"}, "plan_fingerprint": {"$ref": "#/$defs/Sha256"}, "scientific_fingerprint": {"$ref": "#/$defs/Sha256"}, "model_revision": {"$ref": "#/$defs/NonemptyString"},
+        "execution_id": {"$ref": "#/$defs/ScientificId"}, "point_id": {"$ref": "#/$defs/ScientificId"}, "attempt": {"type": "integer", "minimum": 1}, "configuration_hash": {"anyOf": [{"$ref": "#/$defs/Sha256"}, {"type": "null"}]}
+      }
+    },
+    "Binding": {
+      "type": "object", "additionalProperties": false, "required": ["status", "release_id", "release_manifest_sha256", "source_revision", "bundle_sha256", "reason"],
+      "properties": {
+        "status": {"enum": ["bound", "unknown", "incompatible", "unavailable"]}, "release_id": {"anyOf": [{"$ref": "#/$defs/NonemptyString"}, {"type": "null"}]},
+        "release_manifest_sha256": {"anyOf": [{"$ref": "#/$defs/Sha256"}, {"type": "null"}]}, "source_revision": {"anyOf": [{"$ref": "#/$defs/Sha1"}, {"type": "null"}]}, "bundle_sha256": {"anyOf": [{"$ref": "#/$defs/Sha256"}, {"type": "null"}]},
+        "reason": {"enum": ["ok", "source_binding_missing", "wrong_release", "bundle_missing", "unsupported_version", "fragment_missing"]}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "bound"}}}, "then": {"properties": {"reason": {"const": "ok"}, "release_id": {"$ref": "#/$defs/NonemptyString"}, "release_manifest_sha256": {"$ref": "#/$defs/Sha256"}, "source_revision": {"$ref": "#/$defs/Sha1"}, "bundle_sha256": {"$ref": "#/$defs/Sha256"}}}},
+        {"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"properties": {"reason": {"const": "source_binding_missing"}}}},
+        {"if": {"properties": {"status": {"const": "incompatible"}}}, "then": {"properties": {"reason": {"enum": ["wrong_release", "unsupported_version"]}}}},
+        {"if": {"properties": {"status": {"const": "unavailable"}}}, "then": {"properties": {"reason": {"enum": ["bundle_missing", "fragment_missing"]}}}}
+      ]
+    },
+    "ServedFragment": {
+      "type": "object", "additionalProperties": false, "required": ["id", "url", "sha256"],
+      "properties": {"id": {"$ref": "#/$defs/Id"}, "url": {"type": "string", "pattern": "^/docs/[0-9a-f]{40}/help/fragments/[a-z][a-z0-9._-]{0,127}\\.json(?![\\s\\S])"}, "sha256": {"$ref": "#/$defs/Sha256"}}
+    },
+    "ScalarState": {
+      "type": "object", "additionalProperties": false, "required": ["status", "atom"],
+      "properties": {"status": {"enum": ["known", "unknown"]}, "atom": {"anyOf": [{"$ref": "#/$defs/Atom"}, {"type": "null"}]}},
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "known"}}}, "then": {"properties": {"atom": {"$ref": "#/$defs/Atom"}}}},
+        {"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"properties": {"atom": {"type": "null"}}}}
+      ]
+    },
+    "EvidencedScalarState": {
+      "type": "object", "additionalProperties": false, "required": ["status", "atom", "evidence"],
+      "properties": {"status": {"enum": ["known", "unknown"]}, "atom": {"anyOf": [{"$ref": "#/$defs/Atom"}, {"type": "null"}]}, "evidence": {"$ref": "#/$defs/NullableEvidence"}},
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "known"}}}, "then": {"properties": {"atom": {"$ref": "#/$defs/Atom"}, "evidence": {"$ref": "#/$defs/Evidence"}}}},
+        {"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"properties": {"atom": {"type": "null"}, "evidence": {"type": "null"}}}}
+      ]
+    },
+    "AssigningKind": {"enum": ["config_file", "generated_assignment", "typed_constructor", "execution_strategy", "point_axis", "unknown"]},
+    "AssigningRules": {
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "known"}}}, "then": {"anyOf": [{"properties": {"source": {"$ref": "#/$defs/PublicRef"}}}, {"properties": {"rule": {"$ref": "#/$defs/NonemptyString"}}}]}},
+        {"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"properties": {"kind": {"const": "unknown"}, "source": {"type": "null"}, "rule": {"type": "null"}}}},
+        {"if": {"properties": {"status": {"const": "redacted"}}}, "then": {"properties": {"source": {"type": "null"}}}}
+      ]
+    },
+    "RawAssigning": {
+      "type": "object", "additionalProperties": false, "required": ["status", "kind", "source", "rule"],
+      "properties": {"status": {"enum": ["known", "unknown", "redacted"]}, "kind": {"$ref": "#/$defs/AssigningKind"}, "source": {"$ref": "#/$defs/NullableRef"}, "rule": {"$ref": "#/$defs/NullableRule"}},
+      "allOf": [{"$ref": "#/$defs/AssigningRules"}]
+    },
+    "Assigning": {
+      "type": "object", "additionalProperties": false, "required": ["status", "kind", "source", "rule", "evidence"],
+      "properties": {"status": {"enum": ["known", "unknown", "redacted"]}, "kind": {"$ref": "#/$defs/AssigningKind"}, "source": {"$ref": "#/$defs/NullableRef"}, "rule": {"$ref": "#/$defs/NullableRule"}, "evidence": {"$ref": "#/$defs/NullableEvidence"}},
+      "allOf": [
+        {"$ref": "#/$defs/AssigningRules"},
+        {"if": {"properties": {"status": {"const": "known"}}}, "then": {"properties": {"evidence": {"$ref": "#/$defs/Evidence"}}}},
+        {"if": {"properties": {"status": {"const": "unknown"}}}, "then": {"properties": {"evidence": {"type": "null"}}}}
+      ]
+    },
+    "EffectiveOrigin": {
+      "type": "object", "additionalProperties": false, "required": ["status", "evidence"],
+      "properties": {"status": {"enum": ["known", "partial", "unknown"]}, "evidence": {"type": "array", "items": {"$ref": "#/$defs/Evidence"}}}
+    },
+    "OriginStep": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "source", "rule"],
+      "properties": {"kind": {"enum": ["configuration_merge", "point_axis", "execution_strategy", "checkpoint_restore"]}, "source": {"$ref": "#/$defs/NullableRef"}, "rule": {"$ref": "#/$defs/NullableRule"}}
+    },
+    "RawEffectiveOrigin": {
+      "type": "object", "additionalProperties": false, "required": ["status", "steps"],
+      "properties": {"status": {"enum": ["known", "partial", "unknown"]}, "steps": {"type": "array", "items": {"$ref": "#/$defs/OriginStep"}}}
+    },
+    "InputView": {
+      "type": "object", "additionalProperties": false, "required": ["path", "declared", "used", "assigning", "effective_origin", "value_origin"],
+      "properties": {"path": {"$ref": "#/$defs/LeafPath"}, "declared": {"$ref": "#/$defs/EvidencedScalarState"}, "used": {"$ref": "#/$defs/EvidencedScalarState"}, "assigning": {"$ref": "#/$defs/Assigning"}, "effective_origin": {"$ref": "#/$defs/EffectiveOrigin"}, "value_origin": {"$ref": "#/$defs/ValueOrigins"}}
+    },
+    "RawInput": {
+      "type": "object", "additionalProperties": false, "required": ["path", "declared", "used", "assigning", "effective_origin"],
+      "properties": {"path": {"$ref": "#/$defs/LeafPath"}, "declared": {"$ref": "#/$defs/ScalarState"}, "used": {"$ref": "#/$defs/ScalarState"}, "assigning": {"$ref": "#/$defs/RawAssigning"}, "effective_origin": {"$ref": "#/$defs/RawEffectiveOrigin"}}
+    },
+    "InputStatus": {
+      "type": "object", "additionalProperties": false, "required": ["status", "reason"],
+      "properties": {"status": {"enum": ["available", "unavailable", "invalid"]}, "reason": {"enum": ["ok", "snapshot_missing", "snapshot_invalid", "point_not_executed_by_selected_child", "inventory_unavailable", "inventory_incomplete"]}},
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "available"}}}, "then": {"properties": {"reason": {"const": "ok"}}}},
+        {"if": {"properties": {"status": {"const": "invalid"}}}, "then": {"properties": {"reason": {"const": "snapshot_invalid"}}}},
+        {"if": {"properties": {"status": {"const": "unavailable"}}}, "then": {"properties": {"reason": {"enum": ["snapshot_missing", "point_not_executed_by_selected_child", "inventory_unavailable", "inventory_incomplete"]}}}}
+      ]
+    },
+    "View": {
+      "type": "object", "additionalProperties": false, "required": ["format", "context", "binding", "fragment", "inputs", "input_status"],
+      "properties": {
+        "format": {"const": "qcl-negf.model-help-view.v1"}, "context": {"$ref": "#/$defs/ViewContext"}, "binding": {"$ref": "#/$defs/Binding"},
+        "fragment": {"anyOf": [{"$ref": "#/$defs/ServedFragment"}, {"type": "null"}]}, "inputs": {"type": "array", "maxItems": 32, "items": {"$ref": "#/$defs/InputView"}}, "input_status": {"$ref": "#/$defs/InputStatus"}
+      },
+      "allOf": [
+        {"if": {"properties": {"binding": {"properties": {"status": {"const": "bound"}}}}}, "then": {"properties": {"fragment": {"$ref": "#/$defs/ServedFragment"}}}, "else": {"properties": {"fragment": {"type": "null"}}}},
+        {
+          "if": {"properties": {"input_status": {"properties": {"status": {"enum": ["invalid", "unavailable"]}}}}},
+          "then": {
+            "properties": {
+              "inputs": {
+                "items": {
+                  "properties": {
+                    "used": {
+                      "properties": {
+                        "status": {"const": "unknown"},
+                        "atom": {"type": "null"},
+                        "evidence": {"type": "null"}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Snapshot": {
+      "type": "object", "additionalProperties": false, "required": ["format", "context", "phase", "inputs", "origin_bindings"],
+      "properties": {"format": {"const": "qcl-negf.model-help-inputs.v1"}, "context": {"$ref": "#/$defs/LocalContext"}, "phase": {"const": "solver_input"}, "inputs": {"type": "array", "items": {"$ref": "#/$defs/RawInput"}}, "origin_bindings": {"type": "array", "items": {"$ref": "#/$defs/OriginBindingClaim"}}}
+    },
+    "IndexEntry": {
+      "type": "object", "additionalProperties": false, "required": ["path", "bytes", "sha256", "execution_id", "point_id", "attempt", "status", "reason"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^result/executions/[A-Za-z0-9][A-Za-z0-9._-]{0,127}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}/attempt-[1-9][0-9]*/model-help-inputs\\.json(?![\\s\\S])"},
+        "bytes": {"type": "integer", "minimum": 0}, "sha256": {"$ref": "#/$defs/Sha256"}, "execution_id": {"$ref": "#/$defs/ScientificId"}, "point_id": {"$ref": "#/$defs/ScientificId"}, "attempt": {"type": "integer", "minimum": 1},
+        "status": {"enum": ["valid", "invalid"]}, "reason": {"enum": ["ok", "malformed", "identity_mismatch", "too_large", "unsupported_version"]}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "valid"}}}, "then": {"properties": {"reason": {"const": "ok"}}}},
+        {"if": {"properties": {"status": {"const": "invalid"}}}, "then": {"properties": {"reason": {"enum": ["malformed", "identity_mismatch", "too_large", "unsupported_version"]}}}}
+      ]
+    },
+    "Index": {
+      "type": "object", "additionalProperties": false, "required": ["format", "complete", "entries"],
+      "properties": {"format": {"const": "qcl-negf.model-help-index.v1"}, "complete": {"type": "boolean"}, "entries": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/IndexEntry"}}},
+      "$comment": "Incomplete indexes never establish trusted input availability; plan count, aggregate bytes and entry identities require owning checks."
+    }
+  }
+}
