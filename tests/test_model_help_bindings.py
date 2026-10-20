@@ -1,0 +1,1200 @@
+"""DOC07 C2 independent synthetic semantic controls, authored from frozen DOC03/D2.
+
+No scientific correctness or production origin capture is asserted by these data.
+The private retained layout below is detached owner input, not a serialized API:
+selection contains trusted selected child context/requested fragment/release;
+sources maps (component, path) to revision+exact bytes; input/output/selector
+allowlists are explicit tuples; public_reviews associates exact source+recipe
+refs with an opaque retained owning review receipt (bytes+digest). The owning
+boundary supplies that association, never an unverified ``reviewed=True``.
+metadata maps Evidence.container to bytes+digest; bundle/fragment carry exact
+bytes+digest; payload maps logical paths to exact bytes+kind collector facts.
+effective_requirements is a PublicRef into selected owning source listing all
+applicable causal Evidence locations. selected publication binding is the
+release_receipt metadata, not another public manifest/receipt format.
+
+Only these private routine argument names are frozen by these fixtures. Missing
+proofs and contradictions follow D2 R2:178 ordering, not truthy status flags.
+"""
+from __future__ import annotations
+
+from copy import deepcopy
+import hashlib
+import json
+
+import pytest
+
+from qcl_negf_contracts.messages import ContractError
+from qcl_negf_contracts.model_help import (
+    _resolve_value_origin,
+    _validate_model_help_bindings,
+)
+
+
+ROOT = "a" * 40
+OWNER = "b" * 40
+OTHER = "c" * 40
+COMPONENT = "components/qcl-negf-research"
+CONTRACTS = "components/qcl-negf-contracts"
+PATH = "physical.interface_roughness_height"
+TEMP = "physical.lattice_temperature"
+FRAGMENT_ID = "model.ifr"
+FRAGMENT_PATH = "help/fragments/model.ifr.json"
+FACTS = ("signature", "units", "default", "constraint", "effects", "errors",
+         "formula_origin", "value_origin", "assigning_origin", "effective_origin")
+
+
+def raw(value):
+    """Only encode authored synthetic bytes; no production helper is an oracle."""
+    return json.dumps(value, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=False, allow_nan=False).encode("utf-8")
+
+
+def digest(payload):
+    return hashlib.sha256(payload).hexdigest()
+
+
+def blob(value):
+    payload = raw(value)
+    return {"bytes": payload, "sha256": digest(payload)}
+
+
+def atom(value=0.10, unit="nm", kind="quantity"):
+    return {"kind": kind, "value": value, "unit": unit}
+
+
+def ref(sources, path, kind="file", value="", component=COMPONENT):
+    source = sources[(component, path)]
+    return {"component": component, "revision": source["revision"], "path": path,
+            "selector": {"kind": kind, "value": value}, "sha256": digest(source["bytes"])}
+
+
+def evidence(retained, container, selector):
+    return {"container": container, "sha256": retained["metadata"][container]["sha256"],
+            "selector": selector}
+
+
+def unknown_origin(reason="origin_not_recorded"):
+    return {"status": "unknown", "origin": {"status": "unknown", "kind": "unknown",
+            "locators": [], "note": "Synthetic fixture has no complete retained proof."},
+            "binding": None, "reason": reason}
+
+
+def docref():
+    return {"section": "research", "path": "model.html", "anchor": "ifr"}
+
+
+def case(*, reference_status="known", applicability_status="specified",
+         locator_uri="https://example.org/paper", extra_payload_path=None, claim_phase="used"):
+    """One complete immutable historical A, one selected child, and tiny exact blobs."""
+    graph = {"format": "qcl-negf.git-graph.v1", "revision": ROOT, "components": [
+        {"path": CONTRACTS, "revision": OWNER, "url": "https://example.org/contracts.git"},
+        {"path": COMPONENT, "revision": OWNER, "url": "https://example.org/research.git"}]}
+    sources = {
+        (CONTRACTS, "src/qcl_negf_contracts/schemas/model-help.schema.json"): {
+            "revision": OWNER, "bytes": b'{"type":"object"}'},
+        (COMPONENT, "parameters/pilot.json"): {"revision": OWNER, "bytes": raw({
+            "height": atom(), "temperature": atom(70.0, "K")})},
+        (COMPONENT, "docs/src/model.md"): {"revision": OWNER,
+            "bytes": b"# Interface roughness {#ifr}\nEQ-KIFR-001\n"},
+        (COMPONENT, "docs/recipe.json"): {"revision": OWNER,
+            "bytes": raw({"inputs": ["parameters/pilot.json", "docs/help/value-origins.json",
+                                      "docs/src/model.md", "docs/recipe.json", "public/assignment.json",
+                                      "docs/help/causal-steps.json"]})},
+        (COMPONENT, "public/assignment.json"): {"revision": OWNER,
+            "bytes": raw({"height": atom(), "temperature": atom(70.0, "K")})},
+        (COMPONENT, "docs/help/causal-steps.json"): {"revision": OWNER, "bytes": raw({
+            "required": {PATH: [
+                {"container": "frozen_plan", "selector": "/assignment"},
+                {"container": "execution_strategy", "selector": "/steps/0"}]}})},
+    }
+    parameter = ref(sources, "parameters/pilot.json", "json_pointer", "/height")
+    statement = ref(sources, "docs/src/model.md", "anchor", "ifr")
+    reference = {"id": "pilot.ifr-height", "parameter": parameter, "atom": atom(),
+        "applicability": {"status": "specified", "conditions": [{
+            "id": "pilot.temperature", "path": TEMP, "relation": "equal",
+            "atom": atom(70.0, "K"), "source": statement}], "note": ""},
+        "origin": {"status": "known", "kind": "publication", "locators": [{
+            "title": "Synthetic public annotation", "uri": locator_uri,
+            "location": "Table 1"}], "note": "Synthetic reference, not production attribution."}}
+    if reference_status == "not_applicable":
+        reference["origin"] = {"status": "not_applicable", "kind": "not_applicable",
+                               "locators": [], "note": "Explicit owning inapplicability."}
+    if applicability_status == "unknown":
+        reference["applicability"].update(status="unknown", note="Owning conditions not specified.")
+    sources[(COMPONENT, "docs/help/value-origins.json")] = {
+        "revision": OWNER, "bytes": raw({"references": [reference]})}
+    annotation = ref(sources, "docs/help/value-origins.json", "json_pointer", "/references/0")
+    assigning = ref(sources, "public/assignment.json", "json_pointer", "/height")
+    plan = {"point": {"configuration": {PATH: atom(), TEMP: atom(70.0, "K")}},
+            "assignment": {"kind": "config_file", "source": assigning, "rule": None}}
+    plan_blob = blob(plan)
+    context = {"plan_fingerprint": plan_blob["sha256"], "scientific_fingerprint": "d" * 64,
+        "model_revision": "synthetic-frozen-model", "execution_id": "E-1", "point_id": "P-1",
+        "attempt": 1, "configuration_hash": digest(raw(plan["point"]["configuration"]))}
+    receipt = {"source": assigning, "source_sha256": assigning["sha256"],
+        "leaf_pointer": "/point/configuration/" + PATH,
+        "capture": "retained_public_source_binding", "plan_fingerprint": context["plan_fingerprint"],
+        "execution_id": "E-1", "point_id": "P-1", "attempt": 1}
+    claim = {"reference_id": reference["id"], "annotation": annotation, "parameter": parameter,
+        "phase": claim_phase, "assignment_receipt": receipt, "conditions": [{
+            "id": "pilot.temperature", "input_path": TEMP, "phase": claim_phase}]}
+    inputs = []
+    for path, value in ((PATH, atom()), (TEMP, atom(70.0, "K"))):
+        inputs.append({"path": path, "declared": {"status": "known", "atom": value},
+            "used": {"status": "known", "atom": value},
+            "assigning": {"status": "known", "kind": "config_file", "source": assigning, "rule": None},
+            "effective_origin": {"status": "partial", "steps": [
+                {"kind": "configuration_merge", "source": assigning, "rule": None},
+                {"kind": "execution_strategy", "source": None, "rule": "fixed_strategy"}]}})
+    snapshot = {"format": "qcl-negf.model-help-inputs.v1", "context": context,
+        "phase": "solver_input", "inputs": inputs, "origin_bindings": [claim]}
+    metadata = {"frozen_plan": plan_blob, "execution_input": blob(snapshot),
+        "execution_strategy": blob({"steps": [{"kind": "execution_strategy",
+                                               "source": None, "rule": "fixed_strategy"}]}),
+        "value_origin_receipt": blob({"claims": [claim]})}
+    fragment = {"format": "qcl-negf.model-help-fragment.v1", "id": FRAGMENT_ID,
+        "source_revision": ROOT, "title": "Interface roughness", "summary": "Synthetic reference context.",
+        "scope": "baseline", "meaning_source": statement, "full": docref(), "related": [],
+        "equations": [{"id": "EQ-KIFR-001", "doc": docref()}],
+        "inputs": [{"path": PATH, "schema_source": parameter,
+                    "facts": [{"name": name, "status": "unknown", "text": None,
+                               "sources": []} for name in FACTS], "reference_value_origin": reference}],
+        "api": [], "assumptions": [], "limitations": []}
+    fragment_blob = blob(fragment)
+    schema_payload = b'{"synthetic":"selected Contracts resource bytes"}'
+    html = b'<!doctype html><h1 id="ifr">Interface roughness</h1><p id="EQ-KIFR-001">Equation</p>'
+    recipe = ref(sources, "docs/recipe.json")
+    bundle = {"format": "qcl-negf.docs-bundle.v1", "sources": graph,
+        "schema": ref(sources, "src/qcl_negf_contracts/schemas/model-help.schema.json", component=CONTRACTS),
+        "generator": {"name": "Documenter", "version": "1.17.0",
+            "uuid": "e30172f5-a6a5-5a46-863b-614d45cd2de4",
+            "git_tree_sha1": "56e9c37b5e7c3b4f080ab1da18d72d5c290e184a", "julia_version": "1.13.0",
+            "project_sha256": digest(schema_payload), "manifest_sha256": digest(schema_payload),
+            "recipes": [recipe], "toolchain_lock": recipe},
+        "fragments": [{"id": FRAGMENT_ID, "file": FRAGMENT_PATH, "sha256": fragment_blob["sha256"]}],
+        "files": [{"path": FRAGMENT_PATH, "media_type": "application/json",
+                   "bytes": len(fragment_blob["bytes"]), "sha256": fragment_blob["sha256"]},
+                  {"path": "research/model.html", "media_type": "text/html",
+                   "bytes": len(html), "sha256": digest(html)}],
+        "aliases": [{"from": docref(), "to": docref()}]}
+    bundle_blob = blob(bundle)
+    release_manifest = blob({"format": "qcl-negf.release.v2", "sources": graph, "wheels": []})
+    release_id = release_manifest["sha256"]
+    api_context = {**context, "run_uuid": "12345678-1234-4234-8234-123456789abc",
+                   "calcjob_uuid": "abcdefab-1234-4234-8234-123456789abc"}
+    release_receipt = {"context": api_context, "release_id": release_id,
+        "release_manifest_sha256": release_manifest["sha256"], "source_revision": ROOT,
+        "bundle_sha256": bundle_blob["sha256"]}
+    metadata["release_receipt"] = blob(release_receipt)
+    retained = {"selection": {"context": api_context, "fragment_id": FRAGMENT_ID,
+            "sources": graph, "release_id": release_id}, "sources": sources,
+        "input_allowlist": tuple(sources), "output_allowlist": (FRAGMENT_PATH, "research/model.html"),
+        "selector_allowlist": tuple([
+            (component, path, "file", "") for component, path in sources] + [
+            (COMPONENT, "parameters/pilot.json", "json_pointer", "/height"),
+            (COMPONENT, "docs/help/value-origins.json", "json_pointer", "/references/0"),
+            (COMPONENT, "docs/src/model.md", "anchor", "ifr"),
+            (COMPONENT, "public/assignment.json", "json_pointer", "/height"),
+            (COMPONENT, "docs/help/causal-steps.json", "json_pointer", "/required")]),
+        "public_reviews": tuple({"source": ref(sources, path, component=component), "recipe": recipe,
+            "receipt": {"bytes": b"Synthetic owning source review", "sha256": digest(b"Synthetic owning source review")}}
+            for component, path in sources),
+        "release_manifest": release_manifest, "metadata": metadata,
+        "bundle": bundle_blob, "fragment": fragment_blob,
+        "payload": {FRAGMENT_PATH: {"bytes": fragment_blob["bytes"], "kind": "file"},
+                    "research/model.html": {"bytes": html, "kind": "file"}},
+        "effective_requirements": ref(sources, "docs/help/causal-steps.json", "json_pointer", "/required")}
+    if extra_payload_path is not None:
+        extra = b"Synthetic public payload"
+        bundle["files"].append({"path": extra_payload_path, "media_type": "text/plain",
+                                "bytes": len(extra), "sha256": digest(extra)})
+        retained["payload"][extra_payload_path] = {"bytes": extra, "kind": "file"}
+        retained["output_allowlist"] += (extra_payload_path,)
+        retained["bundle"] = blob(bundle)
+        release_receipt["bundle_sha256"] = retained["bundle"]["sha256"]
+        metadata["release_receipt"] = blob(release_receipt)
+    used_ev = evidence(retained, "execution_input", "/inputs/0/used/atom")
+    declared_ev = evidence(retained, "frozen_plan", "/point/configuration/" + PATH)
+    view = {"format": "qcl-negf.model-help-view.v1", "context": api_context,
+        "binding": {"status": "bound", "reason": "ok", **{k: release_receipt[k] for k in (
+            "release_id", "release_manifest_sha256", "source_revision", "bundle_sha256")}},
+        "fragment": {"id": FRAGMENT_ID, "url": "/docs/" + ROOT + "/" + FRAGMENT_PATH,
+                     "sha256": fragment_blob["sha256"]},
+        "input_status": {"status": "available", "reason": "ok"}, "inputs": [{
+            "path": PATH, "declared": {"status": "known", "atom": atom(), "evidence": declared_ev},
+            "used": {"status": "known", "atom": atom(), "evidence": used_ev},
+            "assigning": {"status": "known", "kind": "config_file", "source": assigning,
+                          "rule": None, "evidence": evidence(retained, "frozen_plan", "/assignment")},
+            "effective_origin": {"status": "partial", "evidence": [
+                evidence(retained, "frozen_plan", "/assignment")]},
+            "value_origin": {"declared": unknown_origin(), "used": unknown_origin()}}]}
+    index = {"format": "qcl-negf.model-help-index.v1", "complete": True, "entries": [{
+        "path": "result/executions/E-1/P-1/attempt-1/model-help-inputs.json",
+        "bytes": len(metadata["execution_input"]["bytes"]),
+        "sha256": metadata["execution_input"]["sha256"],
+        "execution_id": "E-1", "point_id": "P-1", "attempt": 1, "status": "valid", "reason": "ok"}]}
+    return {"retained": retained, "bundle": bundle, "fragment": fragment, "snapshot": snapshot, "index": index,
+            "view": view, "reference": reference, "claim": claim}
+
+
+def repack(c, *, reidentify=False):
+    """Reissue synthetic docs manifest after an authored mutation, preserving hash controls.
+
+    This does not create any source/assignment/origin proof. It only prevents a
+    stale outer manifest hash from masking the semantic case under inspection.
+    """
+    retained = c["retained"]
+    if reidentify:
+        # Keep selection.fragment_id unchanged: only the requested identity is
+        # contradicted, while the authored replacement is internally consistent.
+        replacement_id = c["fragment"]["id"]
+        replacement_path = "help/fragments/" + replacement_id + ".json"
+        for descriptor in c["bundle"]["fragments"]:
+            if descriptor["file"] == FRAGMENT_PATH:
+                descriptor.update(id=replacement_id, file=replacement_path)
+        for item in c["bundle"]["files"]:
+            if item["path"] == FRAGMENT_PATH:
+                item["path"] = replacement_path
+        retained["payload"][replacement_path] = retained["payload"].pop(FRAGMENT_PATH)
+        retained["output_allowlist"] = tuple(
+            replacement_path if path == FRAGMENT_PATH else path
+            for path in retained["output_allowlist"])
+        c["view"]["fragment"].update(id=replacement_id,
+            url="/docs/" + ROOT + "/" + replacement_path)
+    else:
+        replacement_path = FRAGMENT_PATH
+    retained["fragment"] = blob(c["fragment"])
+    retained["payload"][replacement_path]["bytes"] = retained["fragment"]["bytes"]
+    for descriptor in c["bundle"]["fragments"]:
+        if descriptor["file"] == replacement_path:
+            descriptor["sha256"] = retained["fragment"]["sha256"]
+    for item in c["bundle"]["files"]:
+        if item["path"] == replacement_path:
+            item.update(bytes=len(retained["fragment"]["bytes"]), sha256=retained["fragment"]["sha256"])
+    retained["bundle"] = blob(c["bundle"])
+    receipt = json.loads(retained["metadata"]["release_receipt"]["bytes"])
+    receipt["bundle_sha256"] = retained["bundle"]["sha256"]
+    retained["metadata"]["release_receipt"] = blob(receipt)
+    c["view"]["binding"]["bundle_sha256"] = retained["bundle"]["sha256"]
+    if c["view"]["fragment"] is not None:
+        c["view"]["fragment"]["sha256"] = retained["fragment"]["sha256"]
+
+
+def reauthor_reference(c, *, additional_references=()):
+    """Author synthetic annotation+claim+review associations before repacking.
+
+    No production source or receipt is repaired: these are fresh fixture bytes
+    with exact associations, so duplicate IDs cannot hide behind a stale hash.
+    """
+    retained = c["retained"]
+    path = "docs/help/value-origins.json"
+    retained["sources"][(COMPONENT, path)]["bytes"] = raw({
+        "references": [c["reference"], *additional_references]})
+    c["claim"]["annotation"] = ref(retained["sources"], path, "json_pointer", "/references/0")
+    c["snapshot"]["origin_bindings"] = [c["claim"]]
+    retained["metadata"]["execution_input"] = blob(c["snapshot"])
+    retained["metadata"]["value_origin_receipt"] = blob({"claims": [c["claim"]]})
+    for review in retained["public_reviews"]:
+        if (review["source"]["component"], review["source"]["path"]) == (COMPONENT, path):
+            review["source"] = ref(retained["sources"], path)
+    c["view"]["inputs"][0]["used"]["evidence"] = evidence(
+        retained, "execution_input", "/inputs/0/used/atom")
+    c["index"]["entries"][0].update(bytes=len(retained["metadata"]["execution_input"]["bytes"]),
+        sha256=retained["metadata"]["execution_input"]["sha256"])
+    repack(c)
+
+
+def resolve(c, claim="retained", phase="used"):
+    return _resolve_value_origin(c["reference"], c["claim"] if claim == "retained" else claim,
+                                 phase=phase, retained=c["retained"])
+
+
+def validate(c, name="view"):
+    document = c[name]
+    before = deepcopy(document)
+    result = _validate_model_help_bindings(document, retained=c["retained"])
+    assert result is document
+    assert document == before
+    return result
+
+
+def assert_unknown(result, reason):
+    assert set(result) == {"status", "origin", "binding", "reason"}
+    assert result["status"] == "unknown"
+    assert result["reason"] == reason
+    assert result["binding"] is None
+    assert result["origin"]["status"] == "unknown"
+    assert result["origin"]["kind"] == "unknown"
+    assert result["origin"]["locators"] == []
+    assert isinstance(result["origin"]["note"], str) and result["origin"]["note"]
+
+
+def test_exact_historical_mapping_and_return_identity():
+    c = case()
+    validate(c)
+    validate(c, "fragment")
+    validate(c, "snapshot")
+    validate(c, "bundle")
+    validate(c, "index")
+
+
+def test_origin_complete_retained_proofs_only_branch_bound():
+    c = case()
+    result = resolve(c)
+    assert result["status"] == "bound" and result["reason"] == "ok"
+    assert result["origin"] == c["reference"]["origin"]
+    binding = result["binding"]
+    assert set(binding) == {"reference_id", "annotation", "parameter", "phase", "value",
+                            "assignment", "conditions", "receipt"}
+    assert binding["phase"] == "used"
+    assert binding["reference_id"] == c["reference"]["id"]
+    assert binding["annotation"] == c["claim"]["annotation"]
+    assert binding["parameter"] == c["claim"]["parameter"]
+    assert binding["value"] == evidence(c["retained"], "execution_input", "/inputs/0/used/atom")
+    assert binding["assignment"] == evidence(c["retained"], "value_origin_receipt", "/claims/0/assignment_receipt")
+    assert binding["receipt"] == evidence(c["retained"], "value_origin_receipt", "/claims/0")
+    assert len(binding["conditions"]) == 1
+    assert binding["conditions"][0] == evidence(c["retained"], "execution_input", "/inputs/1/used/atom")
+    assert binding["conditions"][0]["sha256"] == c["retained"]["metadata"]["execution_input"]["sha256"]
+
+
+def test_reference_equal_scalar_without_claim_is_not_actual_origin():
+    c = case()
+    assert_unknown(resolve(c, None), "origin_not_recorded")
+    assert c["reference"]["origin"]["status"] == "known"
+
+
+@pytest.mark.parametrize("missing", ["annotation", "parameter", "graph"])
+def test_missing_source_proof_is_unknown_not_false_bound(missing):
+    c = case()
+    resolve(c)  # Paired complete control.
+    if missing == "graph":
+        c["retained"]["selection"]["sources"] = None
+    else:
+        key = (c["claim"][missing]["component"], c["claim"][missing]["path"])
+        del c["retained"]["sources"][key]
+    assert_unknown(resolve(c, None), "origin_not_recorded")
+    assert_unknown(resolve(c), "source_unbound")
+
+
+def test_missing_last_assignment_proof_is_override_unbound():
+    c = case()
+    resolve(c)
+    del c["retained"]["sources"][(COMPONENT, "public/assignment.json")]
+    assert_unknown(resolve(c), "override_unbound")
+
+
+def test_missing_target_value_precedes_missing_claim():
+    c = case()
+    resolve(c)
+    del c["retained"]["metadata"]["execution_input"]
+    assert_unknown(resolve(c, None), "value_unavailable")
+
+
+def test_unbound_override_precedes_missing_claim_even_when_reference_equal():
+    c = case()
+    resolve(c)
+    c["snapshot"]["inputs"][0]["assigning"] = {
+        "status": "unknown", "kind": "unknown", "source": None, "rule": None}
+    c["snapshot"]["inputs"][0]["effective_origin"] = {"status": "partial", "steps": [{
+        "kind": "checkpoint_restore", "source": None, "rule": "unbound_restore"}]}
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    assert_unknown(resolve(c, None), "override_unbound")
+
+
+@pytest.mark.parametrize("change", [atom(0.15), atom(0.10, "m"), atom(0.10, "nm", "number")])
+def test_phase_atom_value_kind_unit_mismatch_is_not_converted(change):
+    c = case()
+    resolve(c)
+    c["snapshot"]["inputs"][0]["used"]["atom"] = change
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    assert_unknown(resolve(c, None), "override_unbound")
+
+
+def test_condition_mismatch_precedes_absent_claim():
+    c = case()
+    resolve(c)
+    c["snapshot"]["inputs"][1]["used"]["atom"] = atom(80.0, "K")
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    assert_unknown(resolve(c, None), "conditions_unbound")
+
+
+def test_missing_condition_does_not_guess_earlier_mismatch():
+    c = case()
+    resolve(c)
+    c["snapshot"]["inputs"] = c["snapshot"]["inputs"][:1]
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    assert_unknown(resolve(c, None), "origin_not_recorded")
+    assert_unknown(resolve(c), "conditions_unbound")
+
+
+def test_claim_phase_cannot_transfer_declared_to_used():
+    c = case()
+    resolve(c)
+    declared_claim = deepcopy(c["claim"])
+    declared_claim["phase"] = "declared"
+    declared_claim["conditions"][0]["phase"] = "declared"
+    c["retained"]["metadata"]["value_origin_receipt"] = blob({"claims": [declared_claim]})
+    assert_unknown(resolve(c, None, phase="used"), "origin_not_recorded")
+    with pytest.raises(ContractError):
+        resolve(c, declared_claim, phase="used")
+
+
+@pytest.mark.parametrize("field,value", [("attempt", 2), ("point_id", "P-2"),
+                                         ("execution_id", "E-2"), ("plan_fingerprint", "e" * 64),
+                                         ("source_sha256", "e" * 64)])
+def test_corrupt_claim_context_is_rejected_before_missing_proofs(field, value):
+    c = case()
+    resolve(c)
+    c["claim"]["assignment_receipt"][field] = value
+    with pytest.raises(ContractError):
+        resolve(c)
+
+
+@pytest.mark.parametrize("container", ["execution_input", "frozen_plan", "value_origin_receipt"])
+def test_hash_tamper_never_downgrades_to_missing(container):
+    c = case()
+    resolve(c)
+    c["retained"]["metadata"][container]["bytes"] += b" "
+    with pytest.raises(ContractError):
+        resolve(c)
+
+
+def test_attempted_bound_view_requires_actual_origin_proof():
+    c = case()
+    validate(c)
+    bound = resolve(c)
+    c["view"]["inputs"][0]["value_origin"]["used"] = bound
+    validate(c)
+    del c["retained"]["metadata"]["value_origin_receipt"]
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_documentation_unavailable_preserves_independent_verified_used():
+    c = case()
+    c["view"]["binding"].update(status="unavailable", reason="bundle_missing")
+    c["view"]["fragment"] = None
+    validate(c)
+    assert c["view"]["inputs"][0]["declared"]["status"] == "known"
+    assert c["view"]["inputs"][0]["used"]["status"] == "known"
+
+
+def test_no_mapping_cannot_fall_back_to_current_or_global_leaf_list():
+    c = case()
+    c["view"]["binding"].update(status="unknown", reason="source_binding_missing")
+    c["view"]["fragment"] = None
+    del c["retained"]["fragment"]
+    c["view"]["inputs"] = []
+    validate(c)
+    c["view"]["inputs"] = case()["view"]["inputs"]
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_no_snapshot_keeps_declared_from_exact_frozen_point():
+    c = case()
+    del c["retained"]["metadata"]["execution_input"]
+    c["view"]["input_status"] = {"status": "unavailable", "reason": "snapshot_missing"}
+    c["view"]["inputs"][0]["used"] = {"status": "unknown", "atom": None, "evidence": None}
+    validate(c)
+    c["view"]["inputs"][0]["used"] = case()["view"]["inputs"][0]["used"]
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+@pytest.mark.parametrize("field,value", [("attempt", 2), ("point_id", "P-2"),
+    ("execution_id", "E-2"), ("configuration_hash", "e" * 64),
+    ("calcjob_uuid", "ffffffff-1234-4234-8234-123456789abc"),
+    ("run_uuid", "ffffffff-1234-4234-8234-123456789abc")])
+def test_view_context_is_one_selected_child(field, value):
+    c = case()
+    validate(c)
+    c["view"]["context"][field] = value
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+@pytest.mark.parametrize("part", ["bundle", "fragment"])
+def test_mapping_blob_hash_is_checked(part):
+    c = case()
+    validate(c)
+    c["retained"][part]["bytes"] += b" "
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+@pytest.mark.parametrize("part,field,value", [
+    ("fragment", "id", "model.other"), ("fragment", "source_revision", OTHER)])
+def test_retained_mapping_id_and_revision_are_exact(part, field, value):
+    c = case()
+    validate(c)
+    c[part][field] = value
+    repack(c, reidentify=(field == "id"))
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_same_label_and_numbers_do_not_make_graph_B_historical_A():
+    c = case()
+    validate(c)
+    c["retained"]["selection"]["sources"]["revision"] = OTHER
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+@pytest.mark.parametrize("where", ["inputs", "conditions", "fragments", "files", "components"])
+def test_keyed_collisions_do_not_become_first_match(where):
+    c = case()
+    validate(c)
+    if where == "inputs":
+        c["fragment"]["inputs"].append(deepcopy(c["fragment"]["inputs"][0]))
+        c["retained"]["fragment"] = blob(c["fragment"])
+    elif where == "conditions":
+        conditions = c["reference"]["applicability"]["conditions"]
+        conditions.append(deepcopy(conditions[0]))
+        c["claim"]["conditions"].append(deepcopy(c["claim"]["conditions"][0]))
+        reauthor_reference(c)
+    elif where == "components":
+        c["bundle"]["sources"]["components"].append(deepcopy(c["bundle"]["sources"]["components"][0]))
+        c["retained"]["bundle"] = blob(c["bundle"])
+    else:
+        c["bundle"][where].append(deepcopy(c["bundle"][where][0]))
+        c["retained"]["bundle"] = blob(c["bundle"])
+    repack(c)
+    with pytest.raises(ContractError):
+        if where == "conditions":
+            resolve(c)
+        else:
+            validate(c)
+
+
+@pytest.mark.parametrize("unsafe", ["../private.json", "/private.json", "x/../private.json",
+    "x\\private.json", ".git/config", "x/.aws/key", "x/%2e%2e/private.json", "x/%252e%252e/private.json",
+    "x/secret\x00.json", "x/secret\n.json"])
+def test_public_payload_paths_are_not_silently_normalized(unsafe):
+    validate(case(), "bundle")
+    c = case(extra_payload_path=unsafe)
+    with pytest.raises(ContractError):
+        validate(c, "bundle")
+
+
+def test_source_path_allowlist_is_exact_not_basename_heuristic():
+    c = case()
+    validate(c, "fragment")
+    c["fragment"]["meaning_source"]["path"] = "private/model.md"
+    with pytest.raises(ContractError):
+        validate(c, "fragment")
+
+
+@pytest.mark.parametrize("uri", ["https://example.org/paper?", "https://example.org/paper?x=1",
+    "https://u:p@example.org/paper", "https://example.org/paper\n", "http://example.org/paper",
+    "file:///private/paper", "javascript:alert(1)", "https:paper"])
+def test_public_locator_parser_rejects_queries_credentials_and_controls(uri):
+    validate(case(), "fragment")
+    c = case(locator_uri=uri)
+    before = deepcopy(c["fragment"])
+    with pytest.raises(ContractError):
+        validate(c, "fragment")
+    assert c["fragment"] == before  # No query stripping/repair.
+
+
+def test_query_free_locator_still_requires_owning_public_source_review():
+    c = case()
+    validate(c, "fragment")
+    c["retained"]["public_reviews"] = ()
+    with pytest.raises(ContractError):
+        validate(c, "fragment")
+
+
+def test_missing_alias_anchor_or_symlink_is_not_public_ready():
+    for mutation in ("anchor", "symlink", "blob"):
+        c = case()
+        validate(c, "bundle")
+        if mutation == "anchor":
+            c["bundle"]["aliases"][0]["to"]["anchor"] = "missing"
+        elif mutation == "symlink":
+            c["retained"]["payload"]["research/model.html"]["kind"] = "symlink"
+        else:
+            c["retained"]["payload"]["research/model.html"]["bytes"] += b"tamper"
+        repack(c)
+        with pytest.raises(ContractError):
+            validate(c, "bundle")
+
+
+def test_known_effective_origin_requires_full_owning_chain_not_nonempty_evidence():
+    c = case()
+    validate(c)
+    effective = c["view"]["inputs"][0]["effective_origin"]
+    effective["status"] = "known"
+    effective["evidence"].append(evidence(c["retained"], "execution_strategy", "/steps/0"))
+    validate(c)
+    effective["evidence"].pop()
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_known_effective_origin_cannot_invent_complete_step_universe():
+    c = case()
+    effective = c["view"]["inputs"][0]["effective_origin"]
+    effective["status"] = "known"
+    effective["evidence"].append(evidence(c["retained"], "execution_strategy", "/steps/0"))
+    validate(c)
+    del c["retained"]["effective_requirements"]
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_evidence_selector_and_hash_must_address_the_actual_scalar():
+    for mutation in ("selector", "sha256", "atom"):
+        c = case()
+        validate(c)
+        state = c["view"]["inputs"][0]["used"]
+        if mutation == "selector":
+            state["evidence"]["selector"] = "/inputs/1/used/atom"
+        elif mutation == "sha256":
+            state["evidence"]["sha256"] = "e" * 64
+        else:
+            state["atom"] = atom(0.15)
+        with pytest.raises(ContractError):
+            validate(c)
+
+
+def test_explicit_owning_inapplicability_precedes_absent_value_and_claim():
+    c = case(reference_status="not_applicable")
+    del c["retained"]["metadata"]["execution_input"]
+    result = resolve(c, None)
+    assert result == {"status": "not_applicable", "origin": c["reference"]["origin"],
+                      "binding": None, "reason": "not_applicable"}
+
+
+def test_unknown_applicability_never_becomes_bound_from_equal_numbers():
+    c = case(applicability_status="unknown")
+    assert_unknown(resolve(c), "conditions_unbound")
+
+
+@pytest.mark.parametrize("mutation", ["path", "point", "attempt", "sha256", "bytes", "duplicate"])
+def test_index_identity_hash_size_and_unique_paths(mutation):
+    c = case()
+    validate(c, "index")
+    entry = c["index"]["entries"][0]
+    if mutation == "path":
+        entry["path"] = "result/executions/E-1/P-2/attempt-1/model-help-inputs.json"
+    elif mutation == "point":
+        entry["point_id"] = "P-2"
+    elif mutation == "attempt":
+        entry["attempt"] = 2
+    elif mutation == "sha256":
+        entry["sha256"] = "e" * 64
+    elif mutation == "bytes":
+        entry["bytes"] += 1
+    else:
+        c["index"]["entries"].append(deepcopy(entry))
+    with pytest.raises(ContractError):
+        validate(c, "index")
+
+
+def test_exact_input_path_slice_rejects_a_different_valid_snapshot_leaf():
+    c = case()
+    validate(c)
+    temperature_reference = deepcopy(c["reference"])
+    temperature_reference.update(id="pilot.temperature", atom=atom(70.0, "K"),
+        parameter=ref(c["retained"]["sources"], "parameters/pilot.json", "json_pointer", "/temperature"))
+    temperature_mapping = deepcopy(c["fragment"]["inputs"][0])
+    temperature_mapping.update(path=TEMP, schema_source=temperature_reference["parameter"],
+                               reference_value_origin=temperature_reference)
+    c["fragment"]["inputs"].append(temperature_mapping)
+    c["retained"]["selector_allowlist"] += (
+        (COMPONENT, "parameters/pilot.json", "json_pointer", "/temperature"),
+        (COMPONENT, "docs/help/value-origins.json", "json_pointer", "/references/1"))
+    reauthor_reference(c, additional_references=(temperature_reference,))
+    temperature_input = {"path": TEMP,
+        "declared": {"status": "known", "atom": atom(70.0, "K"),
+            "evidence": evidence(c["retained"], "frozen_plan", "/point/configuration/" + TEMP)},
+        "used": {"status": "known", "atom": atom(70.0, "K"),
+            "evidence": evidence(c["retained"], "execution_input", "/inputs/1/used/atom")},
+        "assigning": {"status": "unknown", "kind": "unknown", "source": None,
+                      "rule": None, "evidence": None},
+        "effective_origin": {"status": "unknown", "evidence": []},
+        "value_origin": {"declared": unknown_origin(), "used": unknown_origin()}}
+    c["view"]["inputs"] = [temperature_input]
+    validate(c)  # Exact TEMP Atom/Evidence and selected mapping are healthy.
+    c["fragment"]["inputs"].pop()  # Only semantic change: remove TEMP mapping.
+    repack(c)
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_public_source_revision_and_selector_proofs_are_not_file_name_matches():
+    for mutation in ("revision", "sha256", "selector"):
+        c = case()
+        validate(c, "fragment")
+        source = c["fragment"]["meaning_source"]
+        if mutation == "selector":
+            source["selector"]["value"] = "missing-anchor"
+        else:
+            source[mutation] = OTHER if mutation == "revision" else "e" * 64
+        repack(c)
+        with pytest.raises(ContractError):
+            validate(c, "fragment")
+
+
+def test_bound_documentation_cannot_be_claimed_without_retained_release_receipt():
+    c = case()
+    validate(c)
+    del c["retained"]["metadata"]["release_receipt"]
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_missing_bundle_mapping_is_empty_even_with_valid_selected_snapshot():
+    c = case()
+    validate(c)
+    del c["retained"]["bundle"]
+    c["view"]["binding"].update(status="unavailable", reason="bundle_missing")
+    c["view"]["fragment"] = None
+    c["view"]["inputs"] = []
+    validate(c)
+    assert c["view"]["input_status"] == {"status": "available", "reason": "ok"}
+    c["view"]["inputs"] = case()["view"]["inputs"]
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+@pytest.mark.parametrize("mutation", ["missing_one", "source", "revision", "recipe", "receipt_bytes"])
+def test_review_association_must_match_exact_source_recipe_and_receipt_digest(mutation):
+    c = case()
+    validate(c, "fragment")
+    target_path = "parameters/pilot.json"
+    reviews = list(deepcopy(c["retained"]["public_reviews"]))
+    position = next(i for i, row in enumerate(reviews)
+                    if row["source"]["component"] == COMPONENT and row["source"]["path"] == target_path)
+    if mutation == "missing_one":
+        reviews.pop(position)
+    elif mutation == "source":
+        reviews[position]["source"] = ref(c["retained"]["sources"], "docs/src/model.md")
+        # Preserve one exact review for model.md rather than introducing an
+        # unrelated duplicate-key witness; only pilot.json loses association.
+        reviews = [row for i, row in enumerate(reviews) if i == position or
+                   not (row["source"]["component"] == COMPONENT and
+                        row["source"]["path"] == "docs/src/model.md")]
+    elif mutation == "revision":
+        reviews[position]["source"]["revision"] = OTHER
+    elif mutation == "recipe":
+        reviews[position]["recipe"] = ref(c["retained"]["sources"], "public/assignment.json")
+    else:
+        reviews[position]["receipt"]["bytes"] += b" changed"
+    # Other exact owning reviews remain: tuple truthiness is insufficient.
+    assert reviews
+    c["retained"]["public_reviews"] = tuple(reviews)
+    with pytest.raises(ContractError):
+        validate(c, "fragment")
+
+
+@pytest.mark.parametrize("replacement", ["duplicate", "unrelated_existing_selector"])
+def test_known_chain_requires_exact_steps_at_same_evidence_cardinality(replacement):
+    c = case()
+    effective = c["view"]["inputs"][0]["effective_origin"]
+    effective["status"] = "known"
+    effective["evidence"].append(evidence(c["retained"], "execution_strategy", "/steps/0"))
+    validate(c)
+    if replacement == "duplicate":
+        effective["evidence"][1] = deepcopy(effective["evidence"][0])
+    else:
+        effective["evidence"][1] = evidence(c["retained"], "execution_input", "/inputs/0/assigning")
+    assert len(effective["evidence"]) == 2
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+@pytest.mark.parametrize("mutation", ["revision", "sha256", "source_bytes"])
+def test_complete_chain_universe_must_be_bound_to_exact_owning_source(mutation):
+    c = case()
+    effective = c["view"]["inputs"][0]["effective_origin"]
+    effective["status"] = "known"
+    effective["evidence"].append(evidence(c["retained"], "execution_strategy", "/steps/0"))
+    validate(c)
+    requirement = c["retained"]["effective_requirements"]
+    if mutation == "revision":
+        requirement["revision"] = OTHER
+    elif mutation == "sha256":
+        requirement["sha256"] = "e" * 64
+    else:
+        c["retained"]["sources"][(requirement["component"], requirement["path"])]["bytes"] += b" "
+    # The list of applicable locations and supplied Evidence cardinality stay fixed.
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_declared_origin_all_four_proofs_bind_to_frozen_point_phase():
+    c = case(claim_phase="declared")
+    result = resolve(c, phase="declared")
+    assert result["status"] == "bound" and result["reason"] == "ok"
+    assert result["origin"] == c["reference"]["origin"]
+    binding = result["binding"]
+    assert set(binding) == {"reference_id", "annotation", "parameter", "phase", "value",
+                            "assignment", "conditions", "receipt"}
+    assert binding["phase"] == "declared"
+    assert binding["reference_id"] == c["reference"]["id"]
+    assert binding["annotation"] == c["claim"]["annotation"]
+    assert binding["parameter"] == c["claim"]["parameter"]
+    assert binding["value"] == evidence(c["retained"], "frozen_plan", "/point/configuration/" + PATH)
+    assert binding["assignment"] == evidence(c["retained"], "value_origin_receipt", "/claims/0/assignment_receipt")
+    assert binding["conditions"] == [evidence(c["retained"], "frozen_plan", "/point/configuration/" + TEMP)]
+    assert binding["receipt"] == evidence(c["retained"], "value_origin_receipt", "/claims/0")
+
+
+# Final collated C2 CPP regressions F1-F6; original 40274-byte prefix is frozen.
+def append_public_fragment(c, document):
+    """Author a second exact public artifact, without changing selected identity."""
+    path = "help/fragments/" + document["id"] + ".json"
+    content = raw(document)
+    c["bundle"]["fragments"].append({"id": document["id"], "file": path, "sha256": digest(content)})
+    c["bundle"]["files"].append({"path": path, "media_type": "application/json",
+                                   "bytes": len(content), "sha256": digest(content)})
+    c["retained"]["payload"][path] = {"bytes": content, "kind": "file"}
+    c["retained"]["output_allowlist"] += (path,)
+    repack(c)
+
+
+def test_cpp_bundle_checks_selected_fragment_semantics_with_fresh_hashes():
+    good = case()
+    validate(good, "bundle")
+    bad = case(locator_uri="https://example.org/paper?token=synthetic")
+    with pytest.raises(ContractError):
+        validate(bad, "bundle")
+
+
+@pytest.mark.parametrize("defect", [None, "query", "selector"])
+def test_cpp_bundle_checks_every_unselected_public_fragment(defect):
+    c = case()
+    extra = deepcopy(c["fragment"])
+    extra["id"] = "model.unselected"
+    extra_reference = extra["inputs"][0]["reference_value_origin"]
+    extra_reference["id"] = "pilot.unselected-reference"
+    if defect == "query":
+        extra_reference["origin"]["locators"][0]["uri"] = "https://example.org/paper?"
+    elif defect == "selector":
+        extra["inputs"][0]["schema_source"]["selector"]["value"] = "/missing"
+    reauthor_reference(c, additional_references=(extra_reference,))
+    append_public_fragment(c, extra)
+    assert c["retained"]["selection"]["fragment_id"] == FRAGMENT_ID
+    if defect is None:
+        validate(c, "bundle")
+    else:
+        with pytest.raises(ContractError):
+            validate(c, "bundle")
+
+
+@pytest.mark.parametrize("field", ["release_id", "release_manifest_sha256", "source_revision", "bundle_sha256"])
+def test_cpp_unavailable_docs_preserve_each_known_identity_scalar(field):
+    c = case()
+    c["view"]["binding"].update(status="unavailable", reason="bundle_missing")
+    c["view"]["fragment"] = None
+    validate(c)
+    c["view"]["binding"][field] = None
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_cpp_genuinely_missing_retained_identity_stays_null():
+    c = case()
+    c["retained"]["selection"].update(sources=None, release_id=None)
+    del c["retained"]["metadata"]["release_receipt"]
+    for key in ("bundle", "fragment", "release_manifest"):
+        del c["retained"][key]
+    c["view"]["binding"] = {"status": "unknown", "reason": "source_binding_missing",
+        "release_id": None, "release_manifest_sha256": None, "source_revision": None, "bundle_sha256": None}
+    c["view"]["fragment"] = None
+    c["view"]["inputs"] = []
+    validate(c)
+
+
+def test_cpp_assigning_evidence_must_select_the_target_last_assignment():
+    c = case()
+    validate(c)  # Existing frozen-plan assignment is healthy.
+    c["view"]["inputs"][0]["assigning"]["evidence"] = evidence(
+        c["retained"], "execution_input", "/inputs/0/assigning")
+    validate(c)  # The exact selected snapshot assignment is also healthy.
+    c["view"]["inputs"][0]["assigning"] = {"status": "known", "kind": "execution_strategy",
+        "source": None, "rule": "fixed_strategy",
+        "evidence": evidence(c["retained"], "execution_strategy", "/steps/0")}
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def test_cpp_known_effective_chain_cannot_emit_extra_out_of_scope_evidence():
+    c = case()
+    effective = c["view"]["inputs"][0]["effective_origin"]
+    effective["status"] = "known"
+    effective["evidence"].append(evidence(c["retained"], "execution_strategy", "/steps/0"))
+    validate(c)
+    effective["evidence"].append(evidence(c["retained"], "execution_input", "/context"))
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+def two_point_index_case(selected="P-1"):
+    """Two original point files of one child, each with a frozen passport proof.
+
+    Private point_passports maps point keys to existing Evidence in original
+    frozen_plan bytes. snapshot_files maps logical paths to closed bytes/digest
+    and the owning inventory measurement. Neither is a new public receipt.
+    """
+    c = case()
+    r = c["retained"]
+    plan = json.loads(r["metadata"]["frozen_plan"]["bytes"])
+    first = deepcopy(plan.pop("point")["configuration"])
+    second = deepcopy(first)
+    second[PATH] = atom(0.15)
+    plan["points"] = [{"id": "P-1", "execution_id": "E-1", "configuration": first},
+                      {"id": "P-2", "execution_id": "E-1", "configuration": second}]
+    r["metadata"]["frozen_plan"] = blob(plan)
+    r["point_passports"] = {
+        ("E-1", "P-1"): evidence(r, "frozen_plan", "/points/0/configuration"),
+        ("E-1", "P-2"): evidence(r, "frozen_plan", "/points/1/configuration")}
+    r["snapshot_files"] = {}
+    entries, snapshots = [], {}
+    for position, point in enumerate(plan["points"]):
+        snap = deepcopy(c["snapshot"])
+        snap["context"].update(plan_fingerprint=r["metadata"]["frozen_plan"]["sha256"],
+            point_id=point["id"], configuration_hash=digest(raw(point["configuration"])))
+        snap["origin_bindings"] = []  # No origin receipt is invented for either point.
+        for leaf in snap["inputs"]:
+            leaf["declared"]["atom"] = deepcopy(point["configuration"][leaf["path"]])
+            leaf["used"]["atom"] = deepcopy(leaf["declared"]["atom"])
+            leaf["assigning"] = {"status": "unknown", "kind": "unknown", "source": None, "rule": None}
+            leaf["effective_origin"] = {"status": "unknown", "steps": []}
+        # Runtime used is intentionally distinct, preserving declared/used axes.
+        snap["inputs"][0]["used"]["atom"] = atom(0.20 + position * 0.05)
+        path = "result/executions/E-1/" + point["id"] + "/attempt-1/model-help-inputs.json"
+        record = blob(snap)
+        inventory = {"bytes": len(record["bytes"]), "sha256": record["sha256"]}
+        r["snapshot_files"][path] = {**record, "inventory": inventory}
+        entries.append({"path": path, **inventory, "execution_id": "E-1", "point_id": point["id"],
+                        "attempt": 1, "status": "valid", "reason": "ok"})
+        snapshots[point["id"]] = snap
+    c["snapshot"] = snapshots[selected]
+    r["metadata"]["execution_input"] = blob(c["snapshot"])
+    del r["metadata"]["value_origin_receipt"]
+    selected_context = {**c["snapshot"]["context"],
+        "run_uuid": c["view"]["context"]["run_uuid"], "calcjob_uuid": c["view"]["context"]["calcjob_uuid"]}
+    r["selection"]["context"] = deepcopy(selected_context)
+    c["view"]["context"] = deepcopy(selected_context)
+    receipt = json.loads(r["metadata"]["release_receipt"]["bytes"])
+    receipt["context"] = deepcopy(selected_context)
+    r["metadata"]["release_receipt"] = blob(receipt)
+    item = c["view"]["inputs"][0]
+    pointer = r["point_passports"][("E-1", selected)]["selector"]
+    item["declared"] = {"status": "known", "atom": deepcopy(c["snapshot"]["inputs"][0]["declared"]["atom"]),
+        "evidence": evidence(r, "frozen_plan", pointer + "/" + PATH)}
+    item["used"] = {"status": "known", "atom": deepcopy(c["snapshot"]["inputs"][0]["used"]["atom"]),
+        "evidence": evidence(r, "execution_input", "/inputs/0/used/atom")}
+    item["assigning"] = {"status": "unknown", "kind": "unknown", "source": None, "rule": None, "evidence": None}
+    item["effective_origin"] = {"status": "unknown", "evidence": []}
+    c["index"] = {"format": "qcl-negf.model-help-index.v1", "complete": True, "entries": entries}
+    return c
+
+
+@pytest.mark.parametrize("selected", ["P-1", "P-2"])
+def test_cpp_complete_two_point_index_and_each_endpoint_selection(selected):
+    c = two_point_index_case(selected)
+    validate(c, "index")
+    validate(c, "snapshot")
+    validate(c)
+    assert len(c["index"]["entries"]) == 2
+    assert c["view"]["context"]["point_id"] == selected
+    assert c["view"]["inputs"][0]["used"]["atom"] != c["view"]["inputs"][0]["declared"]["atom"]
+
+
+@pytest.mark.parametrize("mutation", ["attempt", "execution", "nonmember", "sibling_payload",
+    "passport", "inventory", "duplicate", "count", "aggregate", "missing_sibling"])
+def test_cpp_multi_point_index_requires_each_exact_point_file_and_passport(mutation):
+    c = two_point_index_case()
+    validate(c, "index")
+    entries = c["index"]["entries"]
+    target = entries[1]
+    if mutation in {"attempt", "execution", "nonmember"}:
+        if mutation == "attempt":
+            target["attempt"] = 2
+        elif mutation == "execution":
+            target["execution_id"] = "E-2"
+        else:
+            target["point_id"] = "P-3"
+        target["path"] = ("result/executions/" + target["execution_id"] + "/" + target["point_id"] +
+                           "/attempt-" + str(target["attempt"]) + "/model-help-inputs.json")
+    elif mutation == "sibling_payload":
+        # Rehash/index/inventory all agree with real P-1 bytes under P-2 path;
+        # only their point context/association is wrong.
+        source = deepcopy(c["retained"]["snapshot_files"][entries[0]["path"]])
+        c["retained"]["snapshot_files"][target["path"]] = source
+        target.update(bytes=len(source["bytes"]), sha256=source["sha256"])
+    elif mutation == "passport":
+        c["retained"]["point_passports"][("E-1", "P-2")] = deepcopy(
+            c["retained"]["point_passports"][("E-1", "P-1")])
+    elif mutation == "inventory":
+        c["retained"]["snapshot_files"][target["path"]]["inventory"]["bytes"] += 1
+    elif mutation == "duplicate":
+        entries.append(deepcopy(target))
+    elif mutation == "count":
+        extra = deepcopy(target)
+        extra.update(point_id="P-3", path="result/executions/E-1/P-3/attempt-1/model-help-inputs.json")
+        entries.append(extra)
+    elif mutation == "aggregate":
+        # Two individually bounded invalid files cross only the aggregate cap.
+        # Their actual bytes/index/inventory digests remain mutually consistent;
+        # no stale selected snapshot alias is retained for those invalid files.
+        del c["retained"]["metadata"]["execution_input"]
+        for entry in entries:
+            payload = b" " * (4 * 1024 * 1024 + 1)
+            inventory = {"bytes": len(payload), "sha256": digest(payload)}
+            c["retained"]["snapshot_files"][entry["path"]] = {
+                "bytes": payload, "sha256": digest(payload), "inventory": inventory}
+            entry.update(**inventory, status="invalid", reason="too_large")
+    else:
+        del c["retained"]["snapshot_files"][target["path"]]
+    with pytest.raises(ContractError):
+        validate(c, "index")
+
+
+@pytest.mark.parametrize("replacement", [atom(0.15), atom(0.10, "m"), atom(0.10, "nm", "number")])
+def test_cpp_snapshot_declared_value_unit_kind_must_match_frozen_passport(replacement):
+    c = case()
+    validate(c, "snapshot")
+    c["snapshot"]["inputs"][0]["declared"]["atom"] = replacement
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    c["index"]["entries"][0].update(bytes=len(c["retained"]["metadata"]["execution_input"]["bytes"]),
+        sha256=c["retained"]["metadata"]["execution_input"]["sha256"])
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+def test_cpp_snapshot_used_can_differ_and_unknown_declared_is_not_filled():
+    c = case()
+    c["snapshot"]["inputs"][0]["used"]["atom"] = atom(0.15)
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    validate(c, "snapshot")
+    c["snapshot"]["inputs"][0]["declared"] = {"status": "unknown", "atom": None}
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    before = deepcopy(c["snapshot"])
+    validate(c, "snapshot")
+    assert c["snapshot"] == before
+
+
+def test_cpp_unknown_snapshot_declarations_survive_missing_passport_proof():
+    c = case()
+    plan = json.loads(c["retained"]["metadata"]["frozen_plan"]["bytes"])
+    del plan["point"]["configuration"]
+    c["retained"]["metadata"]["frozen_plan"] = blob(plan)
+    context = c["snapshot"]["context"]
+    context.update(plan_fingerprint=c["retained"]["metadata"]["frozen_plan"]["sha256"], configuration_hash=None)
+    c["retained"]["selection"]["context"].update(
+        plan_fingerprint=context["plan_fingerprint"], configuration_hash=None)
+    c["snapshot"]["origin_bindings"] = []
+    for item in c["snapshot"]["inputs"]:
+        item["declared"] = {"status": "unknown", "atom": None}
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    before = deepcopy(c["snapshot"])
+    validate(c, "snapshot")
+    assert c["snapshot"] == before
+
+
+# DOC07-C2-F3-SOURCE-E1: assigning authority is independent of numeric display.
+def assigning_authority_case(raw_assignment, *, numeric_status="known"):
+    c = case()
+    c["snapshot"]["inputs"][0]["assigning"] = deepcopy(raw_assignment)
+    c["snapshot"]["origin_bindings"] = []
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    c["retained"]["metadata"]["value_origin_receipt"] = blob({"claims": []})
+    record = c["retained"]["metadata"]["execution_input"]
+    c["index"]["entries"][0].update(bytes=len(record["bytes"]), sha256=record["sha256"])
+    item = c["view"]["inputs"][0]
+    item["used"] = ({"status": "known", "atom": atom(),
+                     "evidence": evidence(c["retained"], "execution_input", "/inputs/0/used/atom")}
+                    if numeric_status == "known" else {"status": "unknown", "atom": None, "evidence": None})
+    item["assigning"] = {**deepcopy(raw_assignment), "evidence": evidence(
+        c["retained"], "execution_input", "/inputs/0/assigning")}
+    return c
+
+
+@pytest.mark.parametrize("numeric_status", ["known", "unknown"])
+def test_e1_retained_runtime_assigning_is_authoritative_with_any_numeric_display(numeric_status):
+    runtime = {"status": "known", "kind": "execution_strategy", "source": None, "rule": "fixed_strategy"}
+    c = assigning_authority_case(runtime, numeric_status=numeric_status)
+    validate(c)
+    # Old frozen assignment is a genuine record but is not the latest assignment.
+    stale = case()["view"]["inputs"][0]["assigning"]
+    c["view"]["inputs"][0]["assigning"] = stale
+    with pytest.raises(ContractError):
+        validate(c)
+
+
+@pytest.mark.parametrize("numeric_status", ["known", "unknown"])
+def test_e1_same_runtime_and_frozen_assignment_allow_both_exact_evidence_paths(numeric_status):
+    c = case()
+    if numeric_status == "unknown":
+        c["view"]["inputs"][0]["used"] = {"status": "unknown", "atom": None, "evidence": None}
+    validate(c)
+    c["view"]["inputs"][0]["assigning"]["evidence"] = evidence(
+        c["retained"], "execution_input", "/inputs/0/assigning")
+    validate(c)
+
+
+def test_e1_genuinely_missing_runtime_retains_declared_assignment_fallback():
+    c = case()
+    del c["retained"]["metadata"]["execution_input"]
+    c["view"]["input_status"] = {"status": "unavailable", "reason": "snapshot_missing"}
+    c["view"]["inputs"][0]["used"] = {"status": "unknown", "atom": None, "evidence": None}
+    validate(c)
+    assert c["view"]["inputs"][0]["assigning"]["evidence"] == evidence(
+        c["retained"], "frozen_plan", "/assignment")
+
+
+@pytest.mark.parametrize("numeric_status", ["known", "unknown"])
+def test_e1_genuine_redacted_last_assignment_accepts_exact_nonnull_evidence(numeric_status):
+    redacted = {"status": "redacted", "kind": "config_file", "source": None, "rule": None}
+    c = assigning_authority_case(redacted, numeric_status=numeric_status)
+    before = deepcopy(c["view"])
+    validate(c)
+    assert c["view"] == before
+    assert c["view"]["inputs"][0]["assigning"]["source"] is None
+    assert c["view"]["inputs"][0]["assigning"]["evidence"] is not None
+
+
+@pytest.mark.parametrize("mutation", ["known_status", "wrong_leaf", "wrong_kind", "wrong_rule", "digest", "public_source", "private_path"])
+def test_e1_redacted_projection_cannot_fabricate_known_source_or_assignment(mutation):
+    redacted = {"status": "redacted", "kind": "config_file", "source": None, "rule": None}
+    if mutation == "known_status":
+        redacted.update(kind="execution_strategy", rule="fixed_strategy")
+    c = assigning_authority_case(redacted)
+    if mutation == "wrong_leaf":
+        # The sibling is a real identical redacted record: hash/record equality
+        # cannot distinguish it from the target; only leaf association can.
+        c["snapshot"]["inputs"][1]["assigning"] = deepcopy(redacted)
+        c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+        record = c["retained"]["metadata"]["execution_input"]
+        c["index"]["entries"][0].update(bytes=len(record["bytes"]), sha256=record["sha256"])
+        c["view"]["inputs"][0]["used"]["evidence"] = evidence(
+            c["retained"], "execution_input", "/inputs/0/used/atom")
+        c["view"]["inputs"][0]["assigning"]["evidence"] = evidence(
+            c["retained"], "execution_input", "/inputs/0/assigning")
+    validate(c)
+    assigning = c["view"]["inputs"][0]["assigning"]
+    if mutation == "known_status":
+        assigning["status"] = "known"
+    elif mutation == "wrong_leaf":
+        assigning["evidence"] = evidence(c["retained"], "execution_input", "/inputs/1/assigning")
+    elif mutation == "wrong_kind":
+        assigning["kind"] = "execution_strategy"
+    elif mutation == "wrong_rule":
+        assigning["rule"] = "fixed_strategy"
+    elif mutation == "digest":
+        assigning["evidence"]["sha256"] = "e" * 64
+    elif mutation == "public_source":
+        assigning["source"] = ref(c["retained"]["sources"], "public/assignment.json", "json_pointer", "/height")
+    else:
+        assigning["source"] = {**ref(c["retained"]["sources"], "public/assignment.json"),
+                                "path": "/private/operator/assignment.json"}
+    with pytest.raises(ContractError):
+        validate(c)
