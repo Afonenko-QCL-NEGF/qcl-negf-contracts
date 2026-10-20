@@ -1394,3 +1394,288 @@ def test_actual_repeated_passport_key_is_not_silently_last_wins():
     r["metadata"]["frozen_plan"] = {"bytes": payload, "sha256": digest(payload)}
     with pytest.raises(ContractError):
         validate(c, "snapshot")
+
+
+# DOC07 G2-L source-only controls. These are authored synthetic associations;
+# the map producer's publication/production recipe is not established here.
+RUNNER = "components/QCLNEGFRunner.jl"
+DECLARED_MAP = "docs/help/declared-input-map.json"
+
+
+def declared_map_document():
+    rows = [
+        ("physical.impurity_screening_wavenumber", "execution_configuration", "/physical/impurity_screening_wavenumber", "quantity", "nm^-1", "canonical_quantity_literal"),
+        ("physical.interface_correlation_length", "execution_configuration", "/physical/interface_correlation_length", "quantity", "nm", "canonical_quantity_literal"),
+        (PATH, "execution_configuration", "/physical/interface_roughness_height", "quantity", "nm", "canonical_quantity_literal"),
+        (TEMP, "point", "/temperature_K", "quantity", "K", "json_number"),
+        ("physical.lo_phonon_energy", "execution_configuration", "/physical/lo_phonon_energy", "quantity", "meV", "canonical_quantity_literal"),
+        ("physical.lo_screening_wavenumber", "execution_configuration", "/physical/lo_screening_wavenumber", "quantity", "nm^-1", "canonical_quantity_literal"),
+        ("physical.lo_temperature", "point", "/temperature_K", "quantity", "K", "json_number"),
+        ("production.energy_chunk", "execution_configuration", "/production/energy_chunk", "integer", "1", "json_integer"),
+    ]
+    return {"format": "qcl-negf.declared-input-map.v1", "rows": [dict(zip(
+        ("phase", "path", "base", "pointer", "atom_kind", "unit", "rule"),
+        ("declared", *row))) for row in rows]}
+
+
+def declared_projection_case(selected="P-1"):
+    c = actual_identity_case(selected)
+    r = c["retained"]
+    r["selection"]["sources"]["components"].append(
+        {"path": RUNNER, "revision": OTHER, "url": "https://example.org/runner.git"})
+    r["selection"]["sources"]["components"].sort(key=lambda row: row["path"])
+    r["sources"][(RUNNER, DECLARED_MAP)] = {"revision": OTHER, "bytes": raw(declared_map_document())}
+    reference = ref(r["sources"], DECLARED_MAP, "json_pointer", "", RUNNER)
+    r["declared_map_ref"] = reference
+    r["input_allowlist"] = (*r["input_allowlist"], (RUNNER, DECLARED_MAP))
+    r["selector_allowlist"] = (*r["selector_allowlist"], (RUNNER, DECLARED_MAP, "json_pointer", ""))
+    bundle = json.loads(r["bundle"]["bytes"])
+    r["public_reviews"] = (*r["public_reviews"], {
+        "source": {**reference, "selector": {"kind": "file", "value": ""}},
+        "recipe": bundle["generator"]["recipes"][0], "receipt": blob({"synthetic": True})})
+    plan = json.loads(r["metadata"]["frozen_plan"]["bytes"])
+    config = plan["executions"][0]["resolved_configuration"]
+    config["physical"].update(impurity_screening_wavenumber="0.2 nm^-1",
+        interface_correlation_length="9 nm", lo_phonon_energy="36 meV", lo_screening_wavenumber="0.3 nm^-1")
+    config["production"] = {"energy_chunk": 9007199254740993}
+    r["metadata"]["frozen_plan"] = blob(plan)
+    # Fresh synthetic publication graph, never production publication evidence.
+    c["bundle"]["sources"] = deepcopy(r["selection"]["sources"])
+    r["bundle"] = blob(c["bundle"])
+    manifest = json.loads(r["release_manifest"]["bytes"])
+    manifest["sources"] = deepcopy(r["selection"]["sources"])
+    r["release_manifest"] = blob(manifest)
+    receipt = json.loads(r["metadata"]["release_receipt"]["bytes"])
+    receipt.update(bundle_sha256=r["bundle"]["sha256"], release_manifest_sha256=r["release_manifest"]["sha256"])
+    r["metadata"]["release_receipt"] = blob(receipt)
+    c["view"]["binding"].update(bundle_sha256=receipt["bundle_sha256"],
+        release_manifest_sha256=receipt["release_manifest_sha256"])
+    return c
+
+
+def replace_declared_map(c, payload):
+    r = c["retained"]
+    r["sources"][(RUNNER, DECLARED_MAP)]["bytes"] = payload
+    r["declared_map_ref"]["sha256"] = digest(payload)
+    r["public_reviews"][-1]["source"]["sha256"] = digest(payload)
+
+
+@pytest.mark.parametrize("selected,temperature", [("P-1", 70.0), ("P-2", 71.0)])
+def test_declared_projection_exact_raw_evidence_and_point_overlay(selected, temperature):
+    from qcl_negf_contracts.model_help import _Evidence
+    c = declared_projection_case(selected)
+    session = _Evidence(c["retained"])
+    value, proof = session.scalar(PATH, "declared")
+    assert value == atom()
+    assert proof == evidence(c["retained"], "frozen_plan", "/executions/0/resolved_configuration/physical/interface_roughness_height")
+    assert session.evidence(proof) == "0.10 nm"  # Raw evidence stays raw.
+    assert session.scalar(TEMP, "declared")[0] == atom(temperature, "K")
+    assert session.declared_scalar(TEMP, "E-1", "P-2")[0] == atom(71.0, "K")
+    assert session.scalar("production.energy_chunk", "declared")[0] == atom(9007199254740993, "1", "integer")
+    assert session.scalar("unsupported.path", "declared") == (None, None)
+
+
+@pytest.mark.parametrize("mutation", ["owner", "revision", "hash", "selector", "extra", "duplicate_row", "order", "version", "unit", "rule", "pointer", "duplicate_key", "cap", "input_allowlist", "selector_allowlist"])
+def test_declared_map_supplied_contradictions_reject(mutation):
+    from qcl_negf_contracts.model_help import _Evidence
+    c = declared_projection_case()
+    r = c["retained"]
+    document = declared_map_document()
+    if mutation in {"owner", "revision", "hash", "selector"}:
+        key, value = {"owner": ("component", COMPONENT), "revision": ("revision", ROOT),
+            "hash": ("sha256", "0" * 64), "selector": ("selector", {"kind": "json_pointer", "value": "/rows"})}[mutation]
+        r["declared_map_ref"][key] = value
+    elif mutation in {"input_allowlist", "selector_allowlist"}:
+        r[mutation] = ()
+    else:
+        if mutation == "extra":
+            document["extra"] = 0
+        elif mutation == "duplicate_row":
+            document["rows"][1] = deepcopy(document["rows"][0])
+        elif mutation == "order":
+            document["rows"].reverse()
+        elif mutation == "version":
+            document["format"] = "qcl-negf.declared-input-map.v2"
+        elif mutation in {"unit", "rule", "pointer"}:
+            document["rows"][0][mutation] = "wrong"
+        payload = raw(document)
+        if mutation == "duplicate_key":
+            payload = payload.replace(b'"format":', b'"format":"duplicate","format":', 1)
+        if mutation == "cap":
+            payload = b" " * 4097 + payload
+        replace_declared_map(c, payload)
+    with pytest.raises(ContractError):
+        _Evidence(r).scalar(PATH, "declared")
+
+
+@pytest.mark.parametrize("missing", ["ref", "source", "review", "recipe"])
+def test_declared_map_missing_proof_does_not_authorize_known(missing):
+    from qcl_negf_contracts.model_help import _Evidence, _MissingProof
+    c = declared_projection_case()
+    r = c["retained"]
+    if missing == "ref":
+        del r["declared_map_ref"]
+    elif missing == "source":
+        del r["sources"][(RUNNER, DECLARED_MAP)]
+    elif missing == "review":
+        r["public_reviews"] = ()
+    else:
+        r["public_reviews"][-1]["recipe"] = {**r["public_reviews"][-1]["recipe"], "sha256": "0" * 64}
+    with pytest.raises(_MissingProof):
+        _Evidence(r).scalar(PATH, "declared")
+    c["snapshot"]["inputs"][0]["declared"] = {"status": "known", "atom": atom()}
+    r["metadata"]["execution_input"] = blob(c["snapshot"])
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+@pytest.mark.parametrize("literal", [None, True, {}, "0.1 m", "+0.1 nm", ".1 nm", "01 nm", "0.1  nm", " 0.1 nm", "1e999 nm", "NaN nm", "1\tnm", "1" * 65 + " nm"])
+def test_declared_unsupported_literals_remain_unknown(literal):
+    from qcl_negf_contracts.model_help import _Evidence
+    c = declared_projection_case()
+    r = c["retained"]
+    plan = json.loads(r["metadata"]["frozen_plan"]["bytes"])
+    plan["executions"][0]["resolved_configuration"]["physical"]["interface_roughness_height"] = literal
+    r["metadata"]["frozen_plan"] = blob(plan)
+    assert _Evidence(r).scalar(PATH, "declared") == (None, None)
+
+
+def test_declared_map_cap_precedes_source_decode(monkeypatch):
+    import qcl_negf_contracts.model_help as model_help
+    c = declared_projection_case()
+    replace_declared_map(c, b" " * 4097)
+    session = model_help._Evidence(c["retained"])
+    def forbidden(*args, **kwargs):
+        raise AssertionError("map source decode must not run before cap rejection")
+    monkeypatch.setattr(session, "source", forbidden)
+    with pytest.raises(ContractError):
+        session.scalar(PATH, "declared")
+
+
+def test_used_direct_atom_never_reads_declared_map():
+    from qcl_negf_contracts.model_help import _Evidence
+    c = declared_projection_case()
+    c["retained"]["declared_map_ref"] = {"malformed": True}
+    value, proof = _Evidence(c["retained"]).scalar(PATH, "used")
+    assert value == atom(0.2)
+    assert proof["container"] == "execution_input"
+
+
+def test_declared_known_snapshot_view_and_raw_pointer_controls():
+    c = declared_projection_case()
+    r = c["retained"]
+    c["snapshot"]["inputs"][0]["declared"] = {"status": "known", "atom": atom()}
+    r["metadata"]["execution_input"] = blob(c["snapshot"])
+    validate(c, "snapshot")
+    from qcl_negf_contracts.model_help import _Evidence
+    session = _Evidence(r)
+    _, proof = session.scalar(PATH, "declared")
+    item = c["view"]["inputs"][0]
+    item["declared"] = {"status": "known", "atom": atom(), "evidence": proof}
+    item["used"]["evidence"] = evidence(r, "execution_input", "/inputs/0/used/atom")
+    validate(c)
+    item["declared"]["evidence"] = evidence(r, "frozen_plan", "/points/0/temperature_K")
+    with pytest.raises(ContractError):
+        validate(c)
+    assert proof["selector"] != "/points/0/temperature_K"
+    assert c["view"]["inputs"][0]["value_origin"]["declared"]["status"] == "unknown"
+    c["snapshot"]["inputs"][0]["declared"]["atom"] = atom(0.2)
+    r["metadata"]["execution_input"] = blob(c["snapshot"])
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+@pytest.mark.parametrize("path,value,expected", [
+    ("physical.impurity_screening_wavenumber", "0.2 nm^-1", atom(0.2, "nm^-1")),
+    ("physical.interface_correlation_length", "9 nm", atom(9.0)),
+    (PATH, "-1.25e-1 nm", atom(-0.125)),
+    ("physical.lo_phonon_energy", "36 meV", atom(36.0, "meV")),
+    ("physical.lo_screening_wavenumber", "0.3 nm^-1", atom(0.3, "nm^-1")),
+    ("production.energy_chunk", True, None), ("production.energy_chunk", 1.0, None),
+    ("production.energy_chunk", None, None), (TEMP, True, None),
+    (TEMP, "70", None), (TEMP, None, None),
+])
+def test_declared_rule_types_and_exact_units(path, value, expected):
+    from qcl_negf_contracts.model_help import _Evidence
+    c = declared_projection_case()
+    r = c["retained"]
+    plan = json.loads(r["metadata"]["frozen_plan"]["bytes"])
+    if path == TEMP:
+        plan["points"][0]["temperature_K"] = value
+        plan["points"][0]["effective_inputs"]["temperature_K"] = value
+    else:
+        section, leaf = path.split(".")
+        plan["executions"][0]["resolved_configuration"][section][leaf] = value
+    r["metadata"]["frozen_plan"] = blob(plan)
+    if path == TEMP and (value is None or isinstance(value, (str, bool))):
+        # The pre-existing identity contract rejects contradictory point axes
+        # before projection; test primitive subset independently in that case.
+        from qcl_negf_contracts.model_help import _declared_atom
+        row = next(row for row in declared_map_document()["rows"] if row["path"] == path)
+        assert _declared_atom(value, row) is None
+    else:
+        actual, proof = _Evidence(r).scalar(path, "declared")
+        assert actual == expected
+        assert (proof is None) == (expected is None)
+
+
+def test_declared_index_uses_each_snapshot_context_for_equal_leaf_values():
+    c = declared_projection_case()
+    r = c["retained"]
+    for position, entry in enumerate(c["index"]["entries"]):
+        snapshot = json.loads(r["snapshot_files"][entry["path"]]["bytes"])
+        temperature = next(item for item in snapshot["inputs"] if item["path"] == TEMP)
+        temperature["declared"] = {"status": "known", "atom": atom(70.0 + position, "K")}
+        assert len({item["path"] for item in snapshot["inputs"]}) == len(snapshot["inputs"])
+        record = blob(snapshot)
+        inventory = {"bytes": len(record["bytes"]), "sha256": record["sha256"]}
+        r["snapshot_files"][entry["path"]] = {**record, "inventory": inventory}
+        entry.update(inventory)
+        if entry["point_id"] == r["selection"]["context"]["point_id"]:
+            c["snapshot"] = snapshot
+            r["metadata"]["execution_input"] = deepcopy(record)
+            assert r["metadata"]["execution_input"]["bytes"] == r["snapshot_files"][entry["path"]]["bytes"]
+    validate(c, "index")
+    selected_bytes = r["metadata"]["execution_input"]["bytes"]
+    sibling = c["index"]["entries"][1]
+    snapshot = json.loads(r["snapshot_files"][sibling["path"]]["bytes"])
+    temperature = next(item for item in snapshot["inputs"] if item["path"] == TEMP)
+    temperature["declared"]["atom"] = atom(70.0, "K")
+    record = blob(snapshot)
+    inventory = {"bytes": len(record["bytes"]), "sha256": record["sha256"]}
+    r["snapshot_files"][sibling["path"]] = {**record, "inventory": inventory}
+    sibling.update(inventory)
+    assert r["metadata"]["execution_input"]["bytes"] == selected_bytes
+    with pytest.raises(ContractError):
+        validate(c, "index")
+
+
+def test_declared_projection_does_not_create_origin_and_exact_receipt_can_bind():
+    c = declared_projection_case()
+    r = c["retained"]
+    assert _resolve_value_origin(c["reference"], None, phase="declared", retained=r)["status"] == "unknown"
+    claim = deepcopy(c["claim"])
+    claim["phase"] = "declared"
+    claim["conditions"][0]["phase"] = "declared"
+    receipt = claim["assignment_receipt"]
+    for field in ("plan_fingerprint", "execution_id", "point_id", "attempt"):
+        receipt[field] = r["selection"]["context"][field]
+    receipt["leaf_pointer"] = "/executions/0/resolved_configuration/physical/interface_roughness_height"
+    plan = json.loads(r["metadata"]["frozen_plan"]["bytes"])
+    plan["assignment"] = {"status": "known", "kind": "config_file", "source": receipt["source"], "rule": None}
+    r["metadata"]["frozen_plan"] = blob(plan)
+    c["snapshot"]["origin_bindings"] = [claim]
+    r["metadata"]["execution_input"] = blob(c["snapshot"])
+    r["metadata"]["value_origin_receipt"] = blob({"claims": [claim]})
+    result = _resolve_value_origin(c["reference"], claim, phase="declared", retained=r)
+    assert result["status"] == "bound"
+    assert result["binding"]["value"] == evidence(r, "frozen_plan", receipt["leaf_pointer"])
+    # Genuine sibling raw leaf exists and even matches: equality cannot choose it.
+    plan["executions"][0]["resolved_configuration"]["physical"]["interface_correlation_length"] = "0.10 nm"
+    r["metadata"]["frozen_plan"] = blob(plan)
+    receipt["leaf_pointer"] = "/executions/0/resolved_configuration/physical/interface_correlation_length"
+    c["snapshot"]["origin_bindings"] = [claim]
+    r["metadata"]["execution_input"] = blob(c["snapshot"])
+    r["metadata"]["value_origin_receipt"] = blob({"claims": [claim]})
+    result = _resolve_value_origin(c["reference"], claim, phase="declared", retained=r)
+    assert result["status"] == "unknown"

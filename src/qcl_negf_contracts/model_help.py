@@ -1,6 +1,7 @@
 """Private DOC07 bindings over finite, schema-valid documents and detached evidence.
 
-The caller owns IO, child selection, finite/C1 validation, and the association of
+The caller owns IO, child selection, finite/C1 validation, semantic scientific-plan
+validation (including global point-ID uniqueness), and the association of
 an opaque review receipt with its reviewed source and recipe. These routines
 verify exact bytes and relationships; they never import targets, read files,
 fetch locators, convert units, infer scientific origin, or mutate their inputs.
@@ -11,6 +12,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import hashlib
+import math
 from html.parser import HTMLParser
 import re
 from urllib.parse import unquote, urlsplit
@@ -28,6 +30,47 @@ _FORMATS = {
     "qcl-negf.model-help-inputs.v1": "snapshot",
     "qcl-negf.model-help-index.v1": "index",
 }
+
+# Closed authored Runner contract v1; no inferred paths, units or defaults.
+_DECLARED_MAP_OWNER = "components/QCLNEGFRunner.jl"
+_DECLARED_MAP_PATH = "docs/help/declared-input-map.json"
+_DECLARED_FIELDS = ("phase", "path", "base", "pointer", "atom_kind", "unit", "rule")
+_DECLARED_ROWS = (
+    ("physical.impurity_screening_wavenumber", "execution_configuration", "/physical/impurity_screening_wavenumber", "quantity", "nm^-1", "canonical_quantity_literal"),
+    ("physical.interface_correlation_length", "execution_configuration", "/physical/interface_correlation_length", "quantity", "nm", "canonical_quantity_literal"),
+    ("physical.interface_roughness_height", "execution_configuration", "/physical/interface_roughness_height", "quantity", "nm", "canonical_quantity_literal"),
+    ("physical.lattice_temperature", "point", "/temperature_K", "quantity", "K", "json_number"),
+    ("physical.lo_phonon_energy", "execution_configuration", "/physical/lo_phonon_energy", "quantity", "meV", "canonical_quantity_literal"),
+    ("physical.lo_screening_wavenumber", "execution_configuration", "/physical/lo_screening_wavenumber", "quantity", "nm^-1", "canonical_quantity_literal"),
+    ("physical.lo_temperature", "point", "/temperature_K", "quantity", "K", "json_number"),
+    ("production.energy_chunk", "execution_configuration", "/production/energy_chunk", "integer", "1", "json_integer"),
+)
+
+
+def _declared_atom(raw, row):
+    rule = row["rule"]
+    if rule == "json_integer":
+        if not isinstance(raw, int) or isinstance(raw, bool):
+            return None
+        value = raw  # Keep integer precision, including values above binary64.
+    else:
+        if rule == "canonical_quantity_literal":
+            if not isinstance(raw, str) or len(raw.encode("utf-8")) > 80:
+                return None
+            token, separator, unit = raw.partition(" ")
+            if (separator != " " or unit != row["unit"] or len(token) > 64 or
+                    re.fullmatch(r"-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?", token) is None):
+                return None
+            raw = token
+        elif not isinstance(raw, (int, float)) or isinstance(raw, bool):
+            return None
+        try:
+            value = float(raw)
+        except (ValueError, OverflowError):
+            return None
+        if not math.isfinite(value):
+            return None
+    return {"kind": row["atom_kind"], "value": value, "unit": row["unit"]}
 
 
 class _MissingProof(Exception):
@@ -369,6 +412,71 @@ class _Evidence:
             raise _MissingProof("frozen point passport is missing")
         return configuration, "/point/configuration"
 
+    def declared_map(self):
+        key = ("declared_map",)
+        if key in self.cache:
+            return self.cache[key]
+        reference = self.retained.get("declared_map_ref")
+        if reference is None:
+            raise _MissingProof("declared map reference is missing")
+        _require(isinstance(reference, dict) and set(reference) == {
+            "component", "revision", "path", "sha256", "selector"}, "malformed declared map reference")
+        _require(reference["component"] == _DECLARED_MAP_OWNER and
+                 reference["path"] == _DECLARED_MAP_PATH and
+                 _equal(reference["selector"], {"kind": "json_pointer", "value": ""}),
+                 "declared map owner/path/root selector mismatch")
+        # source_base verifies graph, original bytes/hash and recipe input.
+        # The map-specific cap MUST precede source()'s JSON decode.
+        payload = self.source_base(reference)
+        _require(len(payload) <= 4096, "declared map exceeds byte budget")
+        document = self.source(reference)  # Preserve selector/review/recipe checks.
+        _require(isinstance(document, dict) and set(document) == {"format", "rows"} and
+                 document["format"] == "qcl-negf.declared-input-map.v1",
+                 "unsupported declared map shape/version")
+        rows = document["rows"]
+        _require(isinstance(rows, list) and len(rows) == 8, "declared map requires eight rows")
+        limits = (8, 64, 32, 96, 8, 8, 32)
+        for row, expected in zip(rows, _DECLARED_ROWS):
+            _require(isinstance(row, dict) and set(row) == set(_DECLARED_FIELDS),
+                     "declared map row shape mismatch")
+            for field, limit in zip(_DECLARED_FIELDS, limits):
+                value = row[field]
+                _require(isinstance(value, str) and value.isascii() and len(value) <= limit,
+                         "declared map row field exceeds bounds")
+            _require(tuple(row[field] for field in _DECLARED_FIELDS) == ("declared", *expected),
+                     "declared map differs from closed ordered table")
+        self.cache[key] = {row["path"]: row for row in rows}
+        return self.cache[key]
+
+    def declared_scalar(self, path, execution_id=None, point_id=None):
+        if not self.actual_plan():
+            configuration, pointer = self.point_configuration(execution_id, point_id)
+            if path not in configuration:
+                return None, None
+            return configuration[path], self.make_evidence(
+                "frozen_plan", pointer + "/" + _escape(path))
+        # Membership and opaque passport identity precede map selection.
+        self.point_identity(execution_id, point_id)
+        execution, point, execution_index, point_index = self.actual_point(execution_id, point_id)
+        row = self.declared_map().get(path)
+        if row is None:
+            return None, None
+        if row["base"] == "point":
+            raw = point
+            pointer = f"/points/{point_index}"
+        else:
+            raw = execution.get("resolved_configuration")
+            pointer = f"/executions/{execution_index}/resolved_configuration"
+        # Missing raw leaves and unsupported primitives are unavailable values.
+        for part in row["pointer"][1:].split("/"):
+            if not isinstance(raw, dict) or part not in raw:
+                return None, None
+            raw = raw[part]
+        value = _declared_atom(raw, row)
+        if value is None:
+            return None, None
+        return value, self.make_evidence("frozen_plan", pointer + row["pointer"])
+
     def local_context(self, context, *, index_point=False):
         fields = tuple(key for key in _LOCAL_FIELDS if not (index_point and key in {"point_id", "configuration_hash"}))
         _require(all(_equal(context.get(key), self.context.get(key)) for key in fields),
@@ -410,11 +518,7 @@ class _Evidence:
 
     def scalar(self, path, phase):
         if phase == "declared":
-            configuration, pointer = self.point_configuration()
-            if path not in configuration:
-                return None, None
-            return configuration[path], self.make_evidence(
-                "frozen_plan", pointer + "/" + _escape(path))
+            return self.declared_scalar(path)
         snapshot = self.snapshot()
         for index, item in enumerate(snapshot["inputs"]):
             if item["path"] == path:
@@ -703,12 +807,13 @@ def _resolve(reference, claim, phase, session):
     expected_declared, declared_evidence = session.scalar(path, "declared")
     if declared_evidence is None or receipt["leaf_pointer"] != declared_evidence["selector"]:
         return _unknown("override_unbound")
-    if not _equal(plan_value, expected_declared):
+    if not session.actual_plan() and not _equal(plan_value, expected_declared):
         raise ContractError("model help: receipt leaf differs from frozen point value")
     if isinstance(assignment_value, dict) and {"kind", "value", "unit"} <= assignment_value.keys():
         if not _equal(assignment_value, value):
             return _unknown("override_unbound")
-    elif not _equal(assignment_value, value["value"]):
+    elif not (_equal(assignment_value, value["value"]) or
+              (phase == "declared" and session.actual_plan() and _equal(assignment_value, plan_value))):
         return _unknown("override_unbound")
 
     expected_conditions = reference["applicability"]["conditions"]
@@ -841,13 +946,11 @@ def _snapshot_contents(document, session, *, index_point=False):
     session.local_context(document["context"], index_point=index_point)
     _keyed(document["inputs"], "path", "snapshot input path")
     _keyed(document["origin_bindings"], lambda item: (item["reference_id"], item["phase"]), "origin claim")
-    configuration = None
     for item in document["inputs"]:
         if item["declared"]["status"] == "known":
-            if configuration is None:
-                configuration, _ = session.point_configuration(
-                    document["context"]["execution_id"], document["context"]["point_id"])
-            _require(item["path"] in configuration and _equal(item["declared"]["atom"], configuration[item["path"]]),
+            value, proof = session.declared_scalar(item["path"],
+                document["context"]["execution_id"], document["context"]["point_id"])
+            _require(proof is not None and _equal(item["declared"]["atom"], value),
                      "snapshot declared Atom differs from frozen point passport")
     for claim in document["origin_bindings"]:
         _keyed(claim["conditions"], "id", "claim condition id")
@@ -1067,7 +1170,8 @@ def _view(document, session):
             actual, proof = session.scalar(item["path"], phase)
             _require(proof is not None and _equal(state["atom"], actual), "projected scalar differs from selected phase")
             _require(_equal(state["evidence"], proof), "scalar evidence does not select its exact phase and leaf")
-            _require(_equal(session.evidence(state["evidence"]), actual), "scalar evidence value mismatch")
+            if phase == "used" or not session.actual_plan():
+                _require(_equal(session.evidence(state["evidence"]), actual), "scalar evidence value mismatch")
         _assigning(item, session)
         _effective(item, session)
         reference = mappings[item["path"]]["reference_value_origin"]
