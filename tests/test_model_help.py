@@ -625,6 +625,14 @@ def test_reference_shapes_hashes_selectors_and_no_eight_leaf_global_enum(validat
     assert_bad(validator, healthy, ("inputs", 0, "reference_value_origin", "applicability", "status"), "pass")
 
 
+@pytest.mark.parametrize("path", [("sources", "revision"), ("sources", "components", 0, "revision")])
+@pytest.mark.parametrize("invalid", ["a" * 39, "a" * 41, "A" * 40, "g" * 40, "a" * 40 + "\n"])
+def test_bundle_graph_root_and_component_sha_grammar(validator, path, invalid):
+    healthy = bundle()
+    validator.validate(healthy)
+    assert_bad(validator, healthy, path, invalid)
+
+
 def test_bundle_pinned_generator_and_inventory_types(validator):
     healthy = bundle()
     for field in ("name", "version", "uuid", "git_tree_sha1", "julia_version"):
