@@ -24,8 +24,10 @@ import json
 
 import pytest
 
+from qcl_negf_contracts import schema_validator
 from qcl_negf_contracts.messages import ContractError
 from qcl_negf_contracts.model_help import (
+    _Evidence,
     _resolve_value_origin,
     _validate_model_help_bindings,
 )
@@ -42,6 +44,62 @@ FRAGMENT_ID = "model.ifr"
 FRAGMENT_PATH = "help/fragments/model.ifr.json"
 FACTS = ("signature", "units", "default", "constraint", "effects", "errors",
          "formula_origin", "value_origin", "assigning_origin", "effective_origin")
+
+# Literal historical Root source-graph.json, not a maintained revision lock.
+# Its raw bytes and mixed-case order are independent of the consumer/producer.
+ACTUAL_GRAPH_BYTES = b'''{
+  "format": "qcl-negf.git-graph.v1",
+  "revision": "46709f7a89f0d537c055b01af784f3210fc7e204",
+  "components": [
+    {
+      "revision": "d8f8092ca1c76523d85384b4bac8198d8bfa736b",
+      "path": "components/qcl-negf-aiida",
+      "url": "https://github.com/Afonenko-QCL-NEGF/qcl-negf-aiida.git"
+    },
+    {
+      "revision": "f4009c933183d8537e289d2fa5fa898defd2d9b5",
+      "path": "components/qcl-negf-contracts",
+      "url": "https://github.com/Afonenko-QCL-NEGF/qcl-negf-contracts.git"
+    },
+    {
+      "revision": "f729e2681224d6537538179ab760fefefd575003",
+      "path": "components/qcl-negf-platform",
+      "url": "https://github.com/Afonenko-QCL-NEGF/qcl-negf-platform.git"
+    },
+    {
+      "revision": "2622de5ee28b454ff4f809cc3dd00c1e5bc2295d",
+      "path": "components/qcl-negf-portal",
+      "url": "https://github.com/Afonenko-QCL-NEGF/qcl-negf-portal.git"
+    },
+    {
+      "revision": "3ed8a9fe5f16f51bbcb7547ff2d677e8d3608731",
+      "path": "components/qcl-negf-research",
+      "url": "https://github.com/Afonenko-QCL-NEGF/qcl-negf-research.git"
+    },
+    {
+      "revision": "a0b426759959d9011a41e8d8812704774f950eda",
+      "path": "components/qcl-negf-results",
+      "url": "https://github.com/Afonenko-QCL-NEGF/qcl-negf-results.git"
+    },
+    {
+      "revision": "5b1cdd458eb07ff8c7c792642eda58d9061e1017",
+      "path": "components/QCLNEGF.jl",
+      "url": "https://github.com/Afonenko-QCL-NEGF/QCLNEGF.jl.git"
+    },
+    {
+      "revision": "f0e5950e6a4b4551aa54f039e9718042f34df8aa",
+      "path": "components/QCLNEGFRunner.jl",
+      "url": "https://github.com/Afonenko-QCL-NEGF/QCLNEGFRunner.jl.git"
+    }
+  ]
+}
+'''
+ACTUAL_PATHS = [
+    "components/qcl-negf-aiida", "components/qcl-negf-contracts",
+    "components/qcl-negf-platform", "components/qcl-negf-portal",
+    "components/qcl-negf-research", "components/qcl-negf-results",
+    "components/QCLNEGF.jl", "components/QCLNEGFRunner.jl",
+]
 
 
 def raw(value):
@@ -236,6 +294,123 @@ def case(*, reference_status="known", applicability_status="specified",
         "execution_id": "E-1", "point_id": "P-1", "attempt": 1, "status": "valid", "reason": "ok"}]}
     return {"retained": retained, "bundle": bundle, "fragment": fragment, "snapshot": snapshot, "index": index,
             "view": view, "reference": reference, "claim": claim}
+
+
+def actual_graph_docs_case():
+    """Actual historical graph, explicitly synthetic docs-only retained proofs."""
+    c = case()
+    graph = json.loads(ACTUAL_GRAPH_BYTES)
+    sources = {
+        (CONTRACTS, "src/qcl_negf_contracts/schemas/model-help.schema.json"): {
+            "revision": "f4009c933183d8537e289d2fa5fa898defd2d9b5",
+            "bytes": b'{"synthetic":"schema source"}'},
+        (COMPONENT, "docs/recipe.json"): {
+            "revision": "3ed8a9fe5f16f51bbcb7547ff2d677e8d3608731",
+            "bytes": b'{"synthetic":"reviewed recipe and toolchain"}'},
+    }
+    recipe = ref(sources, "docs/recipe.json")
+    bundle = c["bundle"]
+    bundle.update(sources=graph, fragments=[], aliases=[])
+    bundle["schema"] = ref(sources, "src/qcl_negf_contracts/schemas/model-help.schema.json",
+                           component=CONTRACTS)
+    bundle["generator"].update(recipes=[recipe], toolchain_lock=recipe)
+    bundle["files"] = [item for item in bundle["files"] if item["path"] == "research/model.html"]
+    retained = c["retained"]
+    retained["selection"]["sources"] = graph  # Shared intentionally, as in case().
+    retained["sources"] = sources
+    retained["input_allowlist"] = tuple(sources)
+    retained["selector_allowlist"] = tuple((component, path, "file", "")
+                                           for component, path in sources)
+    retained["public_reviews"] = tuple({
+        "source": ref(sources, path, component=component), "recipe": recipe,
+        "receipt": {"bytes": b"Synthetic docs-only review",
+                    "sha256": digest(b"Synthetic docs-only review")}}
+        for component, path in sources)
+    retained["payload"].pop(FRAGMENT_PATH)
+    retained.pop("fragment")
+    retained["output_allowlist"] = ("research/model.html",)
+    retained["bundle"] = blob(bundle)
+    retained["release_manifest"] = blob({"format": "qcl-negf.release.v2", "sources": graph, "wheels": []})
+    retained["selection"]["release_id"] = retained["release_manifest"]["sha256"]
+    retained["metadata"] = {"release_receipt": blob({
+        "context": retained["selection"]["context"],
+        "release_id": retained["release_manifest"]["sha256"],
+        "release_manifest_sha256": retained["release_manifest"]["sha256"],
+        "source_revision": graph["revision"], "bundle_sha256": retained["bundle"]["sha256"]})}
+    return c
+
+
+def test_actual_root_mixed_case_graph_preserves_identity_order_and_bytes():
+    c = actual_graph_docs_case()
+    retained = c["retained"]
+    graph = retained["selection"]["sources"]
+    before = raw(graph)
+    candidate_bytes = retained["bundle"]["bytes"]
+    assert digest(ACTUAL_GRAPH_BYTES) == "aeb06fc29c5efc4e8e745c6879e6fc9230fc1aef8b6f9c5ed4130d7ac1f6e69a"
+    assert [row["path"] for row in graph["components"]] == ACTUAL_PATHS
+    schema_validator("model-help.schema.json").validate(c["bundle"])
+    assert _Evidence(retained).graph() is graph
+    validate(c, "bundle")
+    _Evidence(retained).publication(c["bundle"])
+    assert raw(graph) == before
+    assert [row["path"] for row in graph["components"]] == ACTUAL_PATHS
+    assert retained["bundle"]["bytes"] == candidate_bytes
+
+
+@pytest.mark.parametrize("conflicting", [False, True])
+def test_actual_graph_duplicate_component_paths_are_rejected(conflicting):
+    c = actual_graph_docs_case()
+    validate(c, "bundle")
+    duplicate = deepcopy(c["bundle"]["sources"]["components"][0])
+    if conflicting:
+        duplicate.update(revision=OTHER, url="https://example.org/conflicting.git")
+    c["bundle"]["sources"]["components"].append(duplicate)
+    c["retained"]["bundle"] = blob(c["bundle"])
+    with pytest.raises(ContractError, match="duplicate source component"):
+        validate(c, "bundle")
+
+
+def test_actual_graph_bundle_reorder_does_not_reorder_selected_graph():
+    c = actual_graph_docs_case()
+    validate(c, "bundle")
+    retained = c["retained"]
+    selected_bytes = raw(retained["selection"]["sources"])
+    c["bundle"]["sources"] = deepcopy(c["bundle"]["sources"])
+    c["bundle"]["sources"]["components"].reverse()
+    retained["bundle"] = blob(c["bundle"])
+    receipt = json.loads(retained["metadata"]["release_receipt"]["bytes"])
+    receipt["bundle_sha256"] = retained["bundle"]["sha256"]
+    retained["metadata"]["release_receipt"] = blob(receipt)
+    with pytest.raises(ContractError, match="bundle differs from selected graph"):
+        validate(c, "bundle")
+    assert raw(retained["selection"]["sources"]) == selected_bytes
+
+
+def test_actual_graph_release_reorder_keeps_honest_hashes_and_selected_graph():
+    c = actual_graph_docs_case()
+    retained = c["retained"]
+    _Evidence(retained).publication(c["bundle"])
+    selected_bytes = raw(retained["selection"]["sources"])
+    manifest = json.loads(retained["release_manifest"]["bytes"])
+    manifest["sources"]["components"].reverse()  # Detached by decoding only this branch.
+    retained["release_manifest"] = blob(manifest)
+    retained["selection"]["release_id"] = retained["release_manifest"]["sha256"]
+    receipt = json.loads(retained["metadata"]["release_receipt"]["bytes"])
+    receipt.update(release_id=retained["release_manifest"]["sha256"],
+                   release_manifest_sha256=retained["release_manifest"]["sha256"])
+    retained["metadata"]["release_receipt"] = blob(receipt)
+    with pytest.raises(ContractError, match="release source graph mismatch"):
+        _Evidence(retained).publication(c["bundle"])
+    assert raw(retained["selection"]["sources"]) == selected_bytes
+
+
+def test_actual_graph_valid_sha_wrong_owner_revision_is_rejected():
+    c = actual_graph_docs_case()
+    validate(c, "bundle")
+    c["bundle"]["schema"]["revision"] = OTHER
+    c["retained"]["bundle"] = blob(c["bundle"])
+    with pytest.raises(ContractError, match="source revision mismatch"):
+        validate(c, "bundle")
 
 
 def repack(c, *, reidentify=False):

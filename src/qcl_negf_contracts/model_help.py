@@ -202,8 +202,7 @@ class _Evidence:
         _require(graph.get("format") == "qcl-negf.git-graph.v1", "unsupported selected graph")
         rows = graph["components"]
         _keyed(rows, "path", "source component")
-        _require([row["path"] for row in rows] == sorted(row["path"] for row in rows),
-                 "source graph is not sorted")
+        # Ordering belongs to the Root producer; comparisons retain exact sequence equality.
         for row in rows:
             _path(row["path"])
         return graph
