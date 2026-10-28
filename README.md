@@ -332,3 +332,132 @@ original bytes and separately bind their digest, native UUID and immutable froze
 This pure format API performs no storage, ORM access, process execution, plan lookup or
 ScientificAssessment construction. A valid card does not establish scientific acceptance;
 agent-report `question_snapshot` remains separate author text.
+
+## Producer phase source wire
+
+`producer-phase-segment.schema.json` and `producer-phase-source.schema.json` describe the separate
+technical producer protocol. Its Segment, Publication, Current and Cursor schemas are
+`qcl-negf.producer-phase-{segment,publication,current,cursor}.v1`, with contract set
+`qcl-negf.results.v2`. All fields, including nullable fields, are required and objects are closed.
+They reuse result Identity/FileRef/decimal Count atoms and the generated Core Int64 atom. They add
+no result artifact registry role and do not replace the Results telemetry Parquet catalog.
+
+```python
+from qcl_negf_contracts.telemetry import (
+    validate_phase_segment, validate_phase_publication,
+    validate_phase_current, validate_phase_cursor,
+)
+
+segment = validate_phase_segment(decoded_segment)
+publication = validate_phase_publication(decoded_publication, segment=segment,
+    segment_ref=verified_segment_ref, previous=previous_publication,
+    previous_ref=verified_previous_ref)
+current = validate_phase_current(decoded_current, publication=publication,
+    publication_ref=verified_publication_ref)
+cursor = validate_phase_cursor(decoded_cursor, publication=publication,
+    publication_ref=verified_publication_ref, segment=segment,
+    segment_ref=verified_segment_ref)
+```
+
+These pure APIs require the existing `[validation]` extra and return detached objects. Decode bytes
+with an explicit caller budget first. FileRefs require application/json and the exact schema, with
+canonical decimal bytes and confined relative paths. A digest declaration is not verification:
+callers read and verify actual bytes/hash, safe paths/symlinks, owner identity and committed-chain
+reachability before supplying immutable contexts. No referenced artifact is opened by these APIs.
+Unknown versions/sets raise `unsupported_format`, malformed shapes `invalid_input`, and
+contradictory bounded relations `corrupt_result`, using the existing `ContractError` and JSON-path
+diagnostics.
+
+Normal Segments contain only aggregates; diagnostic Segments contain only ordered begin/end events.
+Normal maps the actual Core metric name `cpu_seconds` to `process_cpu_seconds` by name alone,
+preserving value, unit, measurement status/reason at admission. The counter scope remains
+`process_inclusive_delta_on_end`: nested timing intervals may overlap or straddle batches, so sums
+are not exclusive CPU or a wall-time partition. Aggregate bounds describe contributing current-batch
+end ordinals, excluding an older span begin. Aggregate rows may overlap across distinct keys and
+need not be chronological. Diagnostic retains `cpu_seconds` and permits Core delivery gaps. Complete
+event context requires a span id; incomplete context requires explicit incomplete Health. Spans may
+cross Segments; the validator does not demand a locally balanced stack.
+
+Numbers denote finite Float64 (including integral-valued floats). Actual native Int64 metrics use
+`{kind:"integer",type:"Int64",decimal:"..."}` without JS Number rounding. Scalars retain explicit
+units, statuses and reasons. Measured requires a nonnull value; unavailable/error requires a reason
+and can retain an actual finite value. A producer represents a nonfinite source observation as null
+with its error/reason, never zero; raw NaN/Infinity is rejected. Each aggregate metric has
+`measured_calls + unavailable_calls == call_count`. Zero measured calls requires null sum; positive
+measured calls with null sum requires an explicit aggregation-failure reason such as
+`counter_overflow`. Summation failure does not relabel measured input calls as unavailable. Finite
+partial sums with unavailable-call reasons are valid. Format validation cannot prove the measured
+values or the declared aggregation failure.
+
+Every normal Aggregate requires a closed `time_bounds` object with exactly `min_start_monotonic_ns`,
+`max_end_monotonic_ns`, `measured_calls`, `unavailable_calls` and `reasons`. Bounds are nullable
+decimal Counts in nanoseconds in the enclosing Source.clock_domain_id; all keys remain present.
+Clock counts sum to Aggregate.call_count. Zero measured calls requires both bounds null; positive
+measured calls requires both nonnull with min_start<=max_end (equality is valid). Unavailable calls
+require unique nonempty reasons; fully measured clocks have no reasons. Partial envelopes cover only
+the measured contributing calls. Clock availability is independent of CPU/GC/allocation availability
+and cumulative Health; missing clocks never become [0,0].
+
+The producer derives each contributing interval from measured, nonnegative native Int64 start/end
+metrics in nanoseconds carried by the same actual phase_end event. End carries its token start even
+across batches; a second begin copy is unnecessary. A measured producer_monotonic_ns, when present,
+must equal end. Missing/invalid/reversed/mismatched pairs become unavailable with their actual
+reasons or producer_clock_missing, producer_clock_invalid, producer_clock_reversed or
+producer_clock_mismatch. Do not round Float64, parse string clocks, infer endpoints from duration,
+or substitute observer/seal time. These are P29 admission rules: the pure validator checks only the
+declared bounded envelope, without reading hidden events. An unfinished begin remains Current/Health
+tail evidence, not a completed aggregate call.
+
+Envelopes can overlap or begin before a previous seal; technical sequence/header/cursor ordering
+still uses current-batch end ordinals. Source anchors correlate an actual endpoint using
+UTC_anchor + (producer_monotonic - monotonic_anchor), within that Source/session/clock domain; they
+do not reconstruct discarded endpoints or prove cross-host synchronization/drift precision. Envelope
+width is not duration sum, busy/exclusive time or continuous coverage. Do not distribute
+CPU/GC/allocation sums uniformly across chart bins and present that as measured per-bin utilization.
+Normal preserves coarse placement; exact per-call chronology requires explicit diagnostic trace.
+
+Segment `observed_events` counts retained valid inputs consumed by this batch before projection;
+`coalesced_events` counts those folded/suppressed intentionally, at most once each. It is at most
+observed, and diagnostic coalescing is zero. Nonempty Segments have at least as many inputs as rows;
+empty/drop-only tails use Current/Health. Bounds equal min/max represented ordinals, excluding
+future queued inputs or dropped-only endpoints. Diagnostic sequence gaps require explicit incomplete
+Health. Normal projection can intentionally leave gaps without marking measurement incomplete.
+
+Health `events_seen`, `enqueued`, `sealed_events`, `coalesced_events`, all six `dropped` counters
+and `peak_buffered_bytes` are cumulative per Source/session. The queue/buffer/inflight/unsealed
+fields are gauges; `self_cost` metrics are independent measurements. Buffered bytes cannot exceed
+peak. Actual positive drops require incomplete Health and nonempty reasons; incomplete is sticky and
+its reasons/cumulative counters cannot decrease in supplied successive contexts. Gauges can
+decrease; no conservation equation is inferred between unlike counters. Publication Health may be
+later than Segment Health, with nondecreasing cumulative fields and different gauges/self-cost, so
+Segment encode/hash/sync costs are reported later without a self-cost cycle.
+
+Publication binds the exact supplied Segment reference/content, full Identity/Source, bounds, row
+count and `generation == segment_ordinal`. Ordinals strictly increase across supplied Publications
+but need not be adjacent. A nonnull predecessor requires its exact content and verified reference;
+initial publication rejects extra contexts. The local check rejects overlapping/reversed source
+ranges and adjacent segment path reuse even if its hash changes. A gap requires incomplete Health or
+normal mode plus positive batch/cumulative coalescing evidence. This is not proof of dense trace
+coverage. Only one previous Publication is inspected; older global immutable path uniqueness and
+chain reachability remain publisher/verified-reader gates.
+
+Current requires its exact Publication content/reference when its pointer is nonnull and rejects
+contexts for a null pointer. It checks full Identity/Source and cumulative Health. A live open phase
+alone is not a drop. A closed Current with an open phase or positive queue/unsealed/buffer/inflight
+tail must explicitly be incomplete; closed never means lossless or durable. When the self
+Publication reference is known (Current/Cursor and supplied predecessor), its path must differ from
+its Segment and previous Publication paths.
+
+Cursor requires the exact Publication and Segment references/contents, with their local binding; it
+does not recursively request ancestors. `next_row` is the zero-based next physical row. At zero,
+`last_sequence` precedes this Publication; after positive progress it equals the maximum represented
+upper ordinal across the consumed row prefix, including normal rows stored out of chronological
+order. `complete_at_observation=true` requires all rows consumed through Publication.last_sequence.
+It means committed-prefix read completion, never lossless measurement or future stream completion;
+false may also mean that more observed Publications remain. The caller verifies the observed head
+and advances a cursor only with its actual accepted output commit.
+
+The existing generator exports `ProducerPhaseSegment`, `ProducerPhaseSource`, shared `Phase_*` types
+and the offline schemas in `generated/contracts.ts`. The pure APIs do not establish queue bounds,
+crash durability, actual storage reads, reader transactions, native overhead or scientific
+acceptance. P29/P30 integration and runtime checks remain separate owning gates.

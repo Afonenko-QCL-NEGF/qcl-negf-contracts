@@ -1,0 +1,149 @@
+{
+  "schema": "qcl-negf.producer-phase-segment.v1",
+  "contract_set": "qcl-negf.results.v2",
+  "identity": {
+    "run_id": "manufactured-run",
+    "execution_id": "execution",
+    "point_id": "point",
+    "attempt": "1",
+    "branch_id": "branch",
+    "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "source": {
+    "session_id": "session-1",
+    "clock_domain_id": "monotonic:manufactured",
+    "utc_anchor_ns": "9007199254740993",
+    "monotonic_anchor_ns": "17"
+  },
+  "mode": "normal",
+  "segment_ordinal": "3",
+  "first_sequence": "4",
+  "last_sequence": "8",
+  "observed_events": "6",
+  "coalesced_events": "6",
+  "rows": [
+    {
+      "kind": "aggregate",
+      "stage": "scba",
+      "phase": "iteration",
+      "status": "ok",
+      "task_width": "2",
+      "counter_scope": "process_inclusive_delta_on_end",
+      "first_sequence": "4",
+      "last_sequence": "8",
+      "first_core_sequence": "15",
+      "last_core_sequence": "27",
+      "call_count": "2",
+      "metrics": [
+        {
+          "name": "duration_seconds",
+          "unit": "s",
+          "sum": 4.5,
+          "measured_calls": "2",
+          "unavailable_calls": "0",
+          "reasons": []
+        },
+        {
+          "name": "process_cpu_seconds",
+          "unit": "s",
+          "sum": 3.0,
+          "measured_calls": "2",
+          "unavailable_calls": "0",
+          "reasons": []
+        },
+        {
+          "name": "allocated_bytes",
+          "unit": "B",
+          "sum": {
+            "kind": "integer",
+            "type": "Int64",
+            "decimal": "9007199254740993"
+          },
+          "measured_calls": "2",
+          "unavailable_calls": "0",
+          "reasons": []
+        },
+        {
+          "name": "gc_seconds",
+          "unit": "s",
+          "sum": 0.125,
+          "measured_calls": "2",
+          "unavailable_calls": "0",
+          "reasons": []
+        },
+        {
+          "name": "gc_count",
+          "unit": "1",
+          "sum": {
+            "kind": "integer",
+            "type": "Int64",
+            "decimal": "3"
+          },
+          "measured_calls": "2",
+          "unavailable_calls": "0",
+          "reasons": []
+        }
+      ],
+      "time_bounds": {
+        "min_start_monotonic_ns": "9007199254741000",
+        "max_end_monotonic_ns": "9007204754741000",
+        "measured_calls": "2",
+        "unavailable_calls": "0",
+        "reasons": []
+      }
+    },
+    {
+      "kind": "aggregate",
+      "stage": "scba",
+      "phase": "nested",
+      "status": "ok",
+      "task_width": null,
+      "counter_scope": "process_inclusive_delta_on_end",
+      "first_sequence": "6",
+      "last_sequence": "6",
+      "first_core_sequence": null,
+      "last_core_sequence": null,
+      "call_count": "1",
+      "metrics": [],
+      "time_bounds": {
+        "min_start_monotonic_ns": "9007202754741000",
+        "max_end_monotonic_ns": "9007203254741000",
+        "measured_calls": "1",
+        "unavailable_calls": "0",
+        "reasons": []
+      }
+    }
+  ],
+  "health": {
+    "events_seen": "12",
+    "enqueued": "12",
+    "sealed_events": "8",
+    "dropped": {
+      "capacity": "0",
+      "contention": "0",
+      "oversized": "0",
+      "closed": "0",
+      "invalid": "0",
+      "writer_failure": "0"
+    },
+    "coalesced_events": "6",
+    "queued_events": "0",
+    "buffered_bytes": "0",
+    "peak_buffered_bytes": "256",
+    "inflight_bytes": "0",
+    "unsealed_events": "0",
+    "incomplete": false,
+    "incomplete_reasons": [],
+    "self_cost": [
+      {
+        "name": "encode_seconds",
+        "value": null,
+        "unit": "s",
+        "measurement_status": "not_measured",
+        "reason": "not_requested"
+      }
+    ]
+  },
+  "sealed": true
+}
