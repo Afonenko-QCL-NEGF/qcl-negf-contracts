@@ -1,0 +1,193 @@
+Julia 1.13.0; Core + Runner import: loaded; default pool=1
+ExactExecutionIdentity
+  core_code::String
+  julia::String
+  blas::String
+  fftw::String
+  scalar_type::String
+  index_type::String
+  reduction::String
+  worker_count::Int64
+  blas_threads::Int64
+  energy_chunk::Int64
+  hilbert_columns::Int64
+  residual_chunk::Int64
+  parallel_backend::Symbol
+ExactRestartIdentity
+  contract_version::UInt16
+  problem::NTuple{32, UInt8}
+  policy::NTuple{32, UInt8}
+  execution::NTuple{32, UInt8}
+ExactSolverState
+  identity::ExactRestartIdentity
+  boundary::Symbol
+  published_U::Vector{Float64}
+  published_n::Vector{Float64}
+  scba::SCBAResult
+  mixer_position::MixerPosition
+  family_order::Tuple{Vararg{Symbol}}
+  outer_history::Vector{OuterIteration}
+  progress::SolverProgress
+  continuation::Union{Nothing, OuterContinuation, SCBAContinuation}
+  status::Symbol
+  warnings::Tuple{Vararg{CoreRecord}}
+  policy_evaluations::Tuple{Vararg{CoreRecord}}
+  adaptation::Union{Nothing, DomainAdaptationState}
+  measurement_context::AcceptanceContext
+  final_evidence::Union{Nothing, FinalEvidenceSnapshot}
+  integrity::NTuple{32, UInt8}
+MixerPosition
+  applied_mixes::Int64
+  retained_mix_indices::Tuple{Vararg{Int64}}
+  last_reset_mix::Int64
+  last_reset_reason::Symbol
+  last_coefficient_fallback::Symbol
+SolverProgress
+  completed_outer::Int64
+  current_outer::Int64
+  accepted_scba::Int64
+  outer_strict_streak::Int64
+  inner_strict_streak::Int64
+  diagnostic_streak::Int64
+SCBAContinuation
+  decision::SCBAStopDecision
+  candidate::Union{Nothing, FixedPointAuditCandidate}
+  next_previous_current::Float64
+  next_previous_populations::Vector{Float64}
+  seed_mu_scaled::Union{Nothing, Float64}
+  seed_number_ratio::Union{Nothing, Float64}
+  witness_retention::Tuple{Int64, Int64, Int64}
+OuterContinuation
+  next_U::Vector{Float64}
+  next_action::Symbol
+AcceptanceContext
+  backend::Symbol
+  algorithms::AlgorithmOptions
+  hilbert_roundoff_measured::Union{Nothing, Bool}
+  map_kernels_shared_with_solver::Union{Nothing, Bool}
+  final_state_alignment::Symbol
+ProblemRebuildRecipe
+  physical::PhysicalParameters
+  numerical::NumericalParameters
+  scales::ScaleSystem
+  scattering::ScatteringOptions
+  models::PhysicalModelOptions
+  algorithms::AlgorithmOptions
+  kernel_options::ProductionKernelOptions
+DomainPreflightEvidence
+  discretization_id::String
+  basis_id::String
+  E_min_eV::Float64
+  E_max_eV::Float64
+  NE::Int64
+  energy_min_scaled::Float64
+  energy_max_scaled::Float64
+  required_min_scaled::Float64
+  required_max_scaled::Float64
+  reason::String
+  seed_transfer::String
+DomainMeasuredEvidence
+  discretization_id::String
+  basis_id::String
+  hartree_id::String
+  E_min_eV::Float64
+  E_max_eV::Float64
+  NE::Int64
+  energy_min_scaled::Float64
+  energy_max_scaled::Float64
+  required_min_scaled::Float64
+  required_max_scaled::Float64
+  tail_low::Float64
+  tail_high::Float64
+  edge_gamma::Float64
+  edge_spectral::Float64
+  scba_quality::Symbol
+  seconds::Float64
+  status::String
+  strict_accepted::Bool
+  metrics::Dict{Symbol, Float64}
+  current_A_per_m2::Float64
+  momentum_tail_unresolved::Bool
+  seed_transfer::String
+  reason::String
+DomainRevision
+  revision::Int64
+  source::Symbol
+  evidence::Union{DomainMeasuredEvidence, DomainPreflightEvidence}
+DomainAdaptationState
+  policy::DomainAdaptationPolicy
+  kernel_options::ProductionKernelOptions
+  expansions::Int64
+  elapsed_domain_seconds::Float64
+  current_problem::NTuple{32, UInt8}
+  current_problem_recipe::ProblemRebuildRecipe
+  revisions::Tuple{Vararg{DomainRevision}}
+  next_action::Symbol
+  decision_id::Int64
+  decision_committed::Bool
+  next_problem_recipe::Union{Nothing, ProblemRebuildRecipe}
+FinalEvidenceSnapshot
+  report::ConvergenceReport
+  original_converged::Bool
+  original_status::Symbol
+  observations::CoreRecord
+ScientificHistorySnapshot
+  action::Symbol
+  stage::Symbol
+  domain_revision::Int64
+  discretization_id::String
+  basis_id::String
+  outer_iteration::Int64
+  inner_iteration::Union{Nothing, Int64}
+  sequence::Int64
+  converged::Bool
+  status::Symbol
+  quality::Symbol
+  strict_streak::Int64
+  diagnostic_streak::Int64
+  units::Tuple{Vararg{Pair{Symbol, String}}}
+  missing_reasons::Tuple{Vararg{Pair{Symbol, Symbol}}}
+  row::Union{OuterIteration, SCBAIteration}
+CoreScalar
+  value::Union{Nothing, Bool, Float64, Int64, String, Symbol, ComplexF64}
+CoreList
+  values::Tuple{Vararg{CoreDatum}}
+CoreRecord
+  entries::Tuple{Vararg{Pair{String, CoreDatum}}}
+SolverMetric
+  name::Symbol
+  value::Union{Nothing, Bool, Float64, Int64, String}
+  unit::String
+  measurement_status::Symbol
+  reason::Union{Nothing, Symbol}
+SolverEvent
+  action::Symbol
+  stage::Symbol
+  label::String
+  status::Symbol
+  iteration::Union{Nothing, Int64}
+  total::Union{Nothing, Int64}
+  metrics::Tuple{Vararg{SolverMetric}}
+  message::String
+  sequence::Int64
+  outer_iteration::Union{Nothing, Int64}
+  inner_iteration::Union{Nothing, Int64}
+RevalidationReceipt
+  status::Symbol
+  reason::Union{Nothing, Symbol}
+  detail::String
+  context::AcceptanceContext
+  report::ConvergenceReport
+IndependentOracleReceipt
+  status::Symbol
+  reason::Union{Nothing, Symbol}
+  detail::String
+  context::Union{Nothing, AcceptanceContext}
+  report::Union{Nothing, ConvergenceReport}
+CompletedStateEvidence
+  original::FinalEvidenceSnapshot
+  revalidation::RevalidationReceipt
+  independent_oracle::IndependentOracleReceipt
+CoreArray{Float64}
+  shape::Tuple{Vararg{Int64}}
+  values::Vector{Float64}

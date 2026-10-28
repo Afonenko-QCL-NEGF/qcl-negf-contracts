@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pinned result cursor v2",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf.result-cursor.v1"
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v2"
+    },
+    "identity": {
+      "$ref": "result-common.schema.json#/$defs/Identity"
+    },
+    "invocation": {
+      "$ref": "result-common.schema.json#/$defs/Invocation"
+    },
+    "manifest": {
+      "$ref": "result-common.schema.json#/$defs/FileRef"
+    },
+    "history": {
+      "$ref": "result-common.schema.json#/$defs/HistoryPin"
+    },
+    "leaf": {
+      "anyOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "row_offset": {
+      "$ref": "result-common.schema.json#/$defs/Count"
+    },
+    "last_record": {
+      "$ref": "result-common.schema.json#/$defs/Count"
+    }
+  },
+  "required": [
+    "schema",
+    "contract_set",
+    "identity",
+    "invocation",
+    "manifest",
+    "history",
+    "leaf",
+    "row_offset",
+    "last_record"
+  ],
+  "additionalProperties": false
+}

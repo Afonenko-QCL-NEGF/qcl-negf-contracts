@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result pointer v2",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf.result-pointer.v1"
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v2"
+    },
+    "identity": {
+      "$ref": "result-common.schema.json#/$defs/Identity"
+    },
+    "generation": {
+      "$ref": "result-common.schema.json#/$defs/PositiveCount"
+    },
+    "manifest": {
+      "$ref": "result-common.schema.json#/$defs/FileRef"
+    }
+  },
+  "required": [
+    "schema",
+    "contract_set",
+    "identity",
+    "generation",
+    "manifest"
+  ],
+  "additionalProperties": false
+}

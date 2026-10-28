@@ -22,7 +22,7 @@
       ]
     },
     "contract_set": {
-      "const": "qcl-negf.results.v1"
+      "const": "qcl-negf.results.v2"
     },
     "transport_schema": {
       "const": "qcl-negf.export-archive.v1"

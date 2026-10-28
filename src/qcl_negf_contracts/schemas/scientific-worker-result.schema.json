@@ -436,7 +436,7 @@
       "uniqueItems": true
     },
     "contract_set": {
-      "const": "qcl-negf.results.v1"
+      "const": "qcl-negf.results.v2"
     }
   },
   "additionalProperties": false

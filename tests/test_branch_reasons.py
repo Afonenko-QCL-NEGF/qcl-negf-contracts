@@ -52,7 +52,7 @@ P6 = {'id': 'p6', 'execution_id': 'e1', 'attempt': 2, 'coordinates': {'temperatu
 
 def context(self_reason=False):
     plan = deepcopy(PLAN)
-    snapshot = {'schema': 'qcl-negf-series-result-v3', 'contract_set': 'qcl-negf.results.v1',
+    snapshot = {'schema': 'qcl-negf-series-result-v3', 'contract_set': 'qcl-negf.results.v2',
                 'plan_fingerprint': 'a' * 64, 'plan_scientific_fingerprint': 'b' * 64,
                 'root_definition_id': 'study', 'name': 'hand metadata',
                 'executions': [{key: deepcopy(entry[key]) for key in PROJECTION}
@@ -71,6 +71,13 @@ def corrupt(ctx):
     with pytest.raises(ContractError) as error:
         call(ctx)
     assert error.value.code == 'corrupt_result'
+
+
+def test_old_result_set_is_unsupported_without_legacy_fallback():
+    ctx = context(True); ctx['source_points']['contract_set'] = 'qcl-negf.results.v1'
+    with pytest.raises(ContractError) as caught:
+        call(ctx)
+    assert caught.value.code == 'unsupported_format'
 
 
 @pytest.mark.parametrize('reason', REASONS)
@@ -197,7 +204,7 @@ def test_utf8_limit_counts_bytes():
 def test_unknown_contract_is_incompatible(target, field):
     ctx = context(); ctx[target][field] = 'unknown'
     with pytest.raises(ContractError) as error: call(ctx)
-    assert error.value.code == 'incompatible_contract'
+    assert error.value.code == ('unsupported_format' if target == 'source_points' else 'incompatible_contract')
 
 
 @pytest.mark.parametrize('field', ['plan_fingerprint', 'plan_scientific_fingerprint', 'root_definition_id', 'name'])

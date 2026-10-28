@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Scientific row and witness update v2",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf.scientific-record.v1"
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v2"
+    },
+    "identity": {
+      "$ref": "result-common.schema.json#/$defs/Identity"
+    },
+    "invocation": {
+      "$ref": "result-common.schema.json#/$defs/Invocation"
+    },
+    "stream_ordinal": {
+      "$ref": "result-common.schema.json#/$defs/PositiveCount"
+    },
+    "row_key": {
+      "$ref": "core-state.schema.json#/$defs/ScientificRowKey"
+    },
+    "target": {
+      "anyOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/AppendTarget"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "core": {
+      "$ref": "core-state.schema.json#/$defs/ScientificHistorySnapshot"
+    }
+  },
+  "required": [
+    "schema",
+    "contract_set",
+    "identity",
+    "invocation",
+    "stream_ordinal",
+    "row_key",
+    "target",
+    "core"
+  ],
+  "additionalProperties": false
+}

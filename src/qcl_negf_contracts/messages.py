@@ -217,10 +217,11 @@ def branch_reason(record: object, *, plan: object, owner_point: object,
         execution = object_value(owner_execution, 'owner execution')
         for document in (frozen, snapshot, owner, execution):
             encode(document)
+        from .artifacts import CONTRACT_SET
+        if snapshot.get('contract_set') != CONTRACT_SET or snapshot.get('schema') != 'qcl-negf-series-result-v3':
+            raise ContractError('branch reason: unsupported result format', 'unsupported_format')
         if (frozen.get('schema') != 'qcl-negf-scientific-plan-v2'
-                or frozen.get('model_revision') != 'transport-contract-v2'
-                or snapshot.get('schema') != 'qcl-negf-series-result-v3'
-                or snapshot.get('contract_set') != 'qcl-negf.results.v1'):
+                or frozen.get('model_revision') != 'transport-contract-v2'):
             raise ContractError('branch reason: incompatible frozen plan/result contract',
                                 'incompatible_contract')
         _branch_id(frozen.get('root_definition_id'))
@@ -351,7 +352,7 @@ def branch_reason(record: object, *, plan: object, owner_point: object,
                         'source is not a declared ancestor')
         return warning
     except ContractError as error:
-        if error.code in ('corrupt_result', 'incompatible_contract'):
+        if error.code in ('corrupt_result', 'incompatible_contract', 'unsupported_format'):
             raise
         raise ContractError('branch reason: invalid or unavailable JSON provenance',
                             'corrupt_result') from error
