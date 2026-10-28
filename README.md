@@ -73,6 +73,21 @@ package remains independently buildable and testable from its native metadata.
 
 ## Result v2 boundaries
 
+The canonical `scientific-plan.schema.json` retains scientific-plan v2 and transport-contract v2,
+and requires the resolved snapshot marker, each execution's resolved snapshot/resource receipt and
+each point's model digest. `resolved-configuration.schema.json` defines the closed snapshot metadata
+containers; `resource-estimate.schema.json` defines the available analytical estimate and the
+not-applicable receipt. Unknown overhead/RSS/admission fields remain required nulls. Receipt counts
+are native JSON integers, distinct from decimal result-envelope counts and browser DTO tags.
+
+Use `schema_validator("scientific-plan.schema.json")` for structural plan validation; the existing
+`messages.scientific_plan` header/ID helper does not establish a full canonical schema pass. Strict
+JSON decode/encode supplies the finite-value boundary. Runner owns typed projection field inventory,
+units, raw replay, model/fingerprint recomputation and resource formulas. Snapshot metadata accepts
+recursive JSON values without duplicating Core parameter definitions. A schema pass does not prove
+scientific acceptance, measured memory, native admission or exact restart identity. Markerless plans
+do not satisfy this canonical schema; no legacy fallback or automatic migration is provided.
+
 ```python
 from qcl_negf_contracts.messages import decode
 from qcl_negf_contracts.results import validate_manifest, validate_scientific_record

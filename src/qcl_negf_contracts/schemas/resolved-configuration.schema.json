@@ -1,0 +1,231 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf-resolved-configuration-v1"
+    },
+    "phase": {
+      "const": "resolved_declarative_inputs"
+    },
+    "raw_configuration": {
+      "$ref": "run.schema.json"
+    },
+    "sections": {
+      "type": "object",
+      "properties": {
+        "physical": {
+          "$ref": "#/$defs/Section"
+        },
+        "numerical": {
+          "$ref": "#/$defs/Section"
+        },
+        "scales": {
+          "$ref": "#/$defs/Section"
+        },
+        "scattering": {
+          "$ref": "#/$defs/Section"
+        },
+        "solver": {
+          "$ref": "#/$defs/Section"
+        },
+        "production": {
+          "$ref": "#/$defs/Section"
+        },
+        "kernel_construction": {
+          "$ref": "#/$defs/Section"
+        },
+        "algorithms": {
+          "$ref": "#/$defs/Section"
+        },
+        "execution": {
+          "$ref": "#/$defs/Section"
+        },
+        "output": {
+          "$ref": "#/$defs/Section"
+        },
+        "study": {
+          "$ref": "#/$defs/Section"
+        },
+        "physical_models": {
+          "$ref": "#/$defs/Section"
+        },
+        "domain_adaptation": {
+          "$ref": "#/$defs/Section"
+        }
+      },
+      "required": [
+        "physical",
+        "numerical",
+        "scales",
+        "scattering",
+        "solver",
+        "production",
+        "kernel_construction",
+        "algorithms",
+        "execution",
+        "output",
+        "study",
+        "physical_models",
+        "domain_adaptation"
+      ],
+      "additionalProperties": false
+    },
+    "derived": {
+      "type": "object",
+      "properties": {
+        "effective_seed": {
+          "$ref": "#/$defs/Seed"
+        }
+      },
+      "required": [
+        "effective_seed"
+      ],
+      "additionalProperties": false
+    },
+    "default_rule_sources": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "result-common.schema.json#/$defs/Sha256"
+      }
+    },
+    "model_binding": {
+      "$ref": "#/$defs/ModelBinding"
+    }
+  },
+  "required": [
+    "schema",
+    "phase",
+    "raw_configuration",
+    "sections",
+    "derived",
+    "default_rule_sources",
+    "model_binding"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Resolved declarative configuration metadata; Runner owns typed semantic validation",
+  "$defs": {
+    "Metadata": {
+      "anyOf": [
+        {
+          "type": [
+            "null",
+            "boolean",
+            "number",
+            "string"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Metadata"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Metadata"
+          }
+        }
+      ]
+    },
+    "Section": {
+      "type": "object",
+      "properties": {
+        "used": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Metadata"
+          }
+        },
+        "origin": {
+          "const": "owning_resolution_rule"
+        },
+        "rule_source": {
+          "type": "string"
+        },
+        "input_assigning_histories": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "used",
+        "origin",
+        "rule_source",
+        "input_assigning_histories"
+      ],
+      "additionalProperties": false
+    },
+    "Seed": {
+      "type": "object",
+      "properties": {
+        "requested_scaled": {
+          "type": "number"
+        },
+        "effective_scaled": {
+          "type": "number"
+        },
+        "grid_floor_scaled": {
+          "type": "number"
+        },
+        "requested_eV": {
+          "type": "number"
+        },
+        "effective_eV": {
+          "type": "number"
+        },
+        "grid_floor_eV": {
+          "type": "number"
+        },
+        "working_eta_eV": {
+          "type": "number"
+        },
+        "clamped": {
+          "type": "boolean"
+        },
+        "rule": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "requested_scaled",
+        "effective_scaled",
+        "grid_floor_scaled",
+        "requested_eV",
+        "effective_eV",
+        "grid_floor_eV",
+        "working_eta_eV",
+        "clamped",
+        "rule"
+      ],
+      "additionalProperties": false
+    },
+    "ModelBinding": {
+      "type": "object",
+      "properties": {
+        "encoding": {
+          "const": "qcl-negf-canonical-bytes-v1"
+        },
+        "scope": {
+          "const": "stationary_transport_inputs_v1"
+        },
+        "sha256": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        }
+      },
+      "required": [
+        "encoding",
+        "scope",
+        "sha256"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Planning-only resource estimate receipt; never native admission or measured RSS",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Available"
+    },
+    {
+      "$ref": "#/$defs/NotApplicable"
+    }
+  ],
+  "$defs": {
+    "MemoryRow": {
+      "type": "object",
+      "properties": {
+        "resident_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "peak_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "breakdown": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          }
+        }
+      },
+      "required": [
+        "resident_bytes",
+        "peak_bytes",
+        "breakdown"
+      ],
+      "additionalProperties": false
+    },
+    "Available": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf-resource-estimate-v1"
+        },
+        "decision_kind": {
+          "const": "planning_estimate"
+        },
+        "status": {
+          "const": "available"
+        },
+        "confidence": {
+          "const": "analytical_conservative_uncalibrated"
+        },
+        "worker_capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "initial_energy_nodes": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 9223372036854775807
+        },
+        "declared_maximum_energy_nodes": {
+          "type": "integer",
+          "minimum": 3,
+          "maximum": 9223372036854775807
+        },
+        "adaptation_enabled": {
+          "type": "boolean"
+        },
+        "initial": {
+          "$ref": "#/$defs/MemoryRow"
+        },
+        "declared_cap": {
+          "$ref": "#/$defs/MemoryRow"
+        },
+        "retained_resident_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "estimated_numerical_peak_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "runtime_overhead_bytes": {
+          "type": "null"
+        },
+        "allocator_overhead_bytes": {
+          "type": "null"
+        },
+        "measured_rss_bytes": {
+          "type": "null"
+        },
+        "admitted_memory_bytes": {
+          "type": "null"
+        },
+        "total_memory_request_bytes": {
+          "type": "null"
+        },
+        "unknown": {
+          "const": [
+            "runtime_overhead",
+            "allocator_overhead",
+            "native_grant",
+            "measured_rss"
+          ]
+        },
+        "basis": {
+          "type": "object",
+          "properties": {
+            "core_estimator_sha256": {
+              "$ref": "result-common.schema.json#/$defs/Sha256"
+            },
+            "runner_formula_sha256": {
+              "$ref": "result-common.schema.json#/$defs/Sha256"
+            }
+          },
+          "required": [
+            "core_estimator_sha256",
+            "runner_formula_sha256"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema",
+        "decision_kind",
+        "status",
+        "confidence",
+        "worker_capacity",
+        "initial_energy_nodes",
+        "declared_maximum_energy_nodes",
+        "adaptation_enabled",
+        "initial",
+        "declared_cap",
+        "retained_resident_bytes",
+        "estimated_numerical_peak_bytes",
+        "runtime_overhead_bytes",
+        "allocator_overhead_bytes",
+        "measured_rss_bytes",
+        "admitted_memory_bytes",
+        "total_memory_request_bytes",
+        "unknown",
+        "basis"
+      ],
+      "additionalProperties": false
+    },
+    "NotApplicable": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf-resource-estimate-v1"
+        },
+        "status": {
+          "const": "not_applicable"
+        },
+        "decision_kind": {
+          "const": "planning_estimate"
+        },
+        "estimated_numerical_peak_bytes": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "schema",
+        "status",
+        "decision_kind",
+        "estimated_numerical_peak_bytes"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
