@@ -18,7 +18,8 @@
     "resources",
     "campaign",
     "nodes",
-    "science_archive_preflight"
+    "science_archive_preflight",
+    "resolved_snapshot_schema"
   ],
   "properties": {
     "schema": {
@@ -126,7 +127,9 @@
           "purpose",
           "repetition",
           "operation",
-          "effective_inputs"
+          "effective_inputs",
+          "resolved_snapshot",
+          "resource_estimate"
         ],
         "properties": {
           "id": {
@@ -229,6 +232,12 @@
           },
           "output": {
             "$ref": "output-policy.schema.json"
+          },
+          "resolved_snapshot": {
+            "$ref": "resolved-configuration.schema.json"
+          },
+          "resource_estimate": {
+            "$ref": "resource-estimate.schema.json"
           }
         },
         "additionalProperties": false,
@@ -325,7 +334,8 @@
               "voltage_per_period_V",
               "configuration_hash",
               "hash_encoding",
-              "axes_applied"
+              "axes_applied",
+              "model_sha256"
             ],
             "properties": {
               "temperature_K": {
@@ -344,6 +354,9 @@
               },
               "axes_applied": {
                 "const": true
+              },
+              "model_sha256": {
+                "$ref": "result-common.schema.json#/$defs/Sha256"
               }
             }
           }
@@ -443,6 +456,9 @@
         "object",
         "null"
       ]
+    },
+    "resolved_snapshot_schema": {
+      "const": "qcl-negf-resolved-configuration-v1"
     }
   },
   "additionalProperties": false
