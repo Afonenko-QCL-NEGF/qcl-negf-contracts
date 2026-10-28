@@ -23,6 +23,7 @@ _SCHEMAS = {
     'cursor': ('result-cursor.schema.json', 'qcl-negf.result-cursor.v1'),
     'checkpoint': ('checkpoint-declaration.schema.json', 'qcl-negf.checkpoint-declaration.v1'),
     'record': ('scientific-record.schema.json', 'qcl-negf.scientific-record.v1'),
+    'final_diagnostics': ('final-diagnostics.schema.json', 'qcl-negf.final-diagnostics.v1'),
 }
 _TOTALS = ('records', 'scba_rows', 'outer_rows', 'witness_updates', 'last_record')
 
@@ -333,6 +334,103 @@ def validate_checkpoint_declaration(value: object, *, manifest: object | None = 
         source = validate_manifest(manifest)
         for key in ('identity','lineage','invocation','state_id','state_sequence','history','numerical_binding'):
             _require(value[key] == source[key], '$.'+key, 'checkpoint differs from pinned manifest')
+    return value
+
+
+def validate_final_diagnostics(value: object, *, checkpoint: object, manifest: object,
+                               artifact_ref: object) -> Object:
+    """Bind complete stored observations to one caller-verified final source.
+
+    Required contexts are immutable decoded documents and the selected analysis
+    HDF FileRef. This pure check reads no files, verifies no hashes/native bytes,
+    and never computes PSD metrics, thresholds, revalidation or scientific pass.
+    Native owners check the header and same-open storage against this declaration.
+    """
+    value = _checked('final_diagnostics', value)
+    source = validate_manifest(manifest)
+    terminal = validate_checkpoint_declaration(checkpoint, manifest=source)
+    reference = _context_definition('FileRef', artifact_ref, '$.artifact_ref')
+    _file(reference, 'qcl-negf-physics-analysis-v5', '$.artifact_ref')
+    _require(reference['media_type'] == 'application/x-hdf5', '$.artifact_ref', 'analysis requires HDF5')
+    inventory = {row['path']: row for row in source['artifacts']}
+    selected = inventory.get(reference['path'])
+    _require(selected is not None and all(selected[key] == reference[key] for key in reference),
+             '$.artifact_ref', 'selected analysis FileRef absent from manifest')
+    _require(source['checkpoint'] is not None and value['checkpoint'] == source['checkpoint'],
+             '$.checkpoint', 'checkpoint FileRef differs from selected manifest')
+    _require(selected['role'] == 'physics.analysis' and selected['profile'] == 'science' and
+             selected['dependencies'] == [value['checkpoint']['path']],
+             '$.artifact_ref', 'analysis role/profile or direct checkpoint dependency differs')
+    anchor = inventory[value['checkpoint']['path']]
+    _require(set(anchor['dependencies']) == {item['path'] for item in terminal['payloads']},
+             '$.checkpoint', 'checkpoint dependencies differ from declared payloads')
+    for payload in terminal['payloads']:
+        _require(payload['path'] not in (reference['path'], value['checkpoint']['path']),
+                 '$.checkpoint', 'checkpoint payload would create an analysis/self hash cycle')
+        row = inventory.get(payload['path'])
+        _require(row is not None and all(row[key] == payload[key] for key in payload),
+                 '$.checkpoint', 'checkpoint payload FileRef absent or differs from manifest')
+    # Selected closure only; iterative DFS distinguishes back-edges from shared DAG leaves.
+    active, completed = set(), set()
+    pending = [(reference['path'], False)]
+    while pending:
+        path, leaving = pending.pop()
+        if leaving:
+            active.remove(path)
+            completed.add(path)
+        elif path not in completed:
+            _require(path not in active, '$.artifact_ref', 'selected dependency closure contains a cycle')
+            active.add(path)
+            pending.append((path, True))
+            pending.extend((dependency, False) for dependency in reversed(inventory[path]['dependencies']))
+    for key in ('identity', 'invocation', 'state_id', 'state_sequence'):
+        _require(value[key] == terminal[key], '$.'+key, 'diagnostics differ from final checkpoint')
+    state = _fields(terminal['state'])
+    _require(source['closed'] and source['status']['process']['state'] in
+             ('succeeded', 'failed', 'cancelled', 'interrupted') and
+             _symbol(state['boundary']) == 'final' and state['final_evidence'] is not None,
+             '$.checkpoint', 'closed global-final evidence required')
+    dimensions = {key: int(number) for key, number in value['dimensions'].items()}
+    _require(all(number <= 2**63-1 for number in dimensions.values()),
+             '$.dimensions', 'dimensions exceed actual Int64 domain')
+    ne, nk, nb = (dimensions[key] for key in ('energy', 'momentum', 'basis'))
+    shape = [str(ne), str(nk), str(nb), str(nb)]
+    green = _fields(_fields(state['scba'])['green'])
+    for name in ('Gᴿ', 'Gˡ', 'Gᵍ', 'A'):
+        _require(green[name]['shape'] == shape, '$.dimensions', 'dimensions differ from checkpoint Green axes')
+    for name, entries in value['solution_metrics'].items():
+        if entries is not None:
+            names = [row['name'] for row in entries]
+            _require(names == sorted(set(names)), '$.solution_metrics.'+name, 'metric names must be sorted and unique')
+    measured = value['positivity']
+    if measured['data'] is None:
+        _require(bool(measured['reason'].strip()), '$.positivity.reason', 'measurement cause must not be blank')
+        return value
+    data = measured['data']
+    _require(_integer(data['metric_version']) > 0, '$.positivity.data.metric_version', 'metric version must be positive')
+    for index, witness in enumerate(data['witnesses']):
+        ei, ki = (_integer(witness[key]) for key in ('energy_index', 'momentum_index'))
+        minimum = 1 if witness['status'] == 'measured' else 0
+        _require(minimum <= ei <= ne and minimum <= ki <= nk,
+                 '$.positivity.data.witnesses', 'witness coordinate outside declared domain')
+        _require(witness['matrix_kind'] == data['matrix_kinds'][index] or
+                 witness['status'] == 'error' and witness['matrix_kind'] == 'none',
+                 '$.positivity.data.witnesses', 'witness kind differs from its channel')
+        _require(witness['status'] != 'error' or not data['strict_threshold_satisfied'][index],
+                 '$.positivity.data.strict_threshold_satisfied', 'error witness cannot declare measured threshold satisfaction')
+    integrals = data['integrals']
+    shapes = {'spectral_integral': [nk, nb, nb], 'spectral_integral_eigenvalues': [nk, nb],
+              'spectral_trace_cumulative': [ne, nk], 'negative_energy_integral_scaled': [6, nk]}
+    for name, expected in shapes.items():
+        _require(integrals[name]['shape'] == [str(number) for number in expected],
+                 '$.positivity.data.integrals.'+name, 'integral shape differs from final domain')
+    total = _integer(integrals['total_blocks_per_kind'])
+    _require(total == ne*nk, '$.positivity.data.integrals.total_blocks_per_kind', 'full-grid block count differs')
+    for negative, beyond, invalid in zip(integrals['negative_block_count'],
+            integrals['beyond_backward_error_block_count'], integrals['invalid_block_count']):
+        n, b, e = map(_integer, (negative, beyond, invalid))
+        _require(0 <= b <= n <= total-e and 0 <= e <= total,
+                 '$.positivity.data.integrals', 'negative/beyond/invalid counts contradict full-grid coverage')
     return value
 
 
