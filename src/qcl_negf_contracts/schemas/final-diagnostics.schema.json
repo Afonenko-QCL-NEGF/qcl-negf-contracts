@@ -1,0 +1,578 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Complete stored final diagnostics v1; observations, not scientific acceptance",
+  "description": "Analysis-v5 local subresource. Core5b public diagnostic fields; frozen Core state graph unchanged. Pure validator binds caller-verified checkpoint/manifest/selected analysis FileRef; native I/O and numerical validity belong to producers/readers.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf.final-diagnostics.v1"
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v2"
+    },
+    "identity": {
+      "$ref": "result-common.schema.json#/$defs/Identity"
+    },
+    "invocation": {
+      "$ref": "result-common.schema.json#/$defs/Invocation"
+    },
+    "state_id": {
+      "$ref": "result-common.schema.json#/$defs/Id"
+    },
+    "state_sequence": {
+      "$ref": "result-common.schema.json#/$defs/PositiveCount"
+    },
+    "checkpoint": {
+      "$ref": "result-common.schema.json#/$defs/FileRef"
+    },
+    "dimensions": {
+      "$ref": "#/$defs/Dimensions"
+    },
+    "solution_metrics": {
+      "$ref": "#/$defs/SolutionMetricDiagnostics"
+    },
+    "positivity": {
+      "$ref": "#/$defs/PositivityMeasurement"
+    }
+  },
+  "required": [
+    "schema",
+    "contract_set",
+    "identity",
+    "invocation",
+    "state_id",
+    "state_sequence",
+    "checkpoint",
+    "dimensions",
+    "solution_metrics",
+    "positivity"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "MetricEntry": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "MetricMap": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/MetricEntry"
+      }
+    },
+    "SolutionMetricDiagnostics": {
+      "type": "object",
+      "properties": {
+        "summary_metrics": {
+          "$ref": "#/$defs/MetricMap"
+        },
+        "strict_limits": {
+          "$ref": "#/$defs/MetricMap"
+        },
+        "approximate_limits": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MetricMap"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "summary_metrics",
+        "strict_limits",
+        "approximate_limits"
+      ],
+      "additionalProperties": false
+    },
+    "PositivityWitness": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "measured",
+            "error"
+          ]
+        },
+        "matrix_kind": {
+          "enum": [
+            "spectral",
+            "occupied",
+            "unoccupied",
+            "broadening",
+            "raw_occupied",
+            "raw_unoccupied",
+            "none"
+          ]
+        },
+        "energy_index": {
+          "$ref": "core-state.schema.json#/$defs/Int64"
+        },
+        "momentum_index": {
+          "$ref": "core-state.schema.json#/$defs/Int64"
+        },
+        "minimum_eigenvalue": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "block_norm": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "floor": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "ratio": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "absolute_defect": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "relative_defect": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "backward_error": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "hermiticity_defect": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "construction_scale": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        }
+      },
+      "required": [
+        "status",
+        "matrix_kind",
+        "energy_index",
+        "momentum_index",
+        "minimum_eigenvalue",
+        "block_norm",
+        "floor",
+        "ratio",
+        "absolute_defect",
+        "relative_defect",
+        "backward_error",
+        "hermiticity_defect",
+        "construction_scale"
+      ],
+      "additionalProperties": false
+    },
+    "SpectralIntegral": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_diagnostics/arrays/spectral_integral"
+        },
+        "eltype": {
+          "const": "ComplexF64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "k"
+            },
+            {
+              "const": "a"
+            },
+            {
+              "const": "b"
+            }
+          ],
+          "items": false,
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "units": {
+          "const": "1"
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units"
+      ],
+      "additionalProperties": false
+    },
+    "SpectralEigenvalues": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_diagnostics/arrays/spectral_integral_eigenvalues"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "k"
+            },
+            {
+              "const": "state"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "1"
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units"
+      ],
+      "additionalProperties": false
+    },
+    "SpectralCumulative": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_diagnostics/arrays/spectral_trace_cumulative"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "E"
+            },
+            {
+              "const": "k"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "1"
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units"
+      ],
+      "additionalProperties": false
+    },
+    "NegativeIntegral": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_diagnostics/arrays/negative_energy_integral_scaled"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "matrix_kind"
+            },
+            {
+              "const": "k"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "scaled solver units; broadening carries energy squared"
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units"
+      ],
+      "additionalProperties": false
+    },
+    "MatrixIntegralDiagnostics": {
+      "type": "object",
+      "properties": {
+        "spectral_integral": {
+          "$ref": "#/$defs/SpectralIntegral"
+        },
+        "spectral_integral_eigenvalues": {
+          "$ref": "#/$defs/SpectralEigenvalues"
+        },
+        "spectral_trace_cumulative": {
+          "$ref": "#/$defs/SpectralCumulative"
+        },
+        "negative_energy_integral_scaled": {
+          "$ref": "#/$defs/NegativeIntegral"
+        },
+        "negative_block_count": {
+          "type": "array",
+          "items": {
+            "$ref": "core-state.schema.json#/$defs/Int64"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "beyond_backward_error_block_count": {
+          "type": "array",
+          "items": {
+            "$ref": "core-state.schema.json#/$defs/Int64"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "invalid_block_count": {
+          "type": "array",
+          "items": {
+            "$ref": "core-state.schema.json#/$defs/Int64"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "total_blocks_per_kind": {
+          "$ref": "core-state.schema.json#/$defs/Int64"
+        },
+        "negative_phase_space_weight_per_m2": {
+          "type": "array",
+          "items": {
+            "$ref": "core-state.schema.json#/$defs/Float64"
+          },
+          "minItems": 5,
+          "maxItems": 5
+        }
+      },
+      "required": [
+        "spectral_integral",
+        "spectral_integral_eigenvalues",
+        "spectral_trace_cumulative",
+        "negative_energy_integral_scaled",
+        "negative_block_count",
+        "beyond_backward_error_block_count",
+        "invalid_block_count",
+        "total_blocks_per_kind",
+        "negative_phase_space_weight_per_m2"
+      ],
+      "additionalProperties": false
+    },
+    "PositivityDiagnostics": {
+      "type": "object",
+      "properties": {
+        "metric_version": {
+          "$ref": "core-state.schema.json#/$defs/Int64"
+        },
+        "matrix_kinds": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "spectral"
+            },
+            {
+              "const": "occupied"
+            },
+            {
+              "const": "unoccupied"
+            },
+            {
+              "const": "broadening"
+            },
+            {
+              "const": "raw_occupied"
+            },
+            {
+              "const": "raw_unoccupied"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "witnesses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PositivityWitness"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "strict_ratio_limit": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "strict_absolute_limits_scaled": {
+          "type": "array",
+          "items": {
+            "$ref": "core-state.schema.json#/$defs/Float64"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "strict_threshold_satisfied": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "scan_order": {
+          "const": "momentum_energy"
+        },
+        "integrals": {
+          "$ref": "#/$defs/MatrixIntegralDiagnostics"
+        }
+      },
+      "required": [
+        "metric_version",
+        "matrix_kinds",
+        "witnesses",
+        "strict_ratio_limit",
+        "strict_absolute_limits_scaled",
+        "strict_threshold_satisfied",
+        "scan_order",
+        "integrals"
+      ],
+      "additionalProperties": false
+    },
+    "Dimensions": {
+      "type": "object",
+      "properties": {
+        "energy": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "momentum": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "basis": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        }
+      },
+      "required": [
+        "energy",
+        "momentum",
+        "basis"
+      ],
+      "additionalProperties": false
+    },
+    "PositivityMeasurement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "measured"
+            },
+            "reason": {
+              "type": "null"
+            },
+            "data": {
+              "$ref": "#/$defs/PositivityDiagnostics"
+            }
+          },
+          "required": [
+            "status",
+            "reason",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "error",
+                "not_measured"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "data": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "status",
+            "reason",
+            "data"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

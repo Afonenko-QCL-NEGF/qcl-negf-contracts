@@ -1,0 +1,149 @@
+{
+  "scope": "published_public_type_declarations_only_not_a_runtime_oracle",
+  "core_revision": "5b50930c0022e5b18ae52faa8b22ba2b5c9d95e4",
+  "path": "src/domain/diagnostic_types.jl",
+  "source_sha256": "b9f8d5fddd19436d24b215b048be1e7873035c96be010b78eac9a2d655ec029d",
+  "index_type": "Int64",
+  "types": {
+    "SolutionMetricDiagnostics": [
+      {
+        "name": "summary_metrics",
+        "julia_type": "Dict{Symbol,Float64}"
+      },
+      {
+        "name": "strict_limits",
+        "julia_type": "Dict{Symbol,Float64}"
+      },
+      {
+        "name": "approximate_limits",
+        "julia_type": "Union{Nothing,Dict{Symbol,Float64}}"
+      }
+    ],
+    "PositivityWitness": [
+      {
+        "name": "status",
+        "julia_type": "Symbol"
+      },
+      {
+        "name": "matrix_kind",
+        "julia_type": "Symbol"
+      },
+      {
+        "name": "energy_index",
+        "julia_type": "Int"
+      },
+      {
+        "name": "momentum_index",
+        "julia_type": "Int"
+      },
+      {
+        "name": "minimum_eigenvalue",
+        "julia_type": "Float64"
+      },
+      {
+        "name": "block_norm",
+        "julia_type": "Float64"
+      },
+      {
+        "name": "floor",
+        "julia_type": "Float64"
+      },
+      {
+        "name": "ratio",
+        "julia_type": "Float64"
+      },
+      {
+        "name": "absolute_defect",
+        "julia_type": "Float64"
+      },
+      {
+        "name": "relative_defect",
+        "julia_type": "Float64"
+      },
+      {
+        "name": "backward_error",
+        "julia_type": "Float64"
+      },
+      {
+        "name": "hermiticity_defect",
+        "julia_type": "Float64"
+      },
+      {
+        "name": "construction_scale",
+        "julia_type": "Float64"
+      }
+    ],
+    "MatrixIntegralDiagnostics": [
+      {
+        "name": "spectral_integral",
+        "julia_type": "Array{ComplexF64,3}"
+      },
+      {
+        "name": "spectral_integral_eigenvalues",
+        "julia_type": "Matrix{Float64}"
+      },
+      {
+        "name": "spectral_trace_cumulative",
+        "julia_type": "Matrix{Float64}"
+      },
+      {
+        "name": "negative_energy_integral_scaled",
+        "julia_type": "Matrix{Float64}"
+      },
+      {
+        "name": "negative_block_count",
+        "julia_type": "NTuple{6,Int}"
+      },
+      {
+        "name": "beyond_backward_error_block_count",
+        "julia_type": "NTuple{6,Int}"
+      },
+      {
+        "name": "invalid_block_count",
+        "julia_type": "NTuple{6,Int}"
+      },
+      {
+        "name": "total_blocks_per_kind",
+        "julia_type": "Int"
+      },
+      {
+        "name": "negative_phase_space_weight_per_m2",
+        "julia_type": "NTuple{5,Float64}"
+      }
+    ],
+    "PositivityDiagnostics": [
+      {
+        "name": "metric_version",
+        "julia_type": "Int"
+      },
+      {
+        "name": "matrix_kinds",
+        "julia_type": "NTuple{6,Symbol}"
+      },
+      {
+        "name": "witnesses",
+        "julia_type": "NTuple{6,PositivityWitness}"
+      },
+      {
+        "name": "strict_ratio_limit",
+        "julia_type": "Float64"
+      },
+      {
+        "name": "strict_absolute_limits_scaled",
+        "julia_type": "NTuple{6,Float64}"
+      },
+      {
+        "name": "strict_threshold_satisfied",
+        "julia_type": "NTuple{6,Bool}"
+      },
+      {
+        "name": "scan_order",
+        "julia_type": "Symbol"
+      },
+      {
+        "name": "integrals",
+        "julia_type": "Union{Nothing,MatrixIntegralDiagnostics}"
+      }
+    ]
+  }
+}

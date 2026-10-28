@@ -173,6 +173,99 @@ process execution from convergence, physics, discretization and experiment: `rec
 owning evidence reference exists, never scientific pass. Original, fresh revalidation and
 independent-oracle receipts remain distinct.
 
+### Полные raw final diagnostics
+
+`final-diagnostics.schema.json` объявляет `qcl-negf.final-diagnostics.v1`: локальный JSON
+subresource уже зарегистрированного native5 HDF `qcl-negf-physics-analysis-v5`, role
+`physics.analysis`, profile `science`. Declaration хранится как bounded fixed-width UTF-8 scalar
+`/final_diagnostics/declaration_json`, representation `final_diagnostics`. Это отдельная admission
+ветка native reader; она не расширяет Core-state `array_payload`/`record_leaf` и graph129. Данная
+поставка определяет Contracts boundary; producer/reader требуют отдельной квалификации.
+
+```python
+from qcl_negf_contracts.results import validate_final_diagnostics
+
+checked = validate_final_diagnostics(
+    declaration,
+    checkpoint=verified_checkpoint_document,
+    manifest=verified_manifest_document,
+    artifact_ref=verified_selected_analysis_file_ref,
+)
+```
+
+Все три keyword contexts обязательны. Caller сначала bounded-decodes JSON и проверяет bytes/hash
+выбранных immutable файлов. Pure validator не открывает файлы, не следует по каталогам/dependencies,
+не проверяет HDF или подлинность SHA256, не вызывает Core и не вычисляет научную приёмку. Он
+связывает все пять FileRef fields выбранного analysis с manifest inventory, точные
+identity/epoch/state id и sequence с checkpoint и manifest, а numerical binding — через существующий
+checkpoint validator. `checkpoint` FileRef должен полностью совпадать с manifest checkpoint; direct
+dependencies analysis ровно `[checkpoint.path]`. Checkpoint dependencies совпадают с его payload
+frontier; полные FileRefs payloads также совпадают с inventory и не могут ссылаться на сам
+checkpoint или selected analysis. Reachable dependency closure выбранного analysis проверяется на
+cycles итеративно, без рекурсии и файлового I/O. Branching, shared leaves и forward/transitive DAG
+разрешены; порядок inventory не задаёт topological order. Это scoped gate нового boundary, не
+изменение старого manifest validator или проверка unrelated inventory closure. Dependency cycle и
+круговая зависимость actual file hashes — разные утверждения; validator не экспериментирует с hash
+fixed points. Требуются closed global `final`, non-null original final evidence и terminal process
+state, включая failed/cancelled/interrupted. Сам payload не содержит собственного FileRef/manifest
+hash: зависимости направлены analysis → checkpoint → state/history, без hash cycle.
+
+Закрытый declaration содержит `schema`, `contract_set`, `identity`, `invocation`, `state_id`,
+`state_sequence`, `checkpoint`, `dimensions`, `solution_metrics`, `positivity`. Dimensions — actual
+positive Int64-domain decimal counts `energy`, `momentum`, `basis`; они должны совпадать с
+`(E,k,a,b)` shapes всех четырёх checkpoint Green arrays. Это не реконструкция problem или новая
+discretization.
+
+`solution_metrics` сохраняет все поля Core `SolutionMetricDiagnostics`: `summary_metrics`,
+`strict_limits`, `approximate_limits`. Maps — sorted unique `{name,value}` entries; symbol names
+сохраняются строками, включая пустое имя; `nothing` optional limits — явный `null`, отличный от
+`[]`. Final-over-history precedence вычисляет public Core getter, а encoder сохраняет его выход.
+
+`positivity={status,reason,data}` отделяет successful invocation (`measured`, null reason, полные
+данные) от `error`/`not_measured` (непустая причина, null data). Measured scan может содержать
+`PositivityWitness.status="error"`: это не измеренный pass. I/O failure принадлежит writer и не
+должен публиковаться как выполненный scan. Полные данные включают все восемь полей
+`PositivityDiagnostics`: metric version, шесть matrix kinds, шесть witnesses, ratio limit, шесть
+absolute limits и threshold flags, scan order и integrals. Full-final вариант требует
+`scan_order="momentum_energy"` и non-null integrals от
+`positivity_diagnostics(...; integrate=true)`; light scan не удовлетворяет этому контракту.
+
+Каждый witness сохраняет все 13 public fields: status, matrix kind, energy/momentum indices, minimum
+eigenvalue, block norm, floor, ratio, absolute/relative defect, backward error, hermiticity defect и
+construction scale. Error sentinel `none`/нулевые coordinates и legacy scalar defaults не теряются;
+error witness не может объявить measured threshold satisfaction. Scalar evidence и limits не
+пересчитываются и не исправляются validator. В частности, IEEE diagnostics failed state сохраняются
+независимо от scientific classification.
+
+Float64 — существующий Core IEEE tag `{kind:"ieee",type:"f64",bits:"16 lowercase hex"}`, включая
+signed zero, ±Inf и произвольные NaN payloads; JSON float/NaN/null не заменяет этот tag. Integers —
+существующий Core Int64 tag с canonical decimal и range check. Counts не переводятся в Float64.
+Четыре local array descriptors имеют fixed unique paths `/final_diagnostics/arrays/<field>`, exact
+eltype, decimal shape, `order="F"`, axes и units; собственного FileRef внутри них нет:
+
+| Field                             | Shape / axes               | Eltype / units                                                     |
+| --------------------------------- | -------------------------- | ------------------------------------------------------------------ |
+| `spectral_integral`               | `(Nk,Nb,Nb)` / `k,a,b`     | ComplexF64 / `1`                                                   |
+| `spectral_integral_eigenvalues`   | `(Nk,Nb)` / `k,state`      | Float64 / `1`                                                      |
+| `spectral_trace_cumulative`       | `(NE,Nk)` / `E,k`          | Float64 / `1`                                                      |
+| `negative_energy_integral_scaled` | `(6,Nk)` / `matrix_kind,k` | Float64 / `scaled solver units; broadening carries energy squared` |
+
+Native owner проверяет exact little-endian Float64 / consecutive `r,i` ComplexF64 storage, logical
+axis mapping, filters, chunks и allocation/read budgets до чтения. Rank-3 analysis array не является
+новой веткой frozen Core graph. Остальные пять integral fields inline: три Int64 count tuples длины
+6, `total_blocks_per_kind=NE*Nk`, пять raw IEEE phase-space weights в `m^-2` для kinds
+spectral/occupied/unoccupied/raw_occupied/raw_unoccupied; broadening сюда не входит. Проверяются
+nonnegative counts, beyond ≤ negative ≤ total−invalid; спектральные данные не исправляются и не
+реконструируются.
+
+Порядок шести kinds фиксирован public Core: spectral, occupied, unoccupied, broadening,
+raw_occupied, raw_unoccupied. Witness scalars/absolute limits используют scaled solver units
+соответствующего matrix kind; physical-unit display projection хранится отдельно и не заменяет raw
+source. Четыре integral arrays записываются один раз, без копии Green/Σ/history/witness matrices и
+без второго scan для display. Stored observations не являются independent oracle или свидетельством
+convergence, physics, discretization либо experiment. Missing analysis означает unavailable
+capability; legacy v4 fallback и скрытый derive/selected-map/solve не предусмотрены.
+
 The wheel includes `qcl_negf_contracts/generated/contracts.ts`, with generated DTO types and the
 offline schema bundle. Counts/IEEE bits are strings in TypeScript. This is a schema/type export, not
 a second runtime physics validator. In an already prepared development environment:
