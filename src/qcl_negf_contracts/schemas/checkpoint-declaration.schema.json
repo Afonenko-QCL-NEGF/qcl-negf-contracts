@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Exact checkpoint declaration v2",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf.checkpoint-declaration.v1"
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v2"
+    },
+    "identity": {
+      "$ref": "result-common.schema.json#/$defs/Identity"
+    },
+    "lineage": {
+      "$ref": "result-common.schema.json#/$defs/Lineage"
+    },
+    "invocation": {
+      "$ref": "result-common.schema.json#/$defs/Invocation"
+    },
+    "state_id": {
+      "$ref": "result-common.schema.json#/$defs/Id"
+    },
+    "state_sequence": {
+      "$ref": "result-common.schema.json#/$defs/PositiveCount"
+    },
+    "core_layout_sha256": {
+      "$ref": "result-common.schema.json#/$defs/Sha256"
+    },
+    "numerical_binding": {
+      "$ref": "result-common.schema.json#/$defs/NumericalBinding"
+    },
+    "history": {
+      "$ref": "result-common.schema.json#/$defs/HistoryPin"
+    },
+    "state": {
+      "$ref": "core-state.schema.json#/$defs/ExactSolverState"
+    },
+    "payloads": {
+      "type": "array",
+      "items": {
+        "$ref": "result-common.schema.json#/$defs/FileRef"
+      }
+    },
+    "witness_targets": {
+      "type": "array",
+      "items": {
+        "$ref": "result-common.schema.json#/$defs/WitnessTarget"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "contract_set",
+    "identity",
+    "lineage",
+    "invocation",
+    "state_id",
+    "state_sequence",
+    "core_layout_sha256",
+    "numerical_binding",
+    "history",
+    "state",
+    "payloads",
+    "witness_targets"
+  ],
+  "additionalProperties": false
+}

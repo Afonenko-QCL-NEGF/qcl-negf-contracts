@@ -11,8 +11,14 @@ from qcl_negf_contracts.messages import ContractError
     {"state_id": "s", "state_sequence": 1},
 ])
 def test_invalid_or_conflicting_state_coordinates_are_rejected(state):
-    value = {"schema": "qcl-negf.artifact-commit.v2", "contract_set": CONTRACT_SET,
-             "generation": 1, "identity": {"state_id": "other", "state_sequence": 1},
-             "artifacts": [], **state}
-    with pytest.raises(ContractError, match="state identity"):
+    from test_results_v2 import manifest
+    value = {**manifest(), **state}
+    value['identity'] = {**value['identity'], 'state_id': 'other', 'state_sequence': 1}
+    with pytest.raises(ContractError):
         validate_commit(value)
+
+
+def test_old_commit_is_explicitly_unsupported():
+    with pytest.raises(ContractError) as caught:
+        validate_commit({'schema':'qcl-negf.artifact-commit.v2','contract_set':'qcl-negf.results.v1'})
+    assert caught.value.code == 'unsupported_format'

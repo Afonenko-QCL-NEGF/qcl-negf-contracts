@@ -34,7 +34,7 @@ def test_all_schemas_are_valid_and_references_stay_in_bundle():
 def test_result_registry_matches_python_contracts():
     registry = load_schema("results-contract-set.json")
     assert registry["contract_set"] == CONTRACT_SET
-    assert registry["native_schema_version"] == NATIVE_SCHEMA_VERSION == "4.0"
+    assert registry["native_schema_version"] == NATIVE_SCHEMA_VERSION == "5.0"
     assert {(row["role"], row["media_type"]): frozenset(row["schemas"])
             for row in registry["artifacts"]} == ARTIFACT_SCHEMA_CONTRACTS
 
@@ -80,17 +80,17 @@ def test_artifact_paths_are_confined(value):
 
 
 def test_commit_checks_inventory_and_dependency_closure():
-    item = {"path": "model.json", "role": "model", "bytes": 4, "sha256": "a" * 64,
+    from test_results_v2 import manifest
+    item = {"path": "model.json", "role": "model", "bytes": "4", "sha256": "a" * 64,
             "media_type": "application/json", "profile": "science",
-            "schema": "qcl-negf-resolved-configuration-v3"}
-    commit = {"schema": "qcl-negf.artifact-commit.v2", "contract_set": CONTRACT_SET,
-              "identity": {"point_id": "p1"}, "generation": 1, "artifacts": [item]}
+            "schema": "qcl-negf-resolved-configuration-v3", "dependencies": []}
+    commit = manifest(); commit['artifacts'] = [item]
     assert validate_commit(commit)[0].path == "model.json"
     with pytest.raises(ContractError, match="dependency"):
         validate_commit({**commit, "artifacts": [{**item, "dependencies": ["missing.json"]}]})
     with pytest.raises(ContractError, match="duplicate"):
         validate_commit({**commit, "artifacts": [item, item]})
-    with pytest.raises(ContractError, match="contract set"):
+    with pytest.raises(ContractError, match="unsupported result format"):
         validate_commit({**commit, "contract_set": "unsupported"})
 
 

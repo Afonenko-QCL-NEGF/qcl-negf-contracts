@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Result manifest v2",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf.result-manifest.v1"
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v2"
+    },
+    "identity": {
+      "$ref": "result-common.schema.json#/$defs/Identity"
+    },
+    "lineage": {
+      "$ref": "result-common.schema.json#/$defs/Lineage"
+    },
+    "invocation": {
+      "$ref": "result-common.schema.json#/$defs/Invocation"
+    },
+    "provenance": {
+      "$ref": "model-help.schema.json#/$defs/SourceGraph"
+    },
+    "numerical_binding": {
+      "anyOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/NumericalBinding"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "state_id": {
+      "$ref": "result-common.schema.json#/$defs/Id"
+    },
+    "state_sequence": {
+      "$ref": "result-common.schema.json#/$defs/PositiveCount"
+    },
+    "generation": {
+      "$ref": "result-common.schema.json#/$defs/PositiveCount"
+    },
+    "closed": {
+      "type": "boolean"
+    },
+    "status": {
+      "$ref": "result-common.schema.json#/$defs/Status"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "result-common.schema.json#/$defs/Artifact"
+      }
+    },
+    "history": {
+      "$ref": "result-common.schema.json#/$defs/HistoryPin"
+    },
+    "checkpoint": {
+      "anyOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "contract_set",
+    "identity",
+    "lineage",
+    "invocation",
+    "provenance",
+    "numerical_binding",
+    "state_id",
+    "state_sequence",
+    "generation",
+    "closed",
+    "status",
+    "artifacts",
+    "history",
+    "checkpoint"
+  ],
+  "additionalProperties": false
+}

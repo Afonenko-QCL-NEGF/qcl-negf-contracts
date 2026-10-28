@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Incremental scientific catalog v2",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf.scientific-catalog.v1"
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v2"
+    },
+    "identity": {
+      "$ref": "result-common.schema.json#/$defs/Identity"
+    },
+    "invocation": {
+      "$ref": "result-common.schema.json#/$defs/Invocation"
+    },
+    "generation": {
+      "$ref": "result-common.schema.json#/$defs/PositiveCount"
+    },
+    "entries": {
+      "$ref": "result-common.schema.json#/$defs/PositiveCount"
+    },
+    "previous": {
+      "anyOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/HistoryPin"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "$ref": "result-common.schema.json#/$defs/Artifact"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "const": "science.history"
+              }
+            },
+            "required": [
+              "role"
+            ]
+          }
+        ]
+      },
+      "minItems": 1
+    },
+    "range": {
+      "type": "object",
+      "properties": {
+        "first_record": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "last_record": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        }
+      },
+      "required": [
+        "first_record",
+        "last_record"
+      ],
+      "additionalProperties": false
+    },
+    "totals": {
+      "$ref": "result-common.schema.json#/$defs/HistoryTotals"
+    }
+  },
+  "required": [
+    "schema",
+    "contract_set",
+    "identity",
+    "invocation",
+    "generation",
+    "entries",
+    "previous",
+    "artifacts",
+    "range",
+    "totals"
+  ],
+  "additionalProperties": false
+}

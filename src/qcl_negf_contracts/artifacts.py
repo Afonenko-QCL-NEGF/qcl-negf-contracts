@@ -8,35 +8,32 @@ from typing import Any, Mapping
 
 from .messages import ContractError
 
-CONTRACT_SET = "qcl-negf.results.v1"
-COMMIT_SCHEMA = "qcl-negf.artifact-commit.v2"
-POINTER_SCHEMA = "qcl-negf.artifact-pointer.v2"
+CONTRACT_SET = "qcl-negf.results.v2"
+COMMIT_SCHEMA = "qcl-negf.result-manifest.v1"
+POINTER_SCHEMA = "qcl-negf.result-pointer.v1"
 EXPORT_SCHEMA = "qcl-negf.science-export.v3"
 EXPORT_TRANSPORT_SCHEMA = "qcl-negf.export-archive.v1"
 DIAGNOSTIC_EXPORT_SCHEMA = "qcl-negf.operational-evidence.v2"
-NATIVE_SCHEMA_VERSION = "4.0"
+NATIVE_SCHEMA_VERSION = "5.0"
 MODEL_SCHEMA = "qcl-negf-resolved-configuration-v3"
-RECOVERY_SCHEMA = "qcl-negf-recovery-reference-v1"
+RECOVERY_SCHEMA = "qcl-negf.checkpoint-declaration.v1"
 PROGRESS_SCHEMA = "qcl-negf-execution-progress-v1"
 PERFORMANCE_SCHEMA = "qcl-negf.performance.v2"
 # Scientific payload versions are independent of their immutable JSON containers.
 # An explicit declaration prevents old native files from passing an index-only read.
 ARTIFACT_SCHEMA_CONTRACTS = {
     ("model", "application/json"): frozenset({MODEL_SCHEMA}),
-    ("recovery", "application/x-hdf5"): frozenset({"qcl-negf-checkpoint-v4"}),
+    ("recovery", "application/x-hdf5"): frozenset({"qcl-negf-checkpoint-v5"}),
     ("recovery", "application/json"): frozenset({RECOVERY_SCHEMA}),
     ("execution.progress", "application/json"): frozenset({PROGRESS_SCHEMA}),
-    ("physics.full", "application/x-hdf5"): frozenset({"qcl-negf-physics-v4"}),
+    ("physics.full", "application/x-hdf5"): frozenset({"qcl-negf-physics-v5"}),
     ("physics.analysis", "application/x-hdf5"): frozenset({
-        "qcl-negf-physics-analysis-v4", "qcl-negf-optical-v4"}),
-    ("science.history", "application/x-hdf5"): frozenset({"qcl-negf-scientific-history-v4"}),
+        "qcl-negf-physics-analysis-v5", "qcl-negf-optical-v5"}),
+    ("science.history", "application/x-hdf5"): frozenset({"qcl-negf-scientific-history-v5"}),
     ("science.comparison", "application/json"): frozenset({
-        "qcl-negf-operator-diagnostics-v4"}),
+        "qcl-negf-operator-diagnostics-v5"}),
 }
 SCHEMA_BOUND_ROLES = frozenset(role for role, _ in ARTIFACT_SCHEMA_CONTRACTS)
-# Legacy multipart read/verification only. New exports have no archive byte cap.
-EXPORT_PART_MAX_BYTES = 200_000_000
-SCIENCE_MAX_BYTES = EXPORT_PART_MAX_BYTES
 SCIENCE_ROLES = frozenset({"physics.analysis", "science.history", "performance.summary",
                            "performance.window", "model", "plan", "science.comparison"})
 FULL_ROLES = SCIENCE_ROLES | {"physics.full", "recovery", "performance.full", "control.state", "execution.progress"}
@@ -48,7 +45,7 @@ def require_contract_set(value: Mapping[str, Any]) -> None:
     """Reject incompatible result contracts before touching their payloads."""
     if value.get("contract_set") != CONTRACT_SET:
         raise ContractError(f"unsupported result contract set: requires {CONTRACT_SET}",
-                            "incompatible_contract")
+                            "unsupported_format")
 
 
 def relative_path(value: object) -> str:
@@ -70,13 +67,13 @@ def validate_export_receipt(value: Mapping[str, Any]) -> Mapping[str, Any]:
     """Validate the identity of one finalized archive, without a size ceiling.
 
     The receipt establishes transport identity, never scientific acceptance.
-    Legacy multipart receipts are consumed by their independent legacy reader.
+    Old result sets and multipart transport declarations are unsupported.
     """
     require_contract_set(value)
     if value.get("schema") not in {EXPORT_SCHEMA, DIAGNOSTIC_EXPORT_SCHEMA}:
-        raise ContractError("unsupported export receipt schema", "incompatible_contract")
+        raise ContractError("unsupported export receipt schema", "unsupported_format")
     if value.get("transport_schema") != EXPORT_TRANSPORT_SCHEMA:
-        raise ContractError("unsupported export transport schema", "incompatible_contract")
+        raise ContractError("unsupported export transport schema", "unsupported_format")
     profile = value.get("profile")
     if profile not in {"science", "full-state", "diagnostic"} or (
         (value["schema"] == DIAGNOSTIC_EXPORT_SCHEMA) != (profile == "diagnostic")
@@ -120,16 +117,16 @@ class Artifact:
         if profile not in {"science", "full-state", "both", "local"}:
             raise ContractError("artifact export profile is invalid", "corrupt_result")
         if profile != "local" and role not in FULL_ROLES:
-            raise ContractError(f"unknown export artifact role: {role}", "incompatible_contract")
+            raise ContractError(f"unknown export artifact role: {role}", "unsupported_format")
         if profile != "local" and media not in MEDIA_TYPES:
-            raise ContractError(f"unknown export artifact media type: {media}", "incompatible_contract")
+            raise ContractError(f"unknown export artifact media type: {media}", "unsupported_format")
         schema = value.get("schema")
         if schema is not None and not isinstance(schema, str):
             raise ContractError("artifact schema must be a string", "corrupt_result")
         if role in SCHEMA_BOUND_ROLES and schema not in ARTIFACT_SCHEMA_CONTRACTS.get((role, media), ()):
             raise ContractError(
                 f"unsupported or missing native artifact schema for {role}: {schema!r}",
-                "incompatible_contract",
+                "unsupported_format",
             )
         deps = value.get("dependencies", [])
         if not isinstance(deps, list):
@@ -144,41 +141,21 @@ class Artifact:
 
 
 def validate_commit(value: Mapping[str, Any]) -> tuple[Artifact, ...]:
-    require_contract_set(value)
-    if value.get("schema") != COMMIT_SCHEMA:
-        raise ContractError("unsupported artifact commit schema", "incompatible_contract")
-    if not isinstance(value.get("identity"), dict):
-        raise ContractError("artifact identity is missing", "corrupt_result")
-    if "state_id" in value or "state_sequence" in value:
-        state_id, sequence = value.get("state_id"), value.get("state_sequence")
-        if (not isinstance(state_id, str) or not state_id or type(sequence) is not int
-                or sequence < 1 or value["identity"].get("state_id") != state_id
-                or value["identity"].get("state_sequence") != sequence):
-            raise ContractError("commit state identity is invalid or conflicting", "corrupt_result")
-    generation = value.get("generation")
-    if not isinstance(generation, (int, str)) or isinstance(generation, bool):
-        raise ContractError("artifact generation is missing", "corrupt_result")
-    rows = value.get("artifacts")
-    if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows):
-        raise ContractError("artifact inventory must be objects", "corrupt_result")
-    artifacts = tuple(Artifact.parse(row) for row in rows)
-    for row in rows:
-        if "identity" in row and row["identity"] != value["identity"]:
-            raise ContractError("artifact state identity differs from its commit", "corrupt_result")
-    paths = {item.path for item in artifacts}
-    if len(paths) != len(artifacts):
-        raise ContractError("duplicate artifact paths", "corrupt_result")
-    for artifact in artifacts:
-        if any(dependency not in paths for dependency in artifact.dependencies):
-            raise ContractError("artifact dependency is absent from commit", "corrupt_result")
-    return artifacts
+    """Return internal artifacts from the single supported strict v2 manifest.
+
+    Decimal wire byte counts adapt explicitly to Python int; Artifact.parse remains
+    the strict in-memory descriptor constructor. No old commit inference/fallback.
+    """
+    from .results import validate_manifest
+    checked = validate_manifest(value)
+    return tuple(Artifact.parse({**row, "bytes": int(row["bytes"])}) for row in checked["artifacts"])
 
 
 def validate_execution_progress(value: Mapping[str, Any]) -> tuple[Mapping[str, Any], ...]:
     """Validate portable prior-final references; callers verify referenced bytes."""
     require_contract_set(value)
     if value.get("schema") != PROGRESS_SCHEMA:
-        raise ContractError("unsupported execution progress schema", "incompatible_contract")
+        raise ContractError("unsupported execution progress schema", "unsupported_format")
     identity = value.get("identity")
     if (not isinstance(identity, dict) or not value.get("execution_id")
             or type(identity.get("attempt")) is not int or identity["attempt"] < 1
