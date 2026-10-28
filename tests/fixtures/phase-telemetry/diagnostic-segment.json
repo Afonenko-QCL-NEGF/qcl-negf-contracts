@@ -1,0 +1,139 @@
+{
+  "schema": "qcl-negf.producer-phase-segment.v1",
+  "contract_set": "qcl-negf.results.v2",
+  "identity": {
+    "run_id": "manufactured-run",
+    "execution_id": "execution",
+    "point_id": "point",
+    "attempt": "1",
+    "branch_id": "branch",
+    "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "source": {
+    "session_id": "session-1",
+    "clock_domain_id": "monotonic:manufactured",
+    "utc_anchor_ns": "9007199254740993",
+    "monotonic_anchor_ns": "17"
+  },
+  "mode": "diagnostic",
+  "segment_ordinal": "1",
+  "first_sequence": "1",
+  "last_sequence": "2",
+  "observed_events": "2",
+  "coalesced_events": "0",
+  "rows": [
+    {
+      "kind": "event",
+      "sequence": "1",
+      "core_sequence": "7",
+      "action": "phase_begin",
+      "stage": "scba",
+      "label": "iteration",
+      "status": "running",
+      "iteration": "1",
+      "total": null,
+      "outer_iteration": null,
+      "inner_iteration": "1",
+      "span_id": "session-1:1",
+      "parent_span_id": null,
+      "context_status": "complete",
+      "metrics": []
+    },
+    {
+      "kind": "event",
+      "sequence": "2",
+      "core_sequence": "11",
+      "action": "phase_end",
+      "stage": "scba",
+      "label": "iteration",
+      "status": "running",
+      "iteration": "1",
+      "total": null,
+      "outer_iteration": null,
+      "inner_iteration": "1",
+      "span_id": "session-1:1",
+      "parent_span_id": null,
+      "context_status": "complete",
+      "metrics": [
+        {
+          "name": "cpu_seconds",
+          "value": 3.0,
+          "unit": "s",
+          "measurement_status": "measured",
+          "reason": "process_inclusive_delta_on_end"
+        },
+        {
+          "name": "allocated_bytes",
+          "value": {
+            "kind": "integer",
+            "type": "Int64",
+            "decimal": "9007199254740993"
+          },
+          "unit": "B",
+          "measurement_status": "measured",
+          "reason": null
+        },
+        {
+          "name": "negative_zero",
+          "value": -0.0,
+          "unit": "1",
+          "measurement_status": "measured",
+          "reason": null
+        },
+        {
+          "name": "flag",
+          "value": true,
+          "unit": "1",
+          "measurement_status": "measured",
+          "reason": null
+        },
+        {
+          "name": "description",
+          "value": "observed",
+          "unit": "",
+          "measurement_status": "measured",
+          "reason": null
+        },
+        {
+          "name": "optional",
+          "value": null,
+          "unit": "",
+          "measurement_status": "not_measured",
+          "reason": "not_requested"
+        }
+      ]
+    }
+  ],
+  "health": {
+    "events_seen": "4",
+    "enqueued": "4",
+    "sealed_events": "2",
+    "dropped": {
+      "capacity": "0",
+      "contention": "0",
+      "oversized": "0",
+      "closed": "0",
+      "invalid": "0",
+      "writer_failure": "0"
+    },
+    "coalesced_events": "0",
+    "queued_events": "0",
+    "buffered_bytes": "0",
+    "peak_buffered_bytes": "256",
+    "inflight_bytes": "0",
+    "unsealed_events": "0",
+    "incomplete": false,
+    "incomplete_reasons": [],
+    "self_cost": [
+      {
+        "name": "encode_seconds",
+        "value": null,
+        "unit": "s",
+        "measurement_status": "not_measured",
+        "reason": "not_requested"
+      }
+    ]
+  },
+  "sealed": true
+}

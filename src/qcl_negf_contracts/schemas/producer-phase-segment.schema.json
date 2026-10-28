@@ -1,0 +1,450 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sealed producer technical phase batch; normal aggregates or diagnostic events",
+  "allOf": [
+    {
+      "$ref": "#/$defs/SegmentHeader"
+    },
+    {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "normal"
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Aggregate"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "mode",
+            "rows"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "diagnostic"
+            },
+            "rows": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Event"
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "mode",
+            "rows"
+          ]
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "Event": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "event"
+        },
+        "sequence": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "core_sequence": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/PositiveCount"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "action": {
+          "enum": [
+            "phase_begin",
+            "phase_end"
+          ]
+        },
+        "stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "iteration": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "total": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outer_iteration": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "inner_iteration": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "span_id": {
+          "anyOf": [
+            {
+              "$ref": "producer-phase-source.schema.json#/$defs/SpanId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parent_span_id": {
+          "anyOf": [
+            {
+              "$ref": "producer-phase-source.schema.json#/$defs/SpanId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "context_status": {
+          "enum": [
+            "complete",
+            "incomplete"
+          ]
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "producer-phase-source.schema.json#/$defs/ScalarMetric"
+          }
+        }
+      },
+      "required": [
+        "kind",
+        "sequence",
+        "core_sequence",
+        "action",
+        "stage",
+        "label",
+        "status",
+        "iteration",
+        "total",
+        "outer_iteration",
+        "inner_iteration",
+        "span_id",
+        "parent_span_id",
+        "context_status",
+        "metrics"
+      ],
+      "additionalProperties": false
+    },
+    "AggregateMetric": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "enum": [
+            "duration_seconds",
+            "process_cpu_seconds",
+            "allocated_bytes",
+            "gc_seconds",
+            "gc_count"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 0
+        },
+        "sum": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": -1.7976931348623157e+308,
+                  "maximum": 1.7976931348623157e+308
+                },
+                {
+                  "$ref": "core-state.schema.json#/$defs/Int64"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "measured_calls": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "unavailable_calls": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "name",
+        "unit",
+        "sum",
+        "measured_calls",
+        "unavailable_calls",
+        "reasons"
+      ],
+      "additionalProperties": false
+    },
+    "Aggregate": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "const": "aggregate"
+        },
+        "stage": {
+          "type": "string",
+          "minLength": 0
+        },
+        "phase": {
+          "type": "string",
+          "minLength": 0
+        },
+        "status": {
+          "type": "string",
+          "minLength": 0
+        },
+        "task_width": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/PositiveCount"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "counter_scope": {
+          "const": "process_inclusive_delta_on_end"
+        },
+        "first_sequence": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "last_sequence": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "first_core_sequence": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/PositiveCount"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_core_sequence": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/PositiveCount"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "call_count": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AggregateMetric"
+          }
+        },
+        "time_bounds": {
+          "$ref": "#/$defs/AggregateTimeBounds"
+        }
+      },
+      "required": [
+        "kind",
+        "stage",
+        "phase",
+        "status",
+        "task_width",
+        "counter_scope",
+        "first_sequence",
+        "last_sequence",
+        "first_core_sequence",
+        "last_core_sequence",
+        "call_count",
+        "metrics",
+        "time_bounds"
+      ],
+      "additionalProperties": false
+    },
+    "SegmentHeader": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.producer-phase-segment.v1"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "identity": {
+          "$ref": "result-common.schema.json#/$defs/Identity"
+        },
+        "source": {
+          "$ref": "producer-phase-source.schema.json#/$defs/Source"
+        },
+        "mode": {
+          "enum": [
+            "normal",
+            "diagnostic"
+          ]
+        },
+        "segment_ordinal": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "first_sequence": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "last_sequence": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "observed_events": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "coalesced_events": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/Aggregate"
+              },
+              {
+                "$ref": "#/$defs/Event"
+              }
+            ]
+          },
+          "minItems": 1
+        },
+        "health": {
+          "$ref": "producer-phase-source.schema.json#/$defs/Health"
+        },
+        "sealed": {
+          "const": true
+        }
+      },
+      "required": [
+        "schema",
+        "contract_set",
+        "identity",
+        "source",
+        "mode",
+        "segment_ordinal",
+        "first_sequence",
+        "last_sequence",
+        "observed_events",
+        "coalesced_events",
+        "rows",
+        "health",
+        "sealed"
+      ],
+      "additionalProperties": false
+    },
+    "AggregateTimeBounds": {
+      "type": "object",
+      "properties": {
+        "min_start_monotonic_ns": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_end_monotonic_ns": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "measured_calls": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "unavailable_calls": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "min_start_monotonic_ns",
+        "max_end_monotonic_ns",
+        "measured_calls",
+        "unavailable_calls",
+        "reasons"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

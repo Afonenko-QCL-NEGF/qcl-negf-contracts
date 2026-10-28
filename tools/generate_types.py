@@ -16,7 +16,8 @@ ROW_FIELDS = ('domain_revision', 'discretization_id', 'basis_id', 'stage',
               'outer_iteration', 'inner_iteration')
 DOCUMENTS = ('result-common.schema.json', 'core-state.schema.json', 'result-manifest.schema.json',
              'result-pointer.schema.json', 'scientific-catalog.schema.json', 'result-cursor.schema.json',
-             'checkpoint-declaration.schema.json', 'scientific-record.schema.json')
+             'checkpoint-declaration.schema.json', 'scientific-record.schema.json',
+             'producer-phase-segment.schema.json', 'producer-phase-source.schema.json')
 
 
 def obj(properties):
@@ -176,9 +177,13 @@ def ts_export(documents):
             base = {'result-manifest.schema.json': 'ResultManifest', 'result-pointer.schema.json': 'ResultPointer',
                     'scientific-catalog.schema.json': 'ScientificCatalogPage', 'result-cursor.schema.json': 'ResultCursor',
                     'checkpoint-declaration.schema.json': 'CheckpointDeclaration',
-                    'scientific-record.schema.json': 'ScientificRecord'}.get(file)
+                    'scientific-record.schema.json': 'ScientificRecord',
+                    'producer-phase-segment.schema.json': 'ProducerPhaseSegment',
+                    'producer-phase-source.schema.json': 'ProducerPhaseSource'}.get(file)
             return base
-        prefix = 'Core_' if file == 'core-state.schema.json' else 'Common_' if file == 'result-common.schema.json' else 'Source_'
+        prefix = ('Core_' if file == 'core-state.schema.json' else
+                  'Common_' if file == 'result-common.schema.json' else
+                  'Phase_' if file in ('producer-phase-segment.schema.json', 'producer-phase-source.schema.json') else 'Source_')
         return prefix + re.sub('[^A-Za-z0-9_]', '_', fragment.rsplit('/', 1)[-1])
     # Register only references reachable from the result schemas; do not interpret unrelated model-help rules.
     def register(file, fragment=''):
@@ -212,12 +217,18 @@ def ts_export(documents):
     for field in documents['core-state.schema.json']['$defs']:
         register('core-state.schema.json', '/$defs/'+field.replace('~', '~0').replace('/', '~1'))
     lines = ['// Generated from bundled schemas and actual public Core reflection. Do not edit.',
-             'export const contractSet = "qcl-negf.results.v2" as const;']
+             'export const contractSet = "qcl-negf.results.v2" as const;',
+             'export type Phase_Readonly<T> = T extends object ? { readonly [K in keyof T]: Phase_Readonly<T[K]> } : T;']
     for (file, fragment), name in sorted(names.items(), key=lambda item: item[1]):
         node = documents[file]
         for part in fragment.lstrip('/').split('/') if fragment else ():
             node = node[part.replace('~1', '/').replace('~0', '~')]
-        lines.append('export type '+name+' = '+ts_type(node, file, names)+';')
+        value = ts_type(node, file, names)
+        # Scope deep immutability to the new producer graph, including shared refs.
+        # Existing public scientific aliases retain their published declarations.
+        if name.startswith(('Phase_', 'ProducerPhase')):
+            value = 'Phase_Readonly<'+value+'>'
+        lines.append('export type '+name+' = '+value+';')
     lines.append('export const schemas = '+quoted({name: documents[name] for name in
                  (*DOCUMENTS, 'model-help.schema.json')})+' as const;')
     return '\n'.join(lines)+'\n'

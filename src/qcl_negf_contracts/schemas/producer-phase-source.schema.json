@@ -1,0 +1,485 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Producer technical source publications and progress; no scientific acceptance",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Publication"
+    },
+    {
+      "$ref": "#/$defs/Current"
+    },
+    {
+      "$ref": "#/$defs/Cursor"
+    }
+  ],
+  "$defs": {
+    "Source": {
+      "type": "object",
+      "properties": {
+        "session_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "clock_domain_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "utc_anchor_ns": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "monotonic_anchor_ns": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        }
+      },
+      "required": [
+        "session_id",
+        "clock_domain_id",
+        "utc_anchor_ns",
+        "monotonic_anchor_ns"
+      ],
+      "additionalProperties": false
+    },
+    "SpanId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "ScalarMetric": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "$ref": "core-state.schema.json#/$defs/Int64"
+            },
+            {
+              "type": "number",
+              "minimum": -1.7976931348623157e+308,
+              "maximum": 1.7976931348623157e+308
+            },
+            {
+              "type": "string",
+              "minLength": 0
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 0
+        },
+        "measurement_status": {
+          "enum": [
+            "measured",
+            "not_measured",
+            "not_applicable",
+            "error"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "unit",
+        "measurement_status",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "Health": {
+      "type": "object",
+      "properties": {
+        "events_seen": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "enqueued": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "sealed_events": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "dropped": {
+          "type": "object",
+          "properties": {
+            "capacity": {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            "contention": {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            "oversized": {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            "closed": {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            "invalid": {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            "writer_failure": {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            }
+          },
+          "required": [
+            "capacity",
+            "contention",
+            "oversized",
+            "closed",
+            "invalid",
+            "writer_failure"
+          ],
+          "additionalProperties": false
+        },
+        "coalesced_events": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "queued_events": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "buffered_bytes": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "peak_buffered_bytes": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "inflight_bytes": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "unsealed_events": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "incomplete": {
+          "type": "boolean"
+        },
+        "incomplete_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "self_cost": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScalarMetric"
+          }
+        }
+      },
+      "required": [
+        "events_seen",
+        "enqueued",
+        "sealed_events",
+        "dropped",
+        "coalesced_events",
+        "queued_events",
+        "buffered_bytes",
+        "peak_buffered_bytes",
+        "inflight_bytes",
+        "unsealed_events",
+        "incomplete",
+        "incomplete_reasons",
+        "self_cost"
+      ],
+      "additionalProperties": false
+    },
+    "Publication": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.producer-phase-publication.v1"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "identity": {
+          "$ref": "result-common.schema.json#/$defs/Identity"
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        },
+        "generation": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "previous": {
+          "anyOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "result-common.schema.json#/$defs/FileRef"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "media_type": {
+                      "const": "application/json"
+                    },
+                    "schema": {
+                      "const": "qcl-negf.producer-phase-publication.v1"
+                    }
+                  },
+                  "required": [
+                    "media_type",
+                    "schema"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "segment": {
+          "allOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/FileRef"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "media_type": {
+                  "const": "application/json"
+                },
+                "schema": {
+                  "const": "qcl-negf.producer-phase-segment.v1"
+                }
+              },
+              "required": [
+                "media_type",
+                "schema"
+              ]
+            }
+          ]
+        },
+        "first_sequence": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "last_sequence": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "rows": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "health": {
+          "$ref": "#/$defs/Health"
+        }
+      },
+      "required": [
+        "schema",
+        "contract_set",
+        "identity",
+        "source",
+        "generation",
+        "previous",
+        "segment",
+        "first_sequence",
+        "last_sequence",
+        "rows",
+        "health"
+      ],
+      "additionalProperties": false
+    },
+    "Current": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.producer-phase-current.v1"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "identity": {
+          "$ref": "result-common.schema.json#/$defs/Identity"
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        },
+        "publication": {
+          "anyOf": [
+            {
+              "allOf": [
+                {
+                  "$ref": "result-common.schema.json#/$defs/FileRef"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "media_type": {
+                      "const": "application/json"
+                    },
+                    "schema": {
+                      "const": "qcl-negf.producer-phase-publication.v1"
+                    }
+                  },
+                  "required": [
+                    "media_type",
+                    "schema"
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "current_phase": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "stage": {
+                  "type": "string",
+                  "minLength": 0
+                },
+                "phase": {
+                  "type": "string",
+                  "minLength": 0
+                },
+                "span_id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/SpanId"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "stage",
+                "phase",
+                "span_id"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "health": {
+          "$ref": "#/$defs/Health"
+        },
+        "closed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema",
+        "contract_set",
+        "identity",
+        "source",
+        "publication",
+        "current_phase",
+        "health",
+        "closed"
+      ],
+      "additionalProperties": false
+    },
+    "Cursor": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.producer-phase-cursor.v1"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "identity": {
+          "$ref": "result-common.schema.json#/$defs/Identity"
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        },
+        "publication": {
+          "allOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/FileRef"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "media_type": {
+                  "const": "application/json"
+                },
+                "schema": {
+                  "const": "qcl-negf.producer-phase-publication.v1"
+                }
+              },
+              "required": [
+                "media_type",
+                "schema"
+              ]
+            }
+          ]
+        },
+        "segment": {
+          "allOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/FileRef"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "media_type": {
+                  "const": "application/json"
+                },
+                "schema": {
+                  "const": "qcl-negf.producer-phase-segment.v1"
+                }
+              },
+              "required": [
+                "media_type",
+                "schema"
+              ]
+            }
+          ]
+        },
+        "next_row": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "last_sequence": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "complete_at_observation": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema",
+        "contract_set",
+        "identity",
+        "source",
+        "publication",
+        "segment",
+        "next_row",
+        "last_sequence",
+        "complete_at_observation"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
