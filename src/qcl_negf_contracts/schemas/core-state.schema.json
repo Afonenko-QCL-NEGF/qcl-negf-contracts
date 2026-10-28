@@ -359,16 +359,16 @@
           "$ref": "#/$defs/CoreRecord"
         },
         {
-          "$ref": "#/$defs/CoreArray{ComplexF64}"
+          "$ref": "#/$defs/CoreArray%7BComplexF64%7D"
         },
         {
-          "$ref": "#/$defs/CoreArray{Bool}"
+          "$ref": "#/$defs/CoreArray%7BBool%7D"
         },
         {
-          "$ref": "#/$defs/CoreArray{Float64}"
+          "$ref": "#/$defs/CoreArray%7BFloat64%7D"
         },
         {
-          "$ref": "#/$defs/CoreArray{Int64}"
+          "$ref": "#/$defs/CoreArray%7BInt64%7D"
         }
       ]
     },

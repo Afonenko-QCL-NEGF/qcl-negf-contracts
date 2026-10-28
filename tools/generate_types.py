@@ -9,6 +9,7 @@ import argparse
 import json
 from pathlib import Path
 import re
+from urllib.parse import quote, unquote
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / 'src/qcl_negf_contracts'
@@ -25,8 +26,40 @@ def obj(properties):
     return dict(type='object', properties=properties, required=list(properties), additionalProperties=False)
 
 
+# RFC 3986 fragment grammar: pchar / "/" / "?"; literal percent always needs encoding.
+_FRAGMENT_SAFE = "/?:@!$&'()*+,;="
+
+
 def ref(name):
-    return {'$ref': '#/$defs/' + name.replace('~', '~0').replace('/', '~1')}
+    pointer = '/$defs/' + name.replace('~', '~0').replace('/', '~1')
+    return {'$ref': '#' + quote(pointer, safe=_FRAGMENT_SAFE)}
+
+
+def reference_key(target, source):
+    """URI decode once, then Pointer decode once into logical lookup/alias tokens."""
+    file, _, fragment = target.partition('#')
+    file = file or source
+    if file not in (*DOCUMENTS, 'model-help.schema.json'):
+        raise ValueError('Unknown bundled schema resource: '+file)
+    if not fragment:
+        return file, ()
+    if quote(fragment, safe=_FRAGMENT_SAFE+'%') != fragment or re.search(r'%(?![0-9A-Fa-f]{2})', fragment):
+        raise ValueError('Invalid URI fragment: '+fragment)
+    # Match the standard resolver's Pointer-vs-anchor dispatch before traversing tokens.
+    if not fragment.startswith('/'):
+        raise ValueError('Only JSON Pointer fragments are supported: '+fragment)
+    pointer = unquote(fragment, encoding='utf-8', errors='strict')
+    parts = pointer[1:].split('/')
+    if any(re.search(r'~(?![01])', part) for part in parts):
+        raise ValueError('Invalid JSON Pointer escape: '+fragment)
+    return file, tuple(part.replace('~1', '/').replace('~0', '~') for part in parts)
+
+
+def schema_at(documents, file, parts):
+    node = documents[file]
+    for part in parts:
+        node = node[part]
+    return node
 
 
 def unsigned_pattern(maximum, *, zero=True):
@@ -131,12 +164,9 @@ def ts_type(schema, source, names):
     if unknown:
         raise ValueError(f'Unsupported schema keyword at {source}: {sorted(unknown)}')
     if '$ref' in schema:
-        target = schema['$ref']
-        file, _, fragment = target.partition('#')
-        file = file or source
-        key = (file, fragment)
+        key = reference_key(schema['$ref'], source)
         if key not in names:
-            raise ValueError(f'Unresolved TS schema reference {file}#{fragment}')
+            raise ValueError(f"Unresolved TS schema reference {schema['$ref']}")
         return names[key]
     if 'const' in schema:
         return quoted(schema['const'])
@@ -173,8 +203,8 @@ def ts_type(schema, source, names):
 def ts_export(documents):
     names = {}
     used = set()
-    def alias(file, fragment):
-        if not fragment:
+    def alias(file, parts):
+        if not parts:
             base = {'result-manifest.schema.json': 'ResultManifest', 'result-pointer.schema.json': 'ResultPointer',
                     'scientific-catalog.schema.json': 'ScientificCatalogPage', 'result-cursor.schema.json': 'ResultCursor',
                     'checkpoint-declaration.schema.json': 'CheckpointDeclaration',
@@ -187,26 +217,23 @@ def ts_export(documents):
                   'Common_' if file == 'result-common.schema.json' else
                   'Phase_' if file in ('producer-phase-segment.schema.json', 'producer-phase-source.schema.json') else
                   'Final_' if file == 'final-diagnostics.schema.json' else 'Source_')
-        return prefix + re.sub('[^A-Za-z0-9_]', '_', fragment.rsplit('/', 1)[-1])
+        return prefix + re.sub('[^A-Za-z0-9_]', '_', parts[-1])
     # Register only references reachable from the result schemas; do not interpret unrelated model-help rules.
-    def register(file, fragment=''):
-        key = file, fragment
+    def register(file, parts=()):
+        key = file, parts
         if key in names:
             return
-        name = alias(file, fragment)
+        name = alias(file, parts)
         if name is None:
             return
         if name in used:
             raise ValueError('TS alias collision: '+name)
         used.add(name); names[key] = name
-        node = documents[file]
-        for part in fragment.lstrip('/').split('/') if fragment else ():
-            node = node[part.replace('~1', '/').replace('~0', '~')]
+        node = schema_at(documents, file, parts)
         def walk(value):
             if isinstance(value, dict):
                 if '$ref' in value:
-                    other, _, frag = value['$ref'].partition('#')
-                    register(other or file, frag)
+                    register(*reference_key(value['$ref'], file))
                 for k, child in value.items():
                     if k != '$defs':
                         walk(child)
@@ -218,14 +245,12 @@ def ts_export(documents):
         register(file)
     # Export every reflected type, including nullable variants and recipes not present in the small golden.
     for field in documents['core-state.schema.json']['$defs']:
-        register('core-state.schema.json', '/$defs/'+field.replace('~', '~0').replace('/', '~1'))
+        register('core-state.schema.json', ('$defs', field))
     lines = ['// Generated from bundled schemas and actual public Core reflection. Do not edit.',
              'export const contractSet = "qcl-negf.results.v2" as const;',
              'export type Phase_Readonly<T> = T extends object ? { readonly [K in keyof T]: Phase_Readonly<T[K]> } : T;']
-    for (file, fragment), name in sorted(names.items(), key=lambda item: item[1]):
-        node = documents[file]
-        for part in fragment.lstrip('/').split('/') if fragment else ():
-            node = node[part.replace('~1', '/').replace('~0', '~')]
+    for (file, parts), name in sorted(names.items(), key=lambda item: item[1]):
+        node = schema_at(documents, file, parts)
         value = ts_type(node, file, names)
         # Scope deep immutability to the new producer graph, including shared refs.
         # Existing public scientific aliases retain their published declarations.

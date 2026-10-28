@@ -50,6 +50,15 @@ the supported resource accessor. Install `qcl-negf-contracts[validation]` and ca
 bundled schemas for relative `$ref` resolution and performs no network retrieval. Schemas follow
 JSON Schema 2020-12. `results-contract-set.json` is a registry, not a validation schema.
 
+Core `$defs` keys and payload type tags remain logical names. Generated `$ref` fragments first
+escape JSON Pointer tokens (`~0`, `~1`), then percent-encode UTF-8 URI characters. For example,
+`#/$defs/CoreArray%7BInt64%7D` targets the unchanged key `CoreArray{Int64}`. A literal `%7B` in a
+logical key becomes `%257B` in its URI fragment. URI decoding happens once before Pointer token
+traversal; decoding twice changes the target. The generator uses the same logical target for lookup
+and TypeScript aliases, rejects invalid/unprovided targets, and retains standard offline resolution
+without disabling optional strict URI format checks. See
+[RFC 6901 §6](https://www.rfc-editor.org/rfc/rfc6901.html#section-6).
+
 The single supported result contract is `qcl-negf.results.v2`, with native HDF5 layout `5.0`. The
 supported result APIs reject old v1/native4 data with `unsupported_format`; no migration or fallback
 is provided. Current single-archive export receipts have no fixed byte ceiling. A successful

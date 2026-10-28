@@ -3,6 +3,7 @@ from copy import deepcopy
 from pathlib import Path
 import hashlib
 import json
+from urllib.parse import quote
 
 import pytest
 
@@ -10,6 +11,11 @@ from qcl_negf_contracts import load_schema, schema_validator
 
 PACKAGE = Path(__file__).parents[1] / 'src/qcl_negf_contracts'
 FIXTURES = Path(__file__).parent / 'fixtures/results-v2'
+
+
+def core_type_uri(name):
+    token = name.replace('~', '~0').replace('/', '~1')
+    return '#/$defs/'+quote(token, safe='')
 
 
 def test_actual_core_layout_resource_exists():
@@ -23,7 +29,7 @@ def test_constructor_only_producer_values_validate_without_solver():
     schema = load_schema('core-state.schema.json')
     validator = schema_validator('core-state.schema.json')
     for value in values['values']:
-        validator.evolve(schema={'$ref': f"#/$defs/{value['type']}", '$defs': schema['$defs']}).validate(value)
+        validator.evolve(schema={'$ref': core_type_uri(value['type']), '$defs': schema['$defs']}).validate(value)
     assert values['ieee_bits'] == ['0000000000000000', '8000000000000000', '7ff0000000000000',
                                   'fff0000000000000', '7ff8000000000001', '7ff8000000000002']
 
@@ -106,7 +112,7 @@ def test_every_reflected_struct_rejects_each_missing_field():
         raise AssertionError(kind)
     for name,node in graph.items():
         if node['kind'] != 'struct': continue
-        local=validator.evolve(schema={'$ref':'#/$defs/'+name,'$defs':schema['$defs']})
+        local=validator.evolve(schema={'$ref':core_type_uri(name),'$defs':schema['$defs']})
         value=sample(name)
         assert local.is_valid(value), name
         for field in node['fields']:
@@ -124,3 +130,27 @@ def test_layout_digest_excludes_source_composition_provenance():
     assert digest(changed) == layout['layout_sha256']
     changed['graph']['nodes']['SolverProgress']['fields'].append({'name': 'new', 'type': 'Int64'})
     assert digest(changed) != layout['layout_sha256']
+
+
+def test_core_schema_meta_and_all_offline_references_are_portable():
+    from jsonschema import Draft202012Validator
+    schema=load_schema('core-state.schema.json')
+    # The same ordinary check runs with the system optional URI checker, without override.
+    Draft202012Validator.check_schema(schema)
+    def references(value):
+        if isinstance(value,dict):
+            for key,item in value.items():
+                if key=='$ref':yield item
+                else:yield from references(item)
+        elif isinstance(value,list):
+            for item in value:yield from references(item)
+    validator=schema_validator('core-state.schema.json')
+    for target in references(schema):
+        assert validator._resolver.lookup(target).contents is not None
+
+
+def test_core_array_logical_key_tag_and_reference_spelling_are_distinct_layers():
+    schema=load_schema('core-state.schema.json')
+    assert 'CoreArray{ComplexF64}' in schema['$defs']
+    assert schema['$defs']['CoreArray{ComplexF64}']['properties']['type']=={'const':'CoreArray{ComplexF64}'}
+    assert {'$ref':'#/$defs/CoreArray%7BComplexF64%7D'} in schema['$defs']['CoreDatum']['anyOf']
