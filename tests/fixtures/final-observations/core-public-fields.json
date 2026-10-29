@@ -1,0 +1,636 @@
+{
+  "scope": "published_Core_declarations_and_explicit_wire_profile_not_a_runtime_oracle",
+  "core_revision": "f1fef6755a0744d88511a3843df2e94900a8b9fc",
+  "source_paths": {
+    "src/numerics/optimized/final_observation_types.jl": "54283671905fb537528ed00e5746c388269397e918aa13a6c2bf2c96f8da812d",
+    "src/numerics/optimized/final_observations.jl": "30c83070be281ec9406a635e5b897b6d203888c668718d0a952cb91d20b08716",
+    "docs/src/developer/public_state_api.md": "4315aaa525f3b87843944205443015e0940e1ac92f823128bd063e1c5ba59fb1"
+  },
+  "index_type": "Int64",
+  "public_types": {
+    "FinalObservationContext": {
+      "field_count": 28,
+      "fields": [
+        {
+          "name": "dimensions",
+          "type": "NTuple{4, Int64}"
+        },
+        {
+          "name": "domain_revision",
+          "type": "Int64"
+        },
+        {
+          "name": "discretization_id",
+          "type": "String"
+        },
+        {
+          "name": "basis_id",
+          "type": "String"
+        },
+        {
+          "name": "x_scaled",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "wX",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "energy_scaled",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "wE",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "momentum_scaled",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "wk",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "z_nm",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "energy_eV",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "k_per_nm",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "state_index",
+          "type": "Vector{Int64}"
+        },
+        {
+          "name": "trusted_energy",
+          "type": "BitVector"
+        },
+        {
+          "name": "scales",
+          "type": "FinalObservationScales"
+        },
+        {
+          "name": "inputs",
+          "type": "FinalObservationInputs"
+        },
+        {
+          "name": "problem_scattering",
+          "type": "ScatteringOptions"
+        },
+        {
+          "name": "enabled_scattering",
+          "type": "Tuple{Vararg{Symbol}}"
+        },
+        {
+          "name": "selfenergy_families",
+          "type": "Tuple{Vararg{Symbol}}"
+        },
+        {
+          "name": "physical_models",
+          "type": "PhysicalModelOptions"
+        },
+        {
+          "name": "algorithms",
+          "type": "AlgorithmOptions"
+        },
+        {
+          "name": "energy_shift_discretization",
+          "type": "Symbol"
+        },
+        {
+          "name": "localization",
+          "type": "Symbol"
+        },
+        {
+          "name": "boundary_condition",
+          "type": "Symbol"
+        },
+        {
+          "name": "basis_contract",
+          "type": "Symbol"
+        },
+        {
+          "name": "energy_reference",
+          "type": "Symbol"
+        },
+        {
+          "name": "effective_gauge",
+          "type": "Symbol"
+        }
+      ]
+    },
+    "FinalObservationInputs": {
+      "field_count": 10,
+      "fields": [
+        {
+          "name": "F_bias_V_per_m",
+          "type": "Float64"
+        },
+        {
+          "name": "V_period_V",
+          "type": "Float64"
+        },
+        {
+          "name": "T_L_K",
+          "type": "Float64"
+        },
+        {
+          "name": "T_LO_K",
+          "type": "Float64"
+        },
+        {
+          "name": "E_ref_eV",
+          "type": "Float64"
+        },
+        {
+          "name": "N_dop_2D_per_m2",
+          "type": "Float64"
+        },
+        {
+          "name": "f_ion",
+          "type": "Float64"
+        },
+        {
+          "name": "z0_m",
+          "type": "Float64"
+        },
+        {
+          "name": "period_length_m",
+          "type": "Float64"
+        },
+        {
+          "name": "g_s",
+          "type": "Int64"
+        }
+      ]
+    },
+    "FinalObservationIssue": {
+      "field_count": 4,
+      "fields": [
+        {
+          "name": "target",
+          "type": "Symbol"
+        },
+        {
+          "name": "status",
+          "type": "Symbol"
+        },
+        {
+          "name": "reason",
+          "type": "Symbol"
+        },
+        {
+          "name": "detail",
+          "type": "String"
+        }
+      ]
+    },
+    "FinalObservationMemoryEstimate": {
+      "field_count": 9,
+      "fields": [
+        {
+          "name": "dimensions",
+          "type": "NTuple{4, Int64}"
+        },
+        {
+          "name": "caller_resident_bytes",
+          "type": "Int64"
+        },
+        {
+          "name": "context_bytes",
+          "type": "Int64"
+        },
+        {
+          "name": "view_bytes",
+          "type": "Int64"
+        },
+        {
+          "name": "positivity_bytes",
+          "type": "Int64"
+        },
+        {
+          "name": "metadata_bytes",
+          "type": "Int64"
+        },
+        {
+          "name": "workspace_bytes",
+          "type": "Int64"
+        },
+        {
+          "name": "existing_validation_bytes",
+          "type": "Int64"
+        },
+        {
+          "name": "peak_additional_bytes",
+          "type": "Int64"
+        }
+      ]
+    },
+    "FinalObservationScales": {
+      "field_count": 3,
+      "fields": [
+        {
+          "name": "E0_eV",
+          "type": "Float64"
+        },
+        {
+          "name": "L0_m",
+          "type": "Float64"
+        },
+        {
+          "name": "J0_A_per_m2",
+          "type": "Float64"
+        }
+      ]
+    },
+    "FinalObservationSnapshot": {
+      "field_count": 12,
+      "fields": [
+        {
+          "name": "source_mode",
+          "type": "Symbol"
+        },
+        {
+          "name": "identity",
+          "type": "ExactRestartIdentity"
+        },
+        {
+          "name": "terminal_integrity",
+          "type": "NTuple{32, UInt8}"
+        },
+        {
+          "name": "context",
+          "type": "FinalObservationContext"
+        },
+        {
+          "name": "views",
+          "type": "StoredFinalObservations"
+        },
+        {
+          "name": "metrics",
+          "type": "SolutionMetricDiagnostics"
+        },
+        {
+          "name": "positivity",
+          "type": "Union{Nothing, PositivityDiagnostics}"
+        },
+        {
+          "name": "summary",
+          "type": "FinalScientificSummary"
+        },
+        {
+          "name": "assessment",
+          "type": "Dict{String, Any}"
+        },
+        {
+          "name": "revalidation",
+          "type": "Union{Nothing, RevalidationReceipt}"
+        },
+        {
+          "name": "independent_oracle",
+          "type": "Union{Nothing, IndependentOracleReceipt}"
+        },
+        {
+          "name": "issues",
+          "type": "Tuple{Vararg{FinalObservationIssue}}"
+        }
+      ]
+    },
+    "FinalScientificSummary": {
+      "field_count": 12,
+      "fields": [
+        {
+          "name": "status",
+          "type": "Symbol"
+        },
+        {
+          "name": "quality",
+          "type": "Symbol"
+        },
+        {
+          "name": "converged",
+          "type": "Bool"
+        },
+        {
+          "name": "registry_version",
+          "type": "String"
+        },
+        {
+          "name": "iterative_converged",
+          "type": "Bool"
+        },
+        {
+          "name": "fixed_hartree_converged",
+          "type": "Bool"
+        },
+        {
+          "name": "physical_gates_passed",
+          "type": "Bool"
+        },
+        {
+          "name": "stationary_candidate_accepted",
+          "type": "Bool"
+        },
+        {
+          "name": "scientific_accepted",
+          "type": "Union{Nothing, Bool}"
+        },
+        {
+          "name": "discretization_verified",
+          "type": "Symbol"
+        },
+        {
+          "name": "scientific_acceptance_reason",
+          "type": "String"
+        },
+        {
+          "name": "outer_confirmation_count",
+          "type": "Int64"
+        }
+      ]
+    },
+    "StoredFinalObservations": {
+      "field_count": 17,
+      "fields": [
+        {
+          "name": "potential_structure_eV",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "potential_external_eV",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "potential_hartree_eV",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "potential_total_eV",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "density_per_m3",
+          "type": "Vector{Float64}"
+        },
+        {
+          "name": "spatial_energy_density_per_eV_m3",
+          "type": "Union{Nothing, Matrix{Float64}}"
+        },
+        {
+          "name": "spectral_trace_per_eV",
+          "type": "Matrix{Float64}"
+        },
+        {
+          "name": "occupied_trace_per_eV",
+          "type": "Matrix{Float64}"
+        },
+        {
+          "name": "localized_levels_eV",
+          "type": "Union{Nothing, Vector{Float64}}"
+        },
+        {
+          "name": "effective_levels_eV",
+          "type": "Union{Nothing, Vector{Float64}}"
+        },
+        {
+          "name": "localized_wavefunctions_per_sqrt_nm",
+          "type": "Matrix{ComplexF64}"
+        },
+        {
+          "name": "effective_wavefunctions_per_sqrt_nm",
+          "type": "Union{Nothing, Matrix{ComplexF64}}"
+        },
+        {
+          "name": "effective_transform",
+          "type": "Union{Nothing, Matrix{ComplexF64}}"
+        },
+        {
+          "name": "sheet_density_matrix_per_m2",
+          "type": "Matrix{ComplexF64}"
+        },
+        {
+          "name": "effective_density_matrix_per_m2",
+          "type": "Union{Nothing, Matrix{ComplexF64}}"
+        },
+        {
+          "name": "current_density_A_per_m2",
+          "type": "Float64"
+        },
+        {
+          "name": "sheet_density_per_m2",
+          "type": "Float64"
+        }
+      ]
+    }
+  },
+  "snapshot_destinations": {
+    "source_mode": "source_mode plain string",
+    "identity": "binding.identity existing Core ExactRestartIdentity ref",
+    "terminal_integrity": "binding.terminal_integrity existing Core ExactDigest ref",
+    "context": "context named closed projection",
+    "views": "views named closed projection",
+    "metrics": "diagnostics.solution_metrics (linked immutable final_diagnostics)",
+    "positivity": "diagnostics.positivity (linked immutable final_diagnostics; null requires positivity issue)",
+    "summary": "summary named closed projection",
+    "assessment": "NON-WIRE existing Runner point/light display only; no equivalence reconstruction claim",
+    "revalidation": "restoration.revalidation existing Core receipt ref or restoration null",
+    "independent_oracle": "restoration.independent_oracle existing Core receipt ref or restoration null",
+    "issues": "issues ordered closed projection"
+  },
+  "existing_alias_sha256": {
+    "Phase_Readonly<T>": "18cc6f296a4d92b8ce9777eb82d6f9326ace6b1f3e65ee51ec025a9880973c64",
+    "CheckpointDeclaration": "82f4aa180b0fcf7fdafd7611b82b654f56a69e45dc444d89a13bf26e24b67d4d",
+    "Common_AppendTarget": "0031b61c65c542d52647b617026baa2b7f2259bb986f063bc077a03056b27e39",
+    "Common_Artifact": "8dc98103a152c802d209e79a17080de0434e79c49c0253dffa1047b07a99ee3b",
+    "Common_Count": "52aa6e5ccef91ee89fbff6587ea3fe512915c5e82a23d4da0f25ed89262f775b",
+    "Common_EvidenceStatus": "e9e941457dcf584f863ab5919c6e63ea3db57921a1245fccff88311b0c761170",
+    "Common_FileRef": "15d834ef3478c274be05d2aeb8bbb71a30c49f7168fbe9437644bc9450d0b5bd",
+    "Common_HistoryPin": "36b74247e379b349acd1f27ebd5587ecd1ecf1a606d0f3f4150690db07749d9f",
+    "Common_HistoryTotals": "503224093f0f1f4887f7e5a145ac165571032e83ffe6e8a36ec13164f45a0273",
+    "Common_Id": "0b1141357d196072154e0a01e3c73e1ac332be7495c15f9a1d621b2396ff9a73",
+    "Common_Identity": "b19aab62310a0575d438b0a456b4292a91ff892ed5ff426d04283f3d1e05e2ee",
+    "Common_Invocation": "9ff1e51d1562d09172982ce60a611a086dfea3310db87e9af9c2dbbd9c158d68",
+    "Common_Lineage": "000496125b0a81035c705be24013d393ab318aed7cd9b7c0a1d6a8fa37552cee",
+    "Common_NumericalBinding": "076d2bf1db4c60a686bb88564da1a9c444c1eb2003a36517e35854110de9ea52",
+    "Common_PositiveCount": "b2ffaf99b410fd99e55b0e3afa8378c0042d79e719d47e5831f28dc93ba28e14",
+    "Common_ProcessStatus": "74eb9efced504b8fcc9bd5c6bd5027e37ee98af57dcefc20cf2ed5c3cf1ad8c2",
+    "Common_RowLocator": "dc727b761e7e6ee029ab1c41d9594d95b895f71e9d1f265cb46e65b65ca6e05f",
+    "Common_Sha256": "eca2ebc88f757945cc5adcacaefc7eb4066434c960797d8b9740317c3c0ff630",
+    "Common_StateRef": "9ef212d2685ab3151476d1bf436e9950020cc306b83dfea886a3dd6acc74bdcb",
+    "Common_Status": "a7028f04f4e690dbe73fb085a14e291d46df2f0f1c33eb45a0d7e1a126dcad57",
+    "Common_WitnessTarget": "be5d4b50f5e3b7a5bbf37484e25da4d5ee3ab5043402f42c55d275b49ec8770a",
+    "Core_AcceptanceContext": "f6f41da21b2291a405e191f82999d36e620f48571c943e374ce59eee591f2886",
+    "Core_AlgorithmOptions": "ed2f4da922b06b6bfbeb75eae35794165aa30ed1a3df14e156b8bb925c36725a",
+    "Core_Any": "1b4e1e29d1754a350b2ac41fd9d875333aacf862426f7d8054b93b61995113df",
+    "Core_Bool": "363d14f03d278c08a6ed71229cf7900cadf957e249e13f1d2e92a3943ad2594e",
+    "Core_CompletedStateEvidence": "3ff2f27afa6cf20b2ddad5e431050aa3d6328b5bd6aec486569c3b94b9ec716d",
+    "Core_ConvergenceReport": "c2d1d26206a12496c1789efbf6c2def8907094cd35c9979140fcbc72422f16a4",
+    "Core_CoreArray_Bool_": "682ac3796bf290046ba683829fd3a85acce08f602bc20c0d592ebb28a69bccec",
+    "Core_CoreArray_ComplexF64_": "30f95562d6d0bf8ae1f6d7d0fe99ca73e402211805b0d83ea6814a8d23df5314",
+    "Core_CoreArray_Float64_": "2246ad2aaf8878d9a8584ebb379c0213768511b2a98f18e2407109fa53170692",
+    "Core_CoreArray_Int64_": "c82a3155ae847014f4707447ba4f08a025ed58b4aa6cf813f26634ccb54420bc",
+    "Core_CoreDatum": "666b7bc46ef023a8b36bad205612c2b0022b472ff26e55d00bc5b67aa60bd048",
+    "Core_CoreList": "7b28603eb010aa5d33338c08a6669faa7e42eb861dc5f89f3e4f64b3b5ab12b2",
+    "Core_CoreRecord": "efc8f3dcc7e88c97ced7081b0ef486c9553cacf61c04807e692d12d1770d856d",
+    "Core_CoreScalar": "884fbd6deda0808c9872ef56f07c08158fbf3c488b85276110e3324dbf926698",
+    "Core_DomainAdaptationPolicy": "ac82897bbc29c06f5aaec0a150a856783f4dc72c4584080b6b9b4ac97da54e3f",
+    "Core_DomainAdaptationState": "4dac4ae987805287a80bb8dffaaabd73ba49e9dda937fcad602dedb8e7047d2e",
+    "Core_DomainMeasuredEvidence": "f6c6d278e9c80bd3fe23be807d785d20da0f5b2afc77b8f3f024a3e1c39d0cc1",
+    "Core_DomainPreflightEvidence": "621ef12c8475554be670ff23a9662bf090cf652a21a3e74b74ea32fb4ce2433e",
+    "Core_DomainRevision": "a9d21ca355ce4165abf100d552e53a56fb983c16a900d2e0cdf9646dbfb340d4",
+    "Core_ElectronElectronOptions": "82a015b75cceafd5bd96673530399f7477bcfff2e3d36c67196481344e006876",
+    "Core_ExactExecutionIdentity": "f32e15bb7ffdd2777286ea598ffea666cb0f308e409d3fe81e1c4a77cd15027b",
+    "Core_ExactRestartIdentity": "87a9f9172b1636805aeb16631ec4e40e2abe5c976f2b3dc1a5f8e8c4fd977440",
+    "Core_ExactSolverState": "a5641b1777fe44eae28c216cd807ecb6e89ec263910b95a48d6876e957dbe711",
+    "Core_FinalEvidenceSnapshot": "9c9ab27e8a3ef09adf046cb9edb8c295623e3e38260b449aabc70ade444f5225",
+    "Core_FixedPointAuditCandidate": "9f77e4894178032d8e3960e5b1fe7ddca3763033df5268155fac6cf061a503cd",
+    "Core_Float64": "6a5ec6ad16bc863805d580d353ffaaad278f330520629bd80e8128055523aa74",
+    "Core_GreenState": "57b6685f60bff9706fa349fc2346cac7eda3ac9a806572955f9fa740ce3f6f64",
+    "Core_IndependentOracleReceipt": "1d0c235305a7329c621effbf69b546bafe72c07a70c2fd127e26a1fbd34b7eda",
+    "Core_Int64": "bc6de3e5d31e1acd4c076c392ca3a1e69eacde79ab2cf714bf5f13f2fbc39371",
+    "Core_Layer": "1628628d94d7b4486ad9b395ab9ba73731f3ddce9b41a1cc3fa3df240e6aa693",
+    "Core_MixerPosition": "7d877f943494e29ea636f689a78b8e6741b96ebabf3d2175634c38e8950fb181",
+    "Core_Nothing": "b8b9fb6505018de32dc8333af3291f160a6c3c99618e63c9134e25e670a10608",
+    "Core_NumericalParameters": "0f7f04523a375425500abe016d2085bb33cb49460375ba2a4fafd873f45985c0",
+    "Core_OuterContinuation": "d570ded6310b17471bbbe7651c1a41e36e53d29910886f6cfe8ec5cb1b896b1f",
+    "Core_OuterIteration": "c0c45f8521b59c71c672841acb70631e1d29c31e3e067de3d0f98d4df560345a",
+    "Core_PhysicalModelOptions": "6cc93a94ace200ce4a0465cbbd670f9df472c34bbf235743eef47ad8fa692377",
+    "Core_PhysicalParameters": "2f59fb40347d3c7122c44cb1e20fd96f52b5a12b6257ed05b14d747e3be9e191",
+    "Core_ProblemRebuildRecipe": "1a4a0716eb075d6297609dbf18589dc9d4f282df6dc4ff94245dcea48787b5d0",
+    "Core_ProductionKernelOptions": "aa7ba874179f08c1c342eec416ec7908cd5d6e0b2a54b4cd49a6180d6cc9cec9",
+    "Core_RestartValue": "b14b2c510c527a82bb7cc793134cd506a51b8f7fdc2e9119835adc3fb9a63c66",
+    "Core_RevalidationReceipt": "92ccd36136dbae9bd5d9a62c3ba6141f258bfe737f168f22432b7aa365bc2897",
+    "Core_SCBAChannelMarker": "4dd813ed083a4d469ef18940215254e918ac3aa1284e0826eba52fb27342f0d4",
+    "Core_SCBACollisionMarker": "a11915674a83ea4bdcfde4d634821ffa0b78302d3c9f83616957c2c976c78bd3",
+    "Core_SCBAContinuation": "617f5639f71f82f6ba9c18b1ed1fb9b60dc9d8d19d586da0085d23de2b4684ac",
+    "Core_SCBAIteration": "db3caadea69ad4fc1fbd1c1c416fe1f0531c4b31e2459781d972cef2c6df236c",
+    "Core_SCBAMixerState": "be769470716f89461c171b220a195ddbf669fd0252d175d6a7a04a1d86f421f5",
+    "Core_SCBAPhysicalMarkers": "e20a3d471eda28deeebf52b92c946525d88d524bda695bbdcc2ee43cb2fb09df",
+    "Core_SCBAPhysicsWitness": "b2e0cda20cdd69bfdfb55b260493db1193da8125772fc2f2ef9b2099aeb84d22",
+    "Core_SCBAResult": "063cff93fc58a7729fefe32f72c483238fc751086b1c35a9e765297152f9a75d",
+    "Core_SCBAStopDecision": "edf0a9ddab49230fc39418c21df37524da27fed5271aba1b0630711da462bccc",
+    "Core_ScaleSystem": "81f024a0ee96606ca62eea1c33e34bd3f1f7d9af7bc0962ea7383e73c696e27b",
+    "Core_ScatteringOptions": "a5429aca5d2b268605d3582ef0ec951db1a4cbe75404de6b84186bd17b939be0",
+    "Core_ScientificHistorySnapshot": "76c515272281daf6710d015a0ce6b1173bed5d29f8d3e92ea4f3fff73c14cc05",
+    "Core_ScientificRowKey": "d53fec9ccedea82a51ec062bdac3c7d41847ced6cbc386af58ae8e269ae26b44",
+    "Core_SelfEnergyFamily": "74b6907dfc0dea86ef65ee154f71c2f9477192bff3fc55088f61f6bfc5301498",
+    "Core_SolverEvent": "e955d0559564ec03a81659e0cf8f9df22c0b73f2491e24e5436eb795837b0d5e",
+    "Core_SolverMetric": "40172bcff84e5893aa407a1639058f26e3be912c0ab5816094a04779f24bc1ff",
+    "Core_SolverProgress": "e8ebe4adeb9dadf94c79d136d0f537724afb6e768d1d8e3671cdb5027549e168",
+    "Core_String": "15afa23bce297134d235fc484bba65d823805350325b82c3713046f901e438f6",
+    "Core_Symbol": "d68ccb128d7b425c1c35489a0bde34dd536ed8b044108d1eb14e42d6b5de3d66",
+    "Core_Type_060c31f50d22bed8": "47c2d295559ca2e0a39c8b85443ed915d2277c0b1182ca68b32bf19dba983a04",
+    "Core_Type_1041f173fabbacfa": "a34553bdd2f243ff4b3d3b6fcb812d0d2e29958e352c19f4885e60b6fef189b8",
+    "Core_Type_11e5b90f1577183d": "b06444fa7f20a249f28127d2b1b0f398d6766da49caed57d98d8abb8fd2d1158",
+    "Core_Type_14cd815685bfa17e": "c4cf36259a9eec63a514035670b5d63be00040f91c208433bea8f6b3556f73d5",
+    "Core_Type_1ec45fb64d4bccdc": "21271193df1c8e9b1ebb095b26d167358ad05e04acfe46149353ef45a6a7dada",
+    "Core_Type_24f3539525c111ca": "29a3f7c1bf5947416211edc69270e3a9eafa516357d70b20f96e82c7a72a174b",
+    "Core_Type_2fb30818ca7db4be": "05a09535c84dd0d3fded6087023cb5331cb54aedc9341d34207f78afbff19536",
+    "Core_Type_3221d9cefc97d041": "089503136842af81b57b53e8725f7b7f419482b9cf55565bb11075f63c3c1af3",
+    "Core_Type_3490ce85596bc2ac": "73dc096357cb18400cc416241ce2fdceccc5463461d36705494c7573e236ed6d",
+    "Core_Type_3795433e7bd3ef62": "07ea325b7469931b9a51710e026912886bfd1edc6052cbf4a54a4739109beff0",
+    "Core_Type_3e10d25d6f14627d": "9accbf18f6a869c9831db43d59c3d1e47838be2c2278a7d9ab8b39bcc4d20924",
+    "Core_Type_3fa6a3953f3d4c0e": "3a05ed8437a6332bc718631ec000a6fa9b7390d654f1fa08c293e1b6cb0e2316",
+    "Core_Type_40a66174f78560d0": "52d1ee9625b16e18a3b70db8c8a3b6f8c7befbcc9f6cebce516b561fbf5cfbc9",
+    "Core_Type_42bd8b42e97f516a": "d3cf5617e22dbb553ae64d5cfa7fa374b824f0c8e6f0dba367c3523e27fa9eb8",
+    "Core_Type_458abebe7784aa53": "76d4421ea113a8d4e029f7b97647cc269ab8555e819a67a835ad32475f012410",
+    "Core_Type_4774838fc76eb64c": "93c897c8077cc4d70a9c37d8060ba4496b52fec5950ebd692cff6d42c4ee7d25",
+    "Core_Type_5a33f89ccbc22e86": "3c4e04e94c48792866902c8a442513213a434395b1d630db73177d743c165e6f",
+    "Core_Type_5ff86a702c3e59bb": "8645d22e141f42f86e32be3050152888b47c82704d3116702acd7ca3a4278093",
+    "Core_Type_64a898fdc852f6eb": "7cfd3d468fa217916e8f692ad672aa42750c4fdcb3c1ee688d99a539dfb59a0d",
+    "Core_Type_666bebc72b06ee48": "14f9f1a31034318299ca64a560fee6bfb270819c2e5b434ff99ed590e1e05c3b",
+    "Core_Type_667b2edea203ad04": "7f9eaae9a1d0efc28676f7c93c3b34192816b0c3483a9800a38f8cf62409f334",
+    "Core_Type_69be99f20717a4e1": "6c9db53c649afacfa88d0c6496c0b61cf2c39fd13d37d29fe1ceb0af56dfa1d7",
+    "Core_Type_6a0c1a4ec1577f78": "51ded583a832368059b3719529c900eb6d55484a979ea4c0c59e77a7c73dc721",
+    "Core_Type_6c5fddf3a100b3f8": "1ae6bb5cb470a9fb67d6fb5ef446dd43617b153c3c8e6247b702033a1eaf3979",
+    "Core_Type_78168b905575917f": "d001297cc0a927660e70d5556e68eff3552a04e3ac5c6c7e2cfacab3ca6a8f62",
+    "Core_Type_7ae5ab717353ff52": "b15d61dad73711f4efdeb0141f8d0da7ec67b2e0f247b2a7226afc39fec1215c",
+    "Core_Type_8297e2a6fa37521f": "a7299937fe09eb4319fa86a06f81530dca9963d841408c1df25e0cb1f28d776a",
+    "Core_Type_90c7b02066eeeb84": "9c11ed490f23e2eb5d511554425f8761902944c9191bff0eb14e5f956532a793",
+    "Core_Type_9ef8bf33cda0846b": "b8e5c4f088c55982ba8d514fde282200ab86a5ab132843729633bf77df43b714",
+    "Core_Type_a4c6cf87982b11a2": "f959a6eafcdf952bce01546964814fcc01bbad4fd14323a7fd7083bfeb283831",
+    "Core_Type_a7628dee73d0cab7": "69ffd0c4b55237eb7f43bfc4db35af5d7f548b658c49d1f602edb3e61203133d",
+    "Core_Type_aa76918c16b45821": "061c8c5b098d11f1f0242bc6a4765940dd648897b8eba8050c14c177a2abb0f3",
+    "Core_Type_ada7c671e42dd07b": "a3dde2b083bd97eb1b34ffb262d8fda35b4ee52855e96bed7d837f2b3711e0fb",
+    "Core_Type_b41a6f63fdacc7e0": "021fc2a244a4a0c49c893a166792b7c78d9d6447ec9073a18110c6c67dbe25ca",
+    "Core_Type_ba62fb5c03d794ea": "ceb177ba5111a0d85fe038540e15f8d50b0c7414c5d1256ab62375e6f4ab7c49",
+    "Core_Type_bb35a8aeca1a4688": "fa9e7d3874a647766d15ebfa7cceaa892e330d7e3437173164417aac8bc1acac",
+    "Core_Type_be431dcef3e4bfef": "a6d891ed4f0f6dcc1dd97093b59509a5a4dfefde1d2ec655d80f89ad2c09c0b5",
+    "Core_Type_c273351ae3b3af39": "a64e8c17603f54547c8177264b63a8709a0f143d3660f8574be10a56877dedda",
+    "Core_Type_c406108ffd8ef7e8": "c493165d803570ef352b4cf1af887e1ea28644ef9c00917ccaf4219ca650e100",
+    "Core_Type_cbb584594fc6afae": "56595e03f51f8add2f805b4657427d45942cdf51a8aee88dc6771be6364c5f19",
+    "Core_Type_dc842d5afe878c45": "b122bd5fadf2ff1cceb0e86ec41470b178f11782639496931989a23d2ba5b82f",
+    "Core_Type_dd9be87326dfdf50": "05937e237775aa02ffc0907b469e331b8416d2f3def534b507242315d974f1b7",
+    "Core_Type_f011e14cdca1660f": "6f131d0569fce950f9792b984cc086a09acb7bfe39f928d8b613468fc941d578",
+    "Core_Type_f0345f9471dbb1a6": "29cdf5864f025e644f129d484f979442fb7a5c23a6eac9866d68783818da5e3e",
+    "Core_Type_f45029381ee8d75a": "2756b2aabacba9e7fdc065ac25db339ef7f3f27911b38a136b84335cdd47bb26",
+    "Core_Type_f89b2950485f6974": "05a372d321b544690b95f27e8caeea518c26c9544824cb46627f954a059813ec",
+    "Core_Type_fe7c4991b9eac7ed": "a986860b8804fb1ac033419ab012c07595d085c717292c3dcf30c07390d166a1",
+    "Core_UInt16": "976921fc722e821b2285ff18db5148887bff35b98e0e07f2f7fd58ec1d093b8d",
+    "Core_UInt8": "734dcecb057e8ce0d7c75de598d522be18eff98538771e79344c3447c091bf21",
+    "Core_Union_04b2dd478d033526": "341f4fd0ca8e979220b7a498dcdd640593cb112e3228b32a33b29cd0ad5e6440",
+    "Core_Union_10c5bcc40652c29f": "c10d97cc9f0db4b9a6021dc7c5c85842e434322f6262cb6cb2894cd009b801a2",
+    "Core_Union_1f8d8e29a5ad8263": "af936e6acc5fa81f74dae11628fdd210431483c77069789b12afd0f39990c833",
+    "Core_Union_3602c5211c6d7193": "9172fb1ca70c0a703698861d993f5197279d48a199afff1346aba07970b04056",
+    "Core_Union_44a5b0382baff98e": "03c6d8606c991fabdbcebf76377236b1fddd15a499062e72536257f36e79ccf9",
+    "Core_Union_56d5e09f6622307f": "b84def7b8d7a986275756541b63e080cd1213afcee190c4f76cf762480cae91e",
+    "Core_Union_5ddcd4b339f59975": "e5b7b446960adcd84b27ee473dc9518e0e5b7b53e8f170f96120b9109e6e283f",
+    "Core_Union_6f71cccc6c7ce154": "499fb972b773322063dbbd81f96aa1b193df09189f15f2a628fb45f2deebbf2c",
+    "Core_Union_740458a83df467c6": "400e0c632775b568c8fe507b4f76ec249dbe92582aff125e48400019d398fcae",
+    "Core_Union_79d3a41e05d82f30": "13d44190a503183074ae3c39e12e91f3c3a6fd45bef86fda0dc36e3c7907d876",
+    "Core_Union_7c2f94f229cd4a35": "89e401781a280a0cc75fdfd450c7d8b511cad584450aaa17021a53edf5f3a1d6",
+    "Core_Union_937a89e8537540ba": "9cac27a1ac071d9d2d3d3721766567008e6b4baf3926e08afedb40727fb0dbce",
+    "Core_Union_989ad2f762a8ea8a": "d8f93f0757eea411d19f3e2b47dad5ac1752e3e9c04a26d0bad0268aac9aa327",
+    "Core_Union_b12fe4dbf8ffd3a8": "e3f2e1173d234777fa6203fd89538ac27f2ecc0168bd1b977d13630c28d309e6",
+    "Core_Union_bd821b5441b51df0": "d9ac2bbf75840d558579ad7ff5ab8386ec355d3da6d78271f21001074234a53e",
+    "Core_Union_be6c0f80ce7a7f42": "a151f6ef351223d9ca8ad60bd1d5479cf1a2f22bc9329aca22be72a35dd7e49f",
+    "Core_Union_c374251dbc907b0c": "ccb16a85871050ef0633093fe5d1c78d0a2cce24137d3abbe34bfe8d300090ba",
+    "Core_Union_c7976686cdf9e5c0": "3150c2a460c8ed7243f9f462b87ef979ce2c93af25b25639d16f9f05512436ed",
+    "Core_Union_ddcf6ceff9b30ebb": "813baded35bb7a945cdb74fc022f5117cbfc6f0217e0aa81a91ec7b9a12631f4",
+    "Core_Union_e4a55b2486407bbd": "01fc7a75b299745323aa5748833299b87ceedad2ab554794acedbd76bf6edf49",
+    "Core_Union_e965ca975d05306a": "d46ef42734e6c4d5dd280a871d18325bfe7bdf618a5feff6953c4f3c8d25be79",
+    "Core_Union_fca187753926e7e4": "83e3364b491b98273a20766aee62450c66a871ab9d6723d94b1ab23a3fbf43c7",
+    "FinalDiagnostics": "70d220d8b2b9217d14c273f0d539f48d3fe3ba22467c45ba5e81a04ac288b802",
+    "Final_Dimensions": "2bedf52d69a9965e9a8d249cd5376fbe14785c95933e88138b324fd98d9a1da8",
+    "Final_MatrixIntegralDiagnostics": "fa8befdae902176b79f39d333d6a993c11ad472e5b05cfec0b94477e4a068f31",
+    "Final_MetricEntry": "2c86969b58aa901b68ede1199d6cdc598e49cca74f43029b603a47d635c26ad3",
+    "Final_MetricMap": "2834d028741d13579757fa3c917e05a1d72df278e1d10873077cdab4ef0c0b71",
+    "Final_NegativeIntegral": "f88e44df67dedfc821e19d049b8e51b59e1b843980d23435fa6d2efa4c87b7cc",
+    "Final_PositivityDiagnostics": "da5c823475372c27f1962db8f0c9338cdc2962349437e275c552fe983f921777",
+    "Final_PositivityMeasurement": "1d0462f5700482806670e3c7a839a785c309d01cef61e2a453bf5d95ef0d4120",
+    "Final_PositivityWitness": "037b83e2535302afd91c9749abd97def9e4c4ebaf571e717283c780f9250156b",
+    "Final_SolutionMetricDiagnostics": "29554f5fbc8b6edc258f7afa9779b30ccaf3d40009662648a1e21e39c0a59662",
+    "Final_SpectralCumulative": "c1fc0edf983daae0988b7f98e895d767c0a2bbb002a900a4d7c77f709c30bcba",
+    "Final_SpectralEigenvalues": "797c7d4db683ea0b24c4f222c73646a97867c0b3c078640fe50238cf63e5eb2a",
+    "Final_SpectralIntegral": "c9e4173d9238dddd6847546424bb0dde184c71b9234a50d4b27cbc0e51d3e727",
+    "Phase_Aggregate": "b77d1b76e83eadc0a8b15e13cfb77df46d23f18094287cb86de2cba080ca1f46",
+    "Phase_AggregateMetric": "b627c7e5bfcef207c68d3c8a2dc2f8da81b193697f42c79100ead2d9bc4b6611",
+    "Phase_AggregateTimeBounds": "84dc5546ee61594999197006b2d5b02124622d6065cb7cff62757c1878e1e204",
+    "Phase_Current": "6727e27a843b769472c355a7d31209bc8f45dbfd0fa225519f2210c118c678da",
+    "Phase_Cursor": "9dad4833432606b43858c5298088520f41eb5e0e69250e11f870aab5dcaef217",
+    "Phase_Event": "0a4994e930d8e78416eeabf3e2a13d489ef607d4a571b6e9b916cd3520fe63e7",
+    "Phase_Health": "aa4da861474b1fbc258c38bbd7f069187d9344bcbcbd99a965c72250dcab45bd",
+    "Phase_Publication": "b8dccd7eddaac6d9613fad7a3b4f4963a409fe085af75a798b8a10108e323bb7",
+    "Phase_ScalarMetric": "ce4a9c1e6fee179506d1087d788ae4c9320f1cacb9a3242e7e5ad93733acd355",
+    "Phase_SegmentHeader": "2b4307bd98c99be8a0ac33c211fa59ecc03e29d339ce9e6f3d11b226a740f026",
+    "Phase_Source": "ebcacf408c4ac912e5581ce5878e66f6e97034549aea0efc464f247b3d21ec41",
+    "Phase_SpanId": "b07bfe325e8198d073df4cad496cacb87d296eb28e5620ae4996f4dde9c8d42f",
+    "ProducerPhaseSegment": "07e52d45e9a09921a9cd29c14414dee6ad3a08da7981edeb728b4f2adf582519",
+    "ProducerPhaseSource": "d7d396d9399bc6584256fbc24c0b728c225d339a244355006e25d4c5d914b2d4",
+    "ResultCursor": "739ad1be6e7d1833994def5dad08f8081df1f5d3e0d249c3373918b03f451f02",
+    "ResultManifest": "394b09b9ad051defed9cf9abf2fc8e76aeecf6f9e328aaad1c6487ff746b4e73",
+    "ResultPointer": "39d816067f2dc0fa4b4193ee11d29ae13edc9e649f60a1b0bd2c618d72141f08",
+    "ScientificCatalogPage": "e279a5e8cf4dd1dc12b0eae83284b223fa0546581fcae25647be90ecbf39118e",
+    "ScientificRecord": "3c84dfcc7bbb25e50ca96baf7603b57a654c9e61d08a8bf0f2cba2402b26d40e",
+    "Source_GraphComponent": "a9e507f9bab8397bf0c43ee140f335d5cda282d84655435b25897e4c3029ed80",
+    "Source_RelativePath": "08fed306e15bc3a25908db2f39157850ab526fb0fa3386d2dc024abb764308e0",
+    "Source_Sha1": "9f4fd67e812ee5dc36551f61c875bd5e68a3bd6371f6b93a1151b6c78035dc0a",
+    "Source_SourceGraph": "1a8631312a31efda1ae148f0910f363821536ab7e023315ac8b22632657323d8"
+  }
+}

@@ -563,3 +563,105 @@ The existing generator exports `ProducerPhaseSegment`, `ProducerPhaseSource`, sh
 and the offline schemas in `generated/contracts.ts`. The pure APIs do not establish queue bounds,
 crash durability, actual storage reads, reader transactions, native overhead or scientific
 acceptance. P29/P30 integration and runtime checks remain separate owning gates.
+
+### Stored final observations and actual physical context
+
+`final-observations.schema.json` defines `qcl-negf.final-observations.v1`, a separate local
+subresource of the existing native5 `qcl-negf-physics-analysis-v5` artifact, role `physics.analysis`,
+profile `science`. Its representation is `final_observations`; the fixed-width UTF8 scalar
+declaration is `/final_observations/declaration_json`. The HDF root contains only `metadata` and
+`final_observations`. This does not extend the frozen Core state graph, `array_payload`,
+`record_leaf` or the independent `final_diagnostics` representation.
+
+```python
+from qcl_negf_contracts.results import (
+    validate_final_observations, validate_nested_sweep_plan,
+)
+
+checked = validate_final_observations(
+    decoded_observations,
+    checkpoint=verified_checkpoint_document,
+    manifest=verified_manifest_document,
+    artifact_ref=verified_selected_observations_file_ref,
+    diagnostics=decoded_selected_final_diagnostics,
+    plan=decoded_original_plan,
+    model=decoded_actual_point_model,
+)
+```
+
+The keyword contexts are mandatory caller-verified immutable sources. The validator returns a
+detached object and checks closed schemas, full FileRefs, actual state bindings, domain dimensions,
+request facts, missing-output issues and the selected dependency DAG. It never opens files, verifies
+hashes/HDF bytes, resolves Julia inputs, computes canonical model bytes or runs numerical validation.
+The existing `[validation]` extra is required. Decode JSON with an explicit caller byte budget;
+the existing finite UTF8/depth64 boundary applies. Native readers share one aggregate metadata/read
+budget, check fixed scalar strings before reading and verify same-open storage and hashes.
+
+The declaration binds exact identity, invocation, state sequence and Core identity/integrity to a
+closed global-final checkpoint. Failed, cancelled and interrupted process outcomes remain valid
+carriers of recorded evidence. Exact direct dependencies are ordered checkpoint, diagnostics, plan,
+model; these are distinct immutable paths, as is the observations file. Diagnostics still depends
+only on the checkpoint; plan and model are leaves. Selected closure cycles fail; forward/shared DAGs
+are allowed. Unrelated inventory closure is not silently given a new global validation meaning.
+
+`context` preserves actual postadaptive coordinates, nonuniform quadrature weights, scaled and
+physical axes, scales, inputs, ordered scattering families, full physical/algorithm options and
+declared basis/boundary/gauge conventions. Five construction/requested flags remain distinct from
+actual enabled families; an absent requested zero kernel is not a measured zero. Electron-electron
+scattering is a separate actual family. The schema names every context/view field from the published
+Core declarations. Twenty-six fixed local array descriptors have exact dataset names, eltypes,
+shapes, F order, logical axes, units and context coordinate/weight field references. Existing
+checkpoint Green/selfenergy descriptors are copied exactly as bindings without duplicating their
+arrays, kernels or retained witnesses.
+
+The stored views retain complete complex wavefunctions and sheet matrices, including coherences;
+raw spectral/occupied traces have axes `(E,k)`, spatial-energy density `(E,z)`. Potentials and density
+refer to the accepted published state. Six nullable views require explicit issues; the effective
+levels/wavefunctions/transform/density-matrix group is all present or all missing. Scalars use
+existing IEEE64 tags; native Float64/ComplexF64 bytes preserve NaN payloads, infinities and signed
+zero. Missing remains null with an issue. Native owners enforce exact LE storage, consecutive complex
+`r/i` components, HDF Boolean enums and the existing non-lossy filter policy.
+
+Raw metrics, optional limits and the one integrated positivity scan remain solely in the linked
+`final_diagnostics`. When positivity is unavailable, its status matches the observations issue and
+its diagnostic reason is exactly `issue.reason + ': ' + issue.detail`; machine reason/detail remain
+separate in observations. An error witness inside measured diagnostics remains an error witness.
+`summary` records the owning scientific classification without computing new acceptance criteria.
+Its exact Core status text has a transport-profile limit of 256 Unicode codepoints: no truncation
+or new Core Symbol restriction. Other current producer conventions/issue vocabularies are closed;
+new owning producer values require an explicit format/profile update. The existing lossy display
+`assessment` is not part of this wire. Runner retains full point/light presentation; readers must
+not claim reconstruction of unseen display fields or treat display as raw evidence.
+
+For completed restoration, pass both `parent_manifest` and `parent_checkpoint`. The child binds the
+immediate parent StateRef, exact parent checkpoint/history cutoff and unchanged original Core
+binding/evidence. Attempt, branch and epoch may legitimately differ in the envelopes. Original
+evidence remains in the child checkpoint; current selected-map and independent-oracle receipts are
+stored separately. `measured`, `unsupported`, `not_measured` and `error` remain distinct. These are
+structural joins, without a hidden restore, fresh map, solve or numerical acceptance evaluator.
+
+The plan FileRef hash is the exact original byte hash, distinct from a scientific fingerprint.
+The model is the existing `qcl-negf-resolved-configuration-v3` envelope containing actual P03
+`stationary_transport_inputs_v1` **after point axes are resolved**. Its `configuration_hash` is the
+existing canonical preimage digest and equals model identity; its FileRef SHA is a different hash
+of JSON file bytes. A template or renamed resolved-snapshot-v1 is not that point model. Results
+independently checks canonical model bytes. Request coordinates bind to the frozen point; honest
+voltage field/period roundtrip differences retain both IEEE samples as `not_verified` without an
+invented tolerance.
+
+`nested-sweep-plan.schema.json` formalizes the existing raw `{name,root}` tree: leaf `{kind,name}`
+or level `{kind,name,axes:[{name,values}],child}`. It adds no payload envelope or `schema` key.
+`validate_nested_sweep_plan(decoded_tree)` checks finite portable metadata, names, depth and unique
+axis/fully-qualified coordinate names. Canonical axis-value uniqueness remains an owner check.
+For configured results its FileRef uses `text/plain`, format `qcl-negf.nested-sweep-plan.v1`.
+Runner captures an immutable attempt copy of original `execution_plan.yaml` bytes before Core;
+the mutable operational file is not an immutable source and reserialization is not byte preservation.
+The bounded raw YAML parser must reject anchors/aliases/merges, custom tags, duplicate/non-string
+keys and NaN/Infinity before building objects. Validation of an already-decoded dict cannot prove
+these properties of unseen YAML. The ordinary scientific route retains its actual canonical
+scientific-plan-v2 JSON and full schema check.
+
+Generated exports add `FinalObservations`, `Observation_*`, `NestedSweepPlan` and `Nested_*` while
+preserving existing aliases and URI rules. Native Julia producer/readback qualification, mandatory
+Results consumers, scientific discretization/oracle evidence and experimental validation remain
+separate gates; a format pass does not establish any of them.
