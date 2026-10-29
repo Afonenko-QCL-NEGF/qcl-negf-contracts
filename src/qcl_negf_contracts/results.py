@@ -615,14 +615,23 @@ def _observation_shapes_and_state(value, terminal):
         _require(all(array['shape'] == shape for array in result.values()),
                  '$.state_bindings', 'selfenergy shape differs from actual domain')
         return result
-    scattering = [dict(family=_symbol(item['key']), **components(item['value'])) for item in scba['scattering']['entries']]
-    families = [item['family'] for item in scattering]
-    _require(bindings['scattering'] == scattering and context['selfenergy_families'] == families and
-             len(families) == len(set(families)), '$.state_bindings.scattering', 'actual family order or descriptors differ')
+    # Dict entry order is transport order; Core records its actual order separately.
+    sources = {}
+    for item in scba['scattering']['entries']:
+        family = _symbol(item['key'])
+        _require(family not in sources, '$.state_bindings.scattering', 'duplicate checkpoint scattering family')
+        sources[family] = components(item['value'])
+    order = [_symbol(item) for item in state['family_order']]
+    _require(order[-2:] == ['embedding_plus', 'embedding_minus'],
+             '$.state_bindings.scattering', 'checkpoint embedding suffix differs')
+    families = order[:-2]
+    _require(len(families) == len(set(families)) and set(families) == set(sources),
+             '$.state_bindings.scattering', 'checkpoint scattering families differ from actual order')
+    scattering = [dict(family=family, **sources[family]) for family in families]
+    _require(bindings['scattering'] == scattering and context['selfenergy_families'] == families,
+             '$.state_bindings.scattering', 'actual family order or descriptors differ')
     _require(context['enabled_scattering'] == [name for name in families if name != 'electron_electron'],
              '$.context.enabled_scattering', 'actual five-family projection differs')
-    _require([_symbol(item) for item in state['family_order']] == families+['embedding_plus', 'embedding_minus'],
-             '$.state_bindings.scattering', 'checkpoint family order differs')
     _require(bindings['embedding'] == {name: components(scba[field]) for name, field in
              (('total', 'embedding'), ('plus', 'embedding_plus'), ('minus', 'embedding_minus'))},
              '$.state_bindings.embedding', 'embedding descriptors differ from checkpoint')
