@@ -11,6 +11,7 @@ from importlib.resources import files
 import json
 import math
 import re
+import struct
 
 from . import schema_validator
 from .artifacts import ARTIFACT_SCHEMA_CONTRACTS, CONTRACT_SET, NATIVE_SCHEMA_VERSION, Artifact, digest_value, relative_path
@@ -24,6 +25,7 @@ _SCHEMAS = {
     'checkpoint': ('checkpoint-declaration.schema.json', 'qcl-negf.checkpoint-declaration.v1'),
     'record': ('scientific-record.schema.json', 'qcl-negf.scientific-record.v1'),
     'final_diagnostics': ('final-diagnostics.schema.json', 'qcl-negf.final-diagnostics.v1'),
+    'final_observations': ('final-observations.schema.json', 'qcl-negf.final-observations.v1'),
 }
 _TOTALS = ('records', 'scba_rows', 'outer_rows', 'witness_updates', 'last_record')
 
@@ -431,6 +433,346 @@ def validate_final_diagnostics(value: object, *, checkpoint: object, manifest: o
         n, b, e = map(_integer, (negative, beyond, invalid))
         _require(0 <= b <= n <= total-e and 0 <= e <= total,
                  '$.positivity.data.integrals', 'negative/beyond/invalid counts contradict full-grid coverage')
+    return value
+
+
+def _observation_context(resource, definition, value, path):
+    """Validate a named bundled context, keeping the offline resource resolver."""
+    from jsonschema import ValidationError
+    checked = object_value(value)
+    try:
+        encode(checked)
+        validator = _validator(resource)
+        validator.evolve(schema={'$ref': '#/$defs/'+definition,
+                                 '$defs': validator.schema['$defs']}).validate(checked)
+    except ValidationError as error:
+        suffix = ''.join(f'[{part}]' if isinstance(part, int) else '.'+part for part in error.absolute_path)
+        raise ContractError(f'{path}{suffix}: {error.message}', 'invalid_input') from error
+    except UnicodeError as error:
+        raise ContractError(f'{path}: invalid UTF-8', 'invalid_input') from error
+    # This context contains owning portable model metadata, not tagged Core values.
+    # A metadata key named "kind" must not dispatch the Core transport grammar.
+    return checked
+
+
+def validate_nested_sweep_plan(value: object) -> Object:
+    """Validate the existing decoded tree, never parse YAML or replace original bytes.
+
+    The caller's bounded raw parser rejects aliases, tags, merges and duplicate keys
+    before constructing this finite JSON-safe tree. A schema pass cannot prove those
+    properties of unseen YAML. Canonical axis-value uniqueness remains an owner gate.
+    """
+    from jsonschema import ValidationError
+    value = object_value(value)
+    try:
+        encode(value)
+        _validator('nested-sweep-plan.schema.json').validate(value)
+    except ValidationError as error:
+        raise ContractError(f'$.plan: {error.message}', 'invalid_input') from error
+    except UnicodeError as error:
+        raise ContractError('$.plan: invalid UTF-8', 'invalid_input') from error
+    paths = set()
+    node = value['root']
+    while node['kind'] == 'level':
+        names = [axis['name'] for axis in node['axes']]
+        _require(len(names) == len(set(names)), '$.plan.root.axes', 'duplicate axis name')
+        for name in names:
+            path = node['name']+'.'+name
+            _require(path not in paths, '$.plan.root.axes', 'duplicate fully-qualified coordinate path')
+            paths.add(path)
+        node = node['child']
+    return value
+
+
+def _observation_selected(source, reference, role, path, dependencies):
+    inventory = {row['path']: row for row in source['artifacts']}
+    row = inventory.get(reference['path'])
+    _require(row is not None and all(row[key] == reference[key] for key in reference),
+             path, 'selected full FileRef absent or differs from manifest inventory')
+    _require(row['role'] == role and row['profile'] == 'science' and
+             row['dependencies'] == dependencies, path, 'role/profile or exact direct dependencies differ')
+    return inventory
+
+
+def _observation_dag(inventory, selected):
+    # Iterative selected-closure DFS: shared descendants are not back-edges.
+    active, completed = set(), set()
+    pending = [(selected, False)]
+    while pending:
+        path, leaving = pending.pop()
+        if leaving:
+            active.remove(path)
+            completed.add(path)
+        elif path not in completed:
+            _require(path not in active, '$.artifact_ref', 'selected dependency closure contains a cycle')
+            active.add(path)
+            pending.append((path, True))
+            pending.extend((child, False) for child in reversed(inventory[path]['dependencies']))
+
+
+def _observation_numeric_bits(value, path):
+    """Encode a finite plan coordinate as f64, without a scientific tolerance."""
+    _require(isinstance(value, (int, float)) and not isinstance(value, bool), path, 'numeric coordinate required')
+    try:
+        return struct.pack('>d', value).hex()
+    except (OverflowError, struct.error) as error:
+        raise ContractError(f'{path}: coordinate outside Float64 domain', 'invalid_input') from error
+
+
+def _observation_request(value, source, plan, model):
+    request = value['request']
+    model = _observation_context('final-observations.schema.json', 'ModelEnvelope', model, '$.model')
+    _require(model['configuration_hash'] == value['identity']['model_sha256'],
+             '$.model.configuration_hash', 'actual point canonical model digest differs')
+    flags = request['scattering_requested']
+    _require(flags == model['configuration']['inputs']['scattering'] ==
+             _fields(value['context']['problem_scattering']), '$.request.scattering_requested',
+             'requested and actual model construction flags differ')
+    plan_ref, model_ref = request['plan'], request['model']
+    _file(model_ref, 'qcl-negf-resolved-configuration-v3', '$.request.model')
+    _require(model_ref['media_type'] == 'application/json', '$.request.model', 'model requires JSON')
+    _observation_selected(source, model_ref, 'model', '$.request.model', [])
+    _require(plan_ref['sha256'] == value['identity']['plan_sha256'], '$.request.plan', 'original plan byte digest differs')
+    _observation_selected(source, plan_ref, 'plan', '$.request.plan', [])
+    if request['kind'] == 'scientific_plan_v2':
+        from .messages import scientific_plan
+        plan = scientific_plan(plan)
+        from jsonschema import ValidationError
+        try:
+            encode(plan)
+            _validator('scientific-plan.schema.json').validate(plan)
+        except ValidationError as error:
+            raise ContractError(f'$.plan: {error.message}', 'invalid_input') from error
+        except UnicodeError as error:
+            raise ContractError('$.plan: invalid UTF-8', 'invalid_input') from error
+        _file(plan_ref, 'qcl-negf-scientific-plan-v2', '$.request.plan')
+        _require(plan_ref['media_type'] == 'application/json', '$.request.plan', 'scientific plan requires JSON')
+        points = [row for row in plan['points'] if row['id'] == value['identity']['point_id']]
+        executions = [row for row in plan['executions'] if row['id'] == value['identity']['execution_id']]
+        _require(len(points) == len(executions) == 1, '$.plan', 'selected point/execution absent or ambiguous')
+        point, execution = points[0], executions[0]
+        _require(point['execution_id'] == execution['id'] and point['id'] in execution['point_ids'],
+                 '$.plan.points', 'point does not belong to selected execution')
+        passport = point['effective_inputs']
+        _require(passport['axes_applied'] and passport['model_sha256'] == model['configuration_hash'],
+                 '$.plan.points.effective_inputs', 'point model binding differs from actual point model')
+        for name in ('temperature_K', 'voltage_per_period_V'):
+            _require(_observation_numeric_bits(point[name], '$.plan.points.'+name) == request[name]['bits'] ==
+                     _observation_numeric_bits(passport[name], '$.plan.points.effective_inputs.'+name),
+                     '$.request.'+name, 'requested coordinate differs from frozen point/passport')
+    else:
+        plan = validate_nested_sweep_plan(plan)
+        _file(plan_ref, 'qcl-negf.nested-sweep-plan.v1', '$.request.plan')
+        _require(plan_ref['media_type'] == 'text/plain', '$.request.plan', 'original nested YAML requires text/plain')
+        _require(plan['name'] == 'configured_operating_points', '$.plan.name', 'configured plan differs')
+        node = plan['root']
+        for level, axis, coordinate in (('temperature', 'temperature_K', 'temperature_K'),
+                                         ('voltage', 'voltage_per_period_V', 'voltage_per_period_V')):
+            _require(node['kind'] == 'level' and node['name'] == level and
+                     len(node['axes']) == 1 and node['axes'][0]['name'] == axis,
+                     '$.plan.root', 'configured coordinate tree differs')
+            values = node['axes'][0]['values']
+            bits = [_observation_numeric_bits(item, '$.plan.root.axes.values') for item in values]
+            _require(request[coordinate]['bits'] in bits, '$.request.'+coordinate,
+                     'requested coordinate absent from original tree')
+            node = node['child']
+        _require(node == {'kind': 'leaf', 'name': 'poisson_scba'}, '$.plan.root.child', 'configured leaf differs')
+    for name, requested, actual in (('temperature', request['temperature_K'], value['context']['inputs']['T_L_K']),
+                                    ('voltage', request['voltage_per_period_V'], value['context']['inputs']['V_period_V'])):
+        check = request['coordinate_checks'][name]
+        _require(check['requested'] == requested and check['actual'] == actual,
+                 '$.request.coordinate_checks.'+name, 'recorded coordinate samples differ')
+        equal = requested == actual
+        _require((equal and check['status'] == 'verified' and check['reason'] is None) or
+                 (not equal and name == 'voltage' and check['status'] == 'not_verified' and
+                  check['reason'] == 'field_period_roundtrip'),
+                 '$.request.coordinate_checks.'+name, 'coordinate verification status/reason differs')
+
+
+def _observation_shapes_and_state(value, terminal):
+    context, views = value['context'], value['views']
+    dimensions = {key: int(number) for key, number in context['dimensions'].items()}
+    _require(all(number <= 2**63-1 for number in dimensions.values()), '$.context.dimensions', 'dimensions exceed Int64 domain')
+    nz, ne, nk, nb = (dimensions[key] for key in ('Nz', 'NE', 'Nk', 'Nb'))
+    state = _fields(terminal['state']); scba = _fields(state['scba'])
+    _require(value['binding'] == {'identity': state['identity'], 'terminal_integrity': state['integrity']},
+             '$.binding', 'Core identity or terminal integrity differs from checkpoint')
+    _require(context['algorithms'] == _fields(state['measurement_context'])['algorithms'],
+             '$.context.algorithms', 'algorithms differ from exact checkpoint context')
+    for name in ('published_U', 'published_n'):
+        _require(state[name]['shape'] == [str(nz)], '$.context.dimensions.Nz', 'spatial dimension differs from checkpoint')
+    green = _fields(scba['green'])
+    shape = [str(ne), str(nk), str(nb), str(nb)]
+    bindings = value['state_bindings']
+    _require(bindings['green'] == {a: green[b] for a, b in
+             (('retarded', 'Gᴿ'), ('lesser', 'Gˡ'), ('greater', 'Gᵍ'), ('spectral', 'A'))},
+             '$.state_bindings.green', 'Green descriptors differ from checkpoint')
+    _require(all(green[name]['shape'] == shape for name in ('Gᴿ', 'Gˡ', 'Gᵍ', 'A')),
+             '$.context.dimensions', 'Green dimensions differ from actual domain')
+    def components(family):
+        fields = _fields(family)
+        result = {a: fields[b] for a, b in (('retarded', 'Σᴿ'), ('lesser', 'Σˡ'), ('greater', 'Σᵍ'))}
+        _require(all(array['shape'] == shape for array in result.values()),
+                 '$.state_bindings', 'selfenergy shape differs from actual domain')
+        return result
+    scattering = [dict(family=_symbol(item['key']), **components(item['value'])) for item in scba['scattering']['entries']]
+    families = [item['family'] for item in scattering]
+    _require(bindings['scattering'] == scattering and context['selfenergy_families'] == families and
+             len(families) == len(set(families)), '$.state_bindings.scattering', 'actual family order or descriptors differ')
+    _require(context['enabled_scattering'] == [name for name in families if name != 'electron_electron'],
+             '$.context.enabled_scattering', 'actual five-family projection differs')
+    _require([_symbol(item) for item in state['family_order']] == families+['embedding_plus', 'embedding_minus'],
+             '$.state_bindings.scattering', 'checkpoint family order differs')
+    _require(bindings['embedding'] == {name: components(scba[field]) for name, field in
+             (('total', 'embedding'), ('plus', 'embedding_plus'), ('minus', 'embedding_minus'))},
+             '$.state_bindings.embedding', 'embedding descriptors differ from checkpoint')
+    adaptation = state['adaptation']
+    _require(_integer(context['domain_revision']) == (0 if adaptation is None else _integer(_fields(adaptation)['expansions'])),
+             '$.context.domain_revision', 'actual domain revision differs')
+    if adaptation is not None:
+        revisions = _fields(adaptation)['revisions']
+        _require(bool(revisions) and _fields(revisions[-1])['evidence'] is not None,
+                 '$.context', 'actual adaptive domain receipt missing')
+        evidence = _fields(_fields(revisions[-1])['evidence'])
+        _require(all(context[name] == evidence[name] for name in ('discretization_id', 'basis_id')),
+                 '$.context', 'actual adaptive domain IDs differ')
+    axis_counts = {'z': nz, 'E': ne, 'k': nk, 'state': nb, 'state_prime': nb}
+    for owner in (context, views):
+        for field, descriptor in owner.items():
+            if isinstance(descriptor, dict) and 'dataset' in descriptor:
+                _require(descriptor['shape'] == [str(axis_counts[axis]) for axis in descriptor['axes']],
+                         '$.arrays.'+field, 'local shape differs from actual dimensions')
+    _require(_integer(value['summary']['outer_confirmation_count']) >= 0, '$.summary.outer_confirmation_count', 'negative count')
+    _require(_integer(context['inputs']['g_s']) >= 0,
+             '$.context.inputs.g_s', 'negative count')
+    return state
+
+
+def _observation_issues(value, diagnostics):
+    issues = {item['target']: item for item in value['issues']}
+    _require(len(issues) == len(value['issues']), '$.issues', 'duplicate issue target')
+    missing = {name for name, array in value['views'].items() if array is None}
+    positivity = diagnostics['positivity']
+    if positivity['data'] is None:
+        missing.add('positivity')
+        issue = issues.get('positivity')
+        _require(issue is not None and issue['status'] == positivity['status'] and
+                 positivity['reason'] == issue['reason']+': '+issue['detail'],
+                 '$.issues', 'positivity issue differs from original diagnostic failure')
+    _require(set(issues) == missing, '$.issues', 'issues do not match unavailable outputs')
+    group = [value['views'][name] is None for name in ('effective_levels_eV',
+             'effective_wavefunctions_per_sqrt_nm', 'effective_transform', 'effective_density_matrix_per_m2')]
+    _require(all(group) or not any(group), '$.views', 'incomplete effective view group')
+
+
+def _observation_restoration(value, source, terminal, parent_manifest, parent_checkpoint):
+    state = _fields(terminal['state']); summary = value['summary']; restoration = value['restoration']
+    if value['source_mode'] == 'produced':
+        _require(restoration is None and parent_manifest is None and parent_checkpoint is None,
+                 '$.restoration', 'produced observations cannot carry restoration contexts')
+        original = _fields(state['final_evidence'])
+        _require(summary['status'] == _symbol(original['original_status']) and
+                 summary['converged'] == original['original_converged'], '$.summary', 'original classification differs')
+        return
+    _require(restoration is not None and parent_manifest is not None and parent_checkpoint is not None,
+             '$.restoration', 'completed restore requires both verified parent contexts')
+    prior_source = validate_manifest(parent_manifest)
+    prior = validate_checkpoint_declaration(parent_checkpoint, manifest=prior_source)
+    anchor = source['lineage']['parent_state']
+    _require(anchor is not None and restoration['parent_state'] == anchor and
+             all(anchor[key] == prior[key] for key in ('identity', 'state_id', 'state_sequence')) and
+             restoration['parent_checkpoint'] == prior_source['checkpoint'] and
+             restoration['history'] == prior['history'], '$.restoration', 'immediate parent state/reference/cutoff differs')
+    _file(restoration['parent_checkpoint'], 'qcl-negf.checkpoint-declaration.v1', '$.restoration.parent_checkpoint')
+    old = _fields(prior['state'])
+    _require(prior_source['closed'] and prior_source['status']['process']['state'] in
+             ('succeeded', 'failed', 'cancelled', 'interrupted') and
+             _symbol(old['boundary']) == 'final' and old['final_evidence'] is not None,
+             '$.restoration', 'parent is not a closed original final state')
+    inventory = {row['path']: row for row in prior_source['artifacts']}
+    checkpoint_row = inventory[restoration['parent_checkpoint']['path']]
+    _require(set(checkpoint_row['dependencies']) == {item['path'] for item in prior['payloads']},
+             '$.restoration.parent_checkpoint', 'parent checkpoint payload frontier differs')
+    for payload in prior['payloads']:
+        row = inventory.get(payload['path'])
+        _require(row is not None and all(row[key] == payload[key] for key in payload),
+                 '$.restoration.parent_checkpoint', 'parent payload full FileRef differs from inventory')
+    _observation_dag(inventory, restoration['parent_checkpoint']['path'])
+    # Core snapshot is preserved across attempts. Envelope attempt/branch/epoch are not Core identity.
+    _require(all(state[name] == old[name] for name in ('identity', 'integrity', 'final_evidence')),
+             '$.restoration.original', 'original Core binding/evidence differs from selected parent')
+    _require(restoration['original'] == {'checkpoint': value['checkpoint'], 'field': 'final_evidence',
+             'integrity': state['integrity']}, '$.restoration.original', 'original locator differs from child checkpoint')
+    selected = _fields(restoration['revalidation']); oracle = _fields(restoration['independent_oracle'])
+    status = _symbol(selected['status']); passed = _fields(selected['report'])['passed']
+    _require(status in ('measured', 'error') and (status != 'error' or selected['reason'] is not None and not passed),
+             '$.restoration.revalidation', 'selected-map receipt status/report inconsistent')
+    context = _fields(selected['context'])
+    _require(context['algorithms'] == value['context']['algorithms'] and
+             _symbol(context['final_state_alignment']) == 'restored_aligned',
+             '$.restoration.revalidation.context', 'restoration context differs')
+    if status == 'measured':
+        _require(_symbol(context['backend']) == 'production' and context['map_kernels_shared_with_solver'] is True,
+                 '$.restoration.revalidation.context', 'measured receipt lacks selected-map context')
+    oracle_status = _symbol(oracle['status'])
+    _require(oracle_status in ('measured', 'not_measured', 'unsupported', 'error') and
+             (oracle_status == 'measured' or oracle['reason'] is not None),
+             '$.restoration.independent_oracle', 'independent receipt status/reason inconsistent')
+    if oracle_status == 'measured':
+        _require(oracle['report'] is not None and oracle['context'] is not None,
+                 '$.restoration.independent_oracle', 'measured independent receipt lacks report/context')
+        independent = _fields(oracle['context'])
+        _require(_symbol(independent['backend']) == 'reference' and independent['map_kernels_shared_with_solver'] is False,
+                 '$.restoration.independent_oracle', 'oracle does not declare independent reference context')
+    # Structural classification relationships only, never repeat numerical band/history gates.
+    if summary['converged']:
+        consistent = passed and summary['status'] == 'converged'
+    elif summary['status'] == 'approximate':
+        consistent = passed
+    elif not passed:
+        consistent = summary['status'] == 'validation_failed'
+    else:
+        consistent = summary['status'] == _symbol(state['status'])
+    _require(consistent, '$.summary', 'current classification contradicts recorded revalidation')
+
+
+def validate_final_observations(value: object, *, checkpoint: object, manifest: object,
+                                artifact_ref: object, diagnostics: object, plan: object, model: object,
+                                parent_manifest: object | None = None,
+                                parent_checkpoint: object | None = None) -> Object:
+    """Join caller-verified immutable final sources without files, hashes or numerics.
+
+    The caller verifies bytes/HDF storage and supplies decoded documents for these
+    exact refs. Model canonical bytes and safe original YAML parsing belong to the
+    independent owners. Valid declarations never establish scientific acceptance.
+    """
+    value = _checked('final_observations', value)
+    source = validate_manifest(manifest)
+    terminal = validate_checkpoint_declaration(checkpoint, manifest=source)
+    reference = _context_definition('FileRef', artifact_ref, '$.artifact_ref')
+    _file(reference, 'qcl-negf-physics-analysis-v5', '$.artifact_ref')
+    _require(reference['media_type'] == 'application/x-hdf5', '$.artifact_ref', 'analysis requires HDF5')
+    refs = (value['checkpoint'], value['diagnostics'], value['request']['plan'], value['request']['model'])
+    paths = [item['path'] for item in refs]
+    _require(len(set(paths+[reference['path']])) == 5, '$.artifact_ref', 'selected immutable paths alias')
+    inventory = _observation_selected(source, reference, 'physics.analysis', '$.artifact_ref', paths)
+    _require(source['checkpoint'] == value['checkpoint'], '$.checkpoint', 'selected checkpoint reference differs')
+    diagnostics = validate_final_diagnostics(diagnostics, checkpoint=terminal, manifest=source,
+                                              artifact_ref=value['diagnostics'])
+    state = _fields(terminal['state'])
+    _require(source['closed'] and source['status']['process']['state'] in
+             ('succeeded', 'failed', 'cancelled', 'interrupted') and _symbol(state['boundary']) == 'final' and
+             state['final_evidence'] is not None, '$.checkpoint', 'closed global-final evidence required')
+    for key in ('identity', 'invocation', 'state_id', 'state_sequence'):
+        _require(value[key] == terminal[key], '$.'+key, 'observations differ from selected final checkpoint')
+    _observation_shapes_and_state(value, terminal)
+    dimensions = value['context']['dimensions']
+    _require(diagnostics['dimensions'] == {'energy': dimensions['NE'], 'momentum': dimensions['Nk'], 'basis': dimensions['Nb']},
+             '$.diagnostics', 'linked diagnostics domain differs')
+    _observation_request(value, source, plan, model)
+    _observation_issues(value, diagnostics)
+    _observation_restoration(value, source, terminal, parent_manifest, parent_checkpoint)
+    _observation_dag(inventory, reference['path'])
     return value
 
 

@@ -19,7 +19,8 @@ DOCUMENTS = ('result-common.schema.json', 'core-state.schema.json', 'result-mani
              'result-pointer.schema.json', 'scientific-catalog.schema.json', 'result-cursor.schema.json',
              'checkpoint-declaration.schema.json', 'scientific-record.schema.json',
              'producer-phase-segment.schema.json', 'producer-phase-source.schema.json',
-             'final-diagnostics.schema.json')
+             'final-diagnostics.schema.json', 'final-observations.schema.json',
+             'nested-sweep-plan.schema.json')
 
 
 def obj(properties):
@@ -211,12 +212,16 @@ def ts_export(documents):
                     'scientific-record.schema.json': 'ScientificRecord',
                     'producer-phase-segment.schema.json': 'ProducerPhaseSegment',
                     'producer-phase-source.schema.json': 'ProducerPhaseSource',
-                    'final-diagnostics.schema.json': 'FinalDiagnostics'}.get(file)
+                    'final-diagnostics.schema.json': 'FinalDiagnostics',
+                    'final-observations.schema.json': 'FinalObservations',
+                    'nested-sweep-plan.schema.json': 'NestedSweepPlan'}.get(file)
             return base
         prefix = ('Core_' if file == 'core-state.schema.json' else
                   'Common_' if file == 'result-common.schema.json' else
                   'Phase_' if file in ('producer-phase-segment.schema.json', 'producer-phase-source.schema.json') else
-                  'Final_' if file == 'final-diagnostics.schema.json' else 'Source_')
+                  'Final_' if file == 'final-diagnostics.schema.json' else
+                  'Observation_' if file == 'final-observations.schema.json' else
+                  'Nested_' if file == 'nested-sweep-plan.schema.json' else 'Source_')
         return prefix + re.sub('[^A-Za-z0-9_]', '_', parts[-1])
     # Register only references reachable from the result schemas; do not interpret unrelated model-help rules.
     def register(file, parts=()):

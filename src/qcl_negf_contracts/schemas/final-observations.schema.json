@@ -1,0 +1,2860 @@
+{
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "qcl-negf.final-observations.v1"
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v2"
+    },
+    "identity": {
+      "$ref": "result-common.schema.json#/$defs/Identity"
+    },
+    "invocation": {
+      "$ref": "result-common.schema.json#/$defs/Invocation"
+    },
+    "state_id": {
+      "$ref": "result-common.schema.json#/$defs/Id"
+    },
+    "state_sequence": {
+      "$ref": "result-common.schema.json#/$defs/PositiveCount"
+    },
+    "checkpoint": {
+      "$ref": "result-common.schema.json#/$defs/FileRef"
+    },
+    "diagnostics": {
+      "$ref": "result-common.schema.json#/$defs/FileRef"
+    },
+    "source_mode": {
+      "enum": [
+        "produced",
+        "completed_restore"
+      ]
+    },
+    "binding": {
+      "$ref": "#/$defs/Binding"
+    },
+    "context": {
+      "$ref": "#/$defs/FinalObservationContext"
+    },
+    "request": {
+      "$ref": "#/$defs/Request"
+    },
+    "state_bindings": {
+      "$ref": "#/$defs/StateBindings"
+    },
+    "views": {
+      "$ref": "#/$defs/StoredFinalObservations"
+    },
+    "summary": {
+      "$ref": "#/$defs/FinalScientificSummary"
+    },
+    "restoration": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Restoration"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/FinalObservationIssue"
+      }
+    }
+  },
+  "required": [
+    "schema",
+    "contract_set",
+    "identity",
+    "invocation",
+    "state_id",
+    "state_sequence",
+    "checkpoint",
+    "diagnostics",
+    "source_mode",
+    "binding",
+    "context",
+    "request",
+    "state_bindings",
+    "views",
+    "summary",
+    "restoration",
+    "issues"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stored final observations v1; structural source bindings, never scientific acceptance",
+  "$defs": {
+    "Array_x_scaled": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/x_scaled"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_wX": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/wX"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_energy_scaled": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/energy_scaled"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "E"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "energy_eV"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wE"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_wE": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/wE"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "E"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "energy_eV"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wE"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_momentum_scaled": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/momentum_scaled"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "k"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "k_per_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wk"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_wk": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/wk"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "k"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "k_per_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wk"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_z_nm": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/z_nm"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "nm"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_energy_eV": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/energy_eV"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "E"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "eV"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "energy_eV"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wE"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_k_per_nm": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/k_per_nm"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "k"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "nm^-1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "k_per_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wk"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_state_index": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/state_index"
+        },
+        "eltype": {
+          "const": "Int64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state_index"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": null
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_trusted_energy": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/trusted_energy"
+        },
+        "eltype": {
+          "const": "Bool"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "E"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "energy_eV"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wE"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_potential_structure_eV": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/potential_structure_eV"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "eV"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_potential_external_eV": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/potential_external_eV"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "eV"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_potential_hartree_eV": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/potential_hartree_eV"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "eV"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_potential_total_eV": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/potential_total_eV"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "eV"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_density_per_m3": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/density_per_m3"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "m^-3"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_spatial_energy_density_per_eV_m3": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/spatial_energy_density_per_eV_m3"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "E"
+            },
+            {
+              "const": "z"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "eV^-1 m^-3"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "energy_eV"
+            },
+            {
+              "const": "z_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wE"
+            },
+            {
+              "const": "wX"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_spectral_trace_per_eV": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/spectral_trace_per_eV"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "E"
+            },
+            {
+              "const": "k"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "eV^-1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "energy_eV"
+            },
+            {
+              "const": "k_per_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wE"
+            },
+            {
+              "const": "wk"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_occupied_trace_per_eV": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/occupied_trace_per_eV"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "E"
+            },
+            {
+              "const": "k"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "eV^-1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "energy_eV"
+            },
+            {
+              "const": "k_per_nm"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wE"
+            },
+            {
+              "const": "wk"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_localized_levels_eV": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/localized_levels_eV"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "eV"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state_index"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": null
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_effective_levels_eV": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/effective_levels_eV"
+        },
+        "eltype": {
+          "const": "Float64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "units": {
+          "const": "eV"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state_index"
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": null
+            }
+          ],
+          "items": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_localized_wavefunctions_per_sqrt_nm": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/localized_wavefunctions_per_sqrt_nm"
+        },
+        "eltype": {
+          "const": "ComplexF64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            },
+            {
+              "const": "state"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "nm^-1/2"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            },
+            {
+              "const": "state_index"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            },
+            {
+              "const": null
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_effective_wavefunctions_per_sqrt_nm": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/effective_wavefunctions_per_sqrt_nm"
+        },
+        "eltype": {
+          "const": "ComplexF64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z"
+            },
+            {
+              "const": "state"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "nm^-1/2"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "z_nm"
+            },
+            {
+              "const": "state_index"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "wX"
+            },
+            {
+              "const": null
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_effective_transform": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/effective_transform"
+        },
+        "eltype": {
+          "const": "ComplexF64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state"
+            },
+            {
+              "const": "state_prime"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "1"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state_index"
+            },
+            {
+              "const": "state_index"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": null
+            },
+            {
+              "const": null
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_sheet_density_matrix_per_m2": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/sheet_density_matrix_per_m2"
+        },
+        "eltype": {
+          "const": "ComplexF64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state"
+            },
+            {
+              "const": "state_prime"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "m^-2"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state_index"
+            },
+            {
+              "const": "state_index"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": null
+            },
+            {
+              "const": null
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Array_effective_density_matrix_per_m2": {
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "const": "/final_observations/arrays/effective_density_matrix_per_m2"
+        },
+        "eltype": {
+          "const": "ComplexF64"
+        },
+        "shape": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/PositiveCount"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "order": {
+          "const": "F"
+        },
+        "axes": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state"
+            },
+            {
+              "const": "state_prime"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "units": {
+          "const": "m^-2"
+        },
+        "coordinate_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "state_index"
+            },
+            {
+              "const": "state_index"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "weight_fields": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": null
+            },
+            {
+              "const": null
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "dataset",
+        "eltype",
+        "shape",
+        "order",
+        "axes",
+        "units",
+        "coordinate_fields",
+        "weight_fields"
+      ],
+      "additionalProperties": false
+    },
+    "Dimensions": {
+      "type": "object",
+      "properties": {
+        "Nz": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "NE": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "Nk": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "Nb": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        }
+      },
+      "required": [
+        "Nz",
+        "NE",
+        "Nk",
+        "Nb"
+      ],
+      "additionalProperties": false
+    },
+    "FinalObservationContext": {
+      "type": "object",
+      "properties": {
+        "dimensions": {
+          "$ref": "#/$defs/Dimensions"
+        },
+        "domain_revision": {
+          "$ref": "core-state.schema.json#/$defs/Int64"
+        },
+        "discretization_id": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        },
+        "basis_id": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        },
+        "x_scaled": {
+          "$ref": "#/$defs/Array_x_scaled"
+        },
+        "wX": {
+          "$ref": "#/$defs/Array_wX"
+        },
+        "energy_scaled": {
+          "$ref": "#/$defs/Array_energy_scaled"
+        },
+        "wE": {
+          "$ref": "#/$defs/Array_wE"
+        },
+        "momentum_scaled": {
+          "$ref": "#/$defs/Array_momentum_scaled"
+        },
+        "wk": {
+          "$ref": "#/$defs/Array_wk"
+        },
+        "z_nm": {
+          "$ref": "#/$defs/Array_z_nm"
+        },
+        "energy_eV": {
+          "$ref": "#/$defs/Array_energy_eV"
+        },
+        "k_per_nm": {
+          "$ref": "#/$defs/Array_k_per_nm"
+        },
+        "state_index": {
+          "$ref": "#/$defs/Array_state_index"
+        },
+        "trusted_energy": {
+          "$ref": "#/$defs/Array_trusted_energy"
+        },
+        "scales": {
+          "$ref": "#/$defs/FinalObservationScales"
+        },
+        "inputs": {
+          "$ref": "#/$defs/FinalObservationInputs"
+        },
+        "problem_scattering": {
+          "$ref": "core-state.schema.json#/$defs/ScatteringOptions"
+        },
+        "enabled_scattering": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "LO",
+              "acoustic",
+              "impurity",
+              "IFR",
+              "alloy"
+            ]
+          }
+        },
+        "selfenergy_families": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "LO",
+              "acoustic",
+              "impurity",
+              "IFR",
+              "alloy",
+              "electron_electron"
+            ]
+          }
+        },
+        "physical_models": {
+          "$ref": "core-state.schema.json#/$defs/PhysicalModelOptions"
+        },
+        "algorithms": {
+          "$ref": "core-state.schema.json#/$defs/AlgorithmOptions"
+        },
+        "energy_shift_discretization": {
+          "enum": [
+            "nodal_linear",
+            "finite_volume_piecewise_constant"
+          ]
+        },
+        "localization": {
+          "enum": [
+            "pzp",
+            "none",
+            "real_space"
+          ]
+        },
+        "boundary_condition": {
+          "enum": [
+            "stationary_field_periodic_embedding"
+          ]
+        },
+        "basis_contract": {
+          "enum": [
+            "orthonormal_finite_projected"
+          ]
+        },
+        "energy_reference": {
+          "enum": [
+            "scaled_E0_plus_E_ref"
+          ]
+        },
+        "effective_gauge": {
+          "enum": [
+            "k0_ascending_spatial_first_max_real_positive"
+          ]
+        }
+      },
+      "required": [
+        "dimensions",
+        "domain_revision",
+        "discretization_id",
+        "basis_id",
+        "x_scaled",
+        "wX",
+        "energy_scaled",
+        "wE",
+        "momentum_scaled",
+        "wk",
+        "z_nm",
+        "energy_eV",
+        "k_per_nm",
+        "state_index",
+        "trusted_energy",
+        "scales",
+        "inputs",
+        "problem_scattering",
+        "enabled_scattering",
+        "selfenergy_families",
+        "physical_models",
+        "algorithms",
+        "energy_shift_discretization",
+        "localization",
+        "boundary_condition",
+        "basis_contract",
+        "energy_reference",
+        "effective_gauge"
+      ],
+      "additionalProperties": false
+    },
+    "FinalObservationInputs": {
+      "type": "object",
+      "properties": {
+        "F_bias_V_per_m": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "V_period_V": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "T_L_K": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "T_LO_K": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "E_ref_eV": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "N_dop_2D_per_m2": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "f_ion": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "z0_m": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "period_length_m": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "g_s": {
+          "$ref": "core-state.schema.json#/$defs/Int64"
+        }
+      },
+      "required": [
+        "F_bias_V_per_m",
+        "V_period_V",
+        "T_L_K",
+        "T_LO_K",
+        "E_ref_eV",
+        "N_dop_2D_per_m2",
+        "f_ion",
+        "z0_m",
+        "period_length_m",
+        "g_s"
+      ],
+      "additionalProperties": false
+    },
+    "FinalObservationScales": {
+      "type": "object",
+      "properties": {
+        "E0_eV": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "L0_m": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "J0_A_per_m2": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        }
+      },
+      "required": [
+        "E0_eV",
+        "L0_m",
+        "J0_A_per_m2"
+      ],
+      "additionalProperties": false
+    },
+    "StoredFinalObservations": {
+      "type": "object",
+      "properties": {
+        "potential_structure_eV": {
+          "$ref": "#/$defs/Array_potential_structure_eV"
+        },
+        "potential_external_eV": {
+          "$ref": "#/$defs/Array_potential_external_eV"
+        },
+        "potential_hartree_eV": {
+          "$ref": "#/$defs/Array_potential_hartree_eV"
+        },
+        "potential_total_eV": {
+          "$ref": "#/$defs/Array_potential_total_eV"
+        },
+        "density_per_m3": {
+          "$ref": "#/$defs/Array_density_per_m3"
+        },
+        "spatial_energy_density_per_eV_m3": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Array_spatial_energy_density_per_eV_m3"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "spectral_trace_per_eV": {
+          "$ref": "#/$defs/Array_spectral_trace_per_eV"
+        },
+        "occupied_trace_per_eV": {
+          "$ref": "#/$defs/Array_occupied_trace_per_eV"
+        },
+        "localized_levels_eV": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Array_localized_levels_eV"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effective_levels_eV": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Array_effective_levels_eV"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "localized_wavefunctions_per_sqrt_nm": {
+          "$ref": "#/$defs/Array_localized_wavefunctions_per_sqrt_nm"
+        },
+        "effective_wavefunctions_per_sqrt_nm": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Array_effective_wavefunctions_per_sqrt_nm"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "effective_transform": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Array_effective_transform"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sheet_density_matrix_per_m2": {
+          "$ref": "#/$defs/Array_sheet_density_matrix_per_m2"
+        },
+        "effective_density_matrix_per_m2": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Array_effective_density_matrix_per_m2"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "current_density_A_per_m2": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "sheet_density_per_m2": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        }
+      },
+      "required": [
+        "potential_structure_eV",
+        "potential_external_eV",
+        "potential_hartree_eV",
+        "potential_total_eV",
+        "density_per_m3",
+        "spatial_energy_density_per_eV_m3",
+        "spectral_trace_per_eV",
+        "occupied_trace_per_eV",
+        "localized_levels_eV",
+        "effective_levels_eV",
+        "localized_wavefunctions_per_sqrt_nm",
+        "effective_wavefunctions_per_sqrt_nm",
+        "effective_transform",
+        "sheet_density_matrix_per_m2",
+        "effective_density_matrix_per_m2",
+        "current_density_A_per_m2",
+        "sheet_density_per_m2"
+      ],
+      "additionalProperties": false
+    },
+    "FinalScientificSummary": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "quality": {
+          "enum": [
+            "strict",
+            "invalid",
+            "approximate",
+            "unconverged"
+          ]
+        },
+        "converged": {
+          "type": "boolean"
+        },
+        "registry_version": {
+          "type": "string"
+        },
+        "iterative_converged": {
+          "type": "boolean"
+        },
+        "fixed_hartree_converged": {
+          "type": "boolean"
+        },
+        "physical_gates_passed": {
+          "type": "boolean"
+        },
+        "stationary_candidate_accepted": {
+          "type": "boolean"
+        },
+        "scientific_accepted": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "discretization_verified": {
+          "const": "not_measured"
+        },
+        "scientific_acceptance_reason": {
+          "type": "string"
+        },
+        "outer_confirmation_count": {
+          "$ref": "core-state.schema.json#/$defs/Int64"
+        }
+      },
+      "required": [
+        "status",
+        "quality",
+        "converged",
+        "registry_version",
+        "iterative_converged",
+        "fixed_hartree_converged",
+        "physical_gates_passed",
+        "stationary_candidate_accepted",
+        "scientific_accepted",
+        "discretization_verified",
+        "scientific_acceptance_reason",
+        "outer_confirmation_count"
+      ],
+      "additionalProperties": false
+    },
+    "FinalObservationIssue": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "enum": [
+            "spatial_energy_density_per_eV_m3",
+            "localized_levels_eV",
+            "effective_levels_eV",
+            "effective_wavefunctions_per_sqrt_nm",
+            "effective_transform",
+            "effective_density_matrix_per_m2",
+            "positivity"
+          ]
+        },
+        "status": {
+          "enum": [
+            "error",
+            "not_measured"
+          ]
+        },
+        "reason": {
+          "enum": [
+            "nonfinite_green",
+            "nonfinite_hartree",
+            "projection_failed",
+            "nonfinite_hamiltonian",
+            "eigensystem_failed",
+            "positivity_measurement_failed"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "target",
+        "status",
+        "reason",
+        "detail"
+      ],
+      "additionalProperties": false
+    },
+    "RequestedScattering": {
+      "type": "object",
+      "properties": {
+        "LO": {
+          "type": "boolean"
+        },
+        "acoustic": {
+          "type": "boolean"
+        },
+        "impurity": {
+          "type": "boolean"
+        },
+        "IFR": {
+          "type": "boolean"
+        },
+        "alloy": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "LO",
+        "acoustic",
+        "impurity",
+        "IFR",
+        "alloy"
+      ],
+      "additionalProperties": false
+    },
+    "CoordinateCheck": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "verified",
+            "not_verified"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "const": "field_period_roundtrip"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requested": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "actual": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        }
+      },
+      "required": [
+        "status",
+        "reason",
+        "requested",
+        "actual"
+      ],
+      "additionalProperties": false
+    },
+    "Request": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "scientific_plan_v2",
+            "nested_sweep"
+          ]
+        },
+        "plan": {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        "model": {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        "temperature_K": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "voltage_per_period_V": {
+          "$ref": "core-state.schema.json#/$defs/Float64"
+        },
+        "scattering_requested": {
+          "$ref": "#/$defs/RequestedScattering"
+        },
+        "coordinate_checks": {
+          "type": "object",
+          "properties": {
+            "temperature": {
+              "$ref": "#/$defs/CoordinateCheck"
+            },
+            "voltage": {
+              "$ref": "#/$defs/CoordinateCheck"
+            }
+          },
+          "required": [
+            "temperature",
+            "voltage"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "kind",
+        "plan",
+        "model",
+        "temperature_K",
+        "voltage_per_period_V",
+        "scattering_requested",
+        "coordinate_checks"
+      ],
+      "additionalProperties": false
+    },
+    "SelfEnergy": {
+      "type": "object",
+      "properties": {
+        "retarded": {
+          "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+        },
+        "lesser": {
+          "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+        },
+        "greater": {
+          "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+        }
+      },
+      "required": [
+        "retarded",
+        "lesser",
+        "greater"
+      ],
+      "additionalProperties": false
+    },
+    "StateBindings": {
+      "type": "object",
+      "properties": {
+        "green": {
+          "type": "object",
+          "properties": {
+            "retarded": {
+              "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+            },
+            "lesser": {
+              "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+            },
+            "greater": {
+              "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+            },
+            "spectral": {
+              "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+            }
+          },
+          "required": [
+            "retarded",
+            "lesser",
+            "greater",
+            "spectral"
+          ],
+          "additionalProperties": false
+        },
+        "scattering": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "family": {
+                "enum": [
+                  "LO",
+                  "acoustic",
+                  "impurity",
+                  "IFR",
+                  "alloy",
+                  "electron_electron"
+                ]
+              },
+              "retarded": {
+                "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+              },
+              "lesser": {
+                "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+              },
+              "greater": {
+                "$ref": "core-state.schema.json#/$defs/Type_69be99f20717a4e1"
+              }
+            },
+            "required": [
+              "family",
+              "retarded",
+              "lesser",
+              "greater"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "embedding": {
+          "type": "object",
+          "properties": {
+            "total": {
+              "$ref": "#/$defs/SelfEnergy"
+            },
+            "plus": {
+              "$ref": "#/$defs/SelfEnergy"
+            },
+            "minus": {
+              "$ref": "#/$defs/SelfEnergy"
+            }
+          },
+          "required": [
+            "total",
+            "plus",
+            "minus"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "green",
+        "scattering",
+        "embedding"
+      ],
+      "additionalProperties": false
+    },
+    "Binding": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "$ref": "core-state.schema.json#/$defs/ExactRestartIdentity"
+        },
+        "terminal_integrity": {
+          "$ref": "core-state.schema.json#/$defs/Type_f0345f9471dbb1a6"
+        }
+      },
+      "required": [
+        "identity",
+        "terminal_integrity"
+      ],
+      "additionalProperties": false
+    },
+    "Restoration": {
+      "type": "object",
+      "properties": {
+        "parent_state": {
+          "$ref": "result-common.schema.json#/$defs/StateRef"
+        },
+        "parent_checkpoint": {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        "history": {
+          "$ref": "result-common.schema.json#/$defs/HistoryPin"
+        },
+        "original": {
+          "type": "object",
+          "properties": {
+            "checkpoint": {
+              "$ref": "result-common.schema.json#/$defs/FileRef"
+            },
+            "field": {
+              "const": "final_evidence"
+            },
+            "integrity": {
+              "$ref": "core-state.schema.json#/$defs/Type_f0345f9471dbb1a6"
+            }
+          },
+          "required": [
+            "checkpoint",
+            "field",
+            "integrity"
+          ],
+          "additionalProperties": false
+        },
+        "revalidation": {
+          "$ref": "core-state.schema.json#/$defs/RevalidationReceipt"
+        },
+        "independent_oracle": {
+          "$ref": "core-state.schema.json#/$defs/IndependentOracleReceipt"
+        }
+      },
+      "required": [
+        "parent_state",
+        "parent_checkpoint",
+        "history",
+        "original",
+        "revalidation",
+        "independent_oracle"
+      ],
+      "additionalProperties": false
+    },
+    "ModelEnvelope": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf-resolved-configuration-v3"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "configuration": {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "const": "stationary_transport_inputs_v1"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "physical": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+                  }
+                },
+                "numerical": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+                  }
+                },
+                "scales": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+                  }
+                },
+                "solver": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+                  }
+                },
+                "kernel_construction": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+                  }
+                },
+                "algorithms": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+                  }
+                },
+                "physical_models": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+                  }
+                },
+                "domain_adaptation": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+                  }
+                },
+                "scattering": {
+                  "$ref": "#/$defs/RequestedScattering"
+                },
+                "production": {
+                  "type": "object",
+                  "properties": {
+                    "physics_markers": {
+                      "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+                    },
+                    "verify_fft_roundoff": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "physics_markers",
+                    "verify_fft_roundoff"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "physical",
+                "numerical",
+                "scales",
+                "solver",
+                "kernel_construction",
+                "algorithms",
+                "physical_models",
+                "domain_adaptation",
+                "scattering",
+                "production"
+              ],
+              "additionalProperties": false
+            },
+            "derived": {
+              "type": "object",
+              "properties": {
+                "effective_seed_eV": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "effective_seed_eV"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "scope",
+            "inputs",
+            "derived"
+          ],
+          "additionalProperties": false
+        },
+        "configuration_hash": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        },
+        "hash_encoding": {
+          "const": "qcl-negf-canonical-bytes-v1"
+        }
+      },
+      "required": [
+        "schema",
+        "contract_set",
+        "configuration",
+        "configuration_hash",
+        "hash_encoding"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
