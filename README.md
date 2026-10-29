@@ -665,3 +665,132 @@ Generated exports add `FinalObservations`, `Observation_*`, `NestedSweepPlan` an
 preserving existing aliases and URI rules. Native Julia producer/readback qualification, mandatory
 Results consumers, scientific discretization/oracle evidence and experimental validation remain
 separate gates; a format pass does not establish any of them.
+
+## Optional technical telemetry envelopes
+
+`telemetry-envelope.schema.json` defines five closed, independent JSON roots:
+`qcl-negf.telemetry-{commit,pointer,summary,binding,source-binding}.v1`. They use
+`qcl-negf.results.v2` but do not extend scientific manifests or `validate_commit`.
+The existing `qcl-negf.performance.v2` Arrow fields and producer phase v1 protocol
+remain unchanged. All fields, including nullable fields, are required. Counts and
+FileRef byte sizes use the existing decimal UInt64 atom; the separate legacy
+transport selection keeps its positive integer attempt. A transport fingerprint,
+CalcJob UUID or allocation id never supplies a canonical scientific identity.
+
+```python
+from qcl_negf_contracts.telemetry import (
+    validate_telemetry_summary, validate_telemetry_source_binding,
+    validate_telemetry_commit, validate_telemetry_pointer, validate_telemetry_binding,
+)
+
+summary = validate_telemetry_summary(decoded_summary)
+commit = validate_telemetry_commit(decoded_commit, summary=summary,
+    summary_ref=verified_summary_ref, previous=previous_commit,
+    previous_ref=verified_previous_ref, previous_summary=previous_summary,
+    previous_summary_ref=verified_previous_summary_ref,
+    phase_contexts=verified_phase_contexts, resume_contexts=verified_resume_contexts)
+pointer = validate_telemetry_pointer(decoded_pointer, commit=commit,
+    commit_ref=verified_commit_ref)
+```
+
+All validators return detached `Object` values. They validate only bounded supplied
+metadata and relations; they do not open files, authenticate producers, discover
+latest sessions, verify remote chain reachability or assess science. Caller I/O
+must establish safe roots, exact actual original bytes/size/hash, regular files,
+producer authority and pinned predecessor reachability. Unknown versions raise
+`unsupported_format`; malformed shapes `invalid_input`; contradictory relations
+`corrupt_result`, with JSON-path diagnostics.
+
+Commit/summary/session/closure/cursors/Baseline must agree exactly. First generation
+is `"1"`; a successor binds its immediate original predecessor. A closed collector
+session cannot append. Detail rotation closes one session and pins its final commit
+and summary in the next Baseline, inheriting fixed cumulative totals once. Per-phase,
+per-allocation and per-source detail is session-scoped, selectable through explicit
+retained parent pages; latest detail is not a complete all-run per-key summary.
+Page bounds (16 source cursors/allocations, 256 phase keys, 128 accepted ranges or
+phase contexts) never impose a run-duration, attempt-count or lifetime I/O quota.
+No new table, monitoring service or catalog registry is introduced.
+
+`phase_contexts` contains exact `{publication,publication_ref,segment,segment_ref}`
+objects. Accepted ranges are deltas in physical file order, not ordinal intervals.
+A normal row prefix whose maxima are 8 then 6 has `last_sequence="8"` at both row
+positions. Advancing to the next publication therefore requires its exact old
+publication/segment context, validation of the old cursor and
+`next_row == len(old_segment.rows)`. The old completion flag may be false because a
+later head was observed. This necessary predecessor context counts against the
+same operation bound but is not accepted or counted again; unrelated/duplicate
+contexts fail. Missing proof holds that technical transition without claiming its
+tail. `resume_contexts` contains explicit ancestor commit/ref/summary/ref pairs;
+callers prove their reachability, and unreferenced contexts are rejected.
+
+Normal aggregate time envelopes never reconstruct individual spans or interval
+occupancy. Typed sums retain Int64 decimal values, per-metric measured/unavailable
+calls, finite floating values including negative zero, and overflow reasons/nulls.
+Summary-only raw omissions name exact accepted row ranges; a retained full raw
+segment may contain an unaccepted suffix that must not enter summaries or export.
+Actual producer units `bytes`/empty string and fixture units `B`/`1` remain literal:
+no conversion or default unit is inferred. Unlike name/unit/native numeric profiles
+cannot be summed into one key; select separate detail pages. Diagnostic summaries
+project actual numeric end metrics and actual measured start/end clocks only;
+original begin/context/text/boolean/unknown metrics remain in the raw segment.
+Producer Health/self-cost is the latest snapshot per source, not a sum of snapshots
+or collector costs.
+
+CPU coverage retains stable process counter deltas across long intervals. Missing
+capacity leaves measured CPU available and capacity/ratios unknown. Actual restart
+uses a `collector_restart` gap; same-process detail rotation uses
+`detail_page_rotation` for conservative endpoint reset and explicitly marks the
+uncovered interval. Neither fabricates zero CPU or a restart. Fixed cumulative CPU
+totals remain inherited. Resource rows retain their existing thread/cache/pressure
+fields. Observed process scope is not the scheduler grant or host utilization.
+Self-cost measurements have explicit null/status/reason; Arrow I/O forecasts use
+`forecast`, never measured physical I/O.
+
+Source binding requires independently verified manifest/StateRef/Invocation,
+enclosing and original source transports, canonical plan FileRef and qualified
+producer SourceGraph. `validate_telemetry_source_binding` accepts these as
+`expected_state`, `expected_transport`, `manifest`, `manifest_ref`,
+`source_transport`, `canonical_plan_ref`, `expected_producer_provenance` keyword
+contexts. Produced transports agree; borrowed selection preserves its actual
+original StateRef and transport. V1 supports only proven `identical_frozen_bytes`:
+original source frozen plan FileRef equals canonical plan FileRef and its SHA equals
+the canonical identity's plan SHA. Missing mapping, another plan representation or
+missing original transport remains unbound/unsupported; Results cannot manufacture
+a producer receipt from legacy aliases.
+
+`validate_telemetry_binding` additionally requires original `commit`, `commit_ref`,
+`summary`, `summary_ref`, `source_binding`, `source_binding_ref` plus the same
+independent source-binding contexts. It retains exact returned close raw UTF8 bytes
+and verifies their sizes/hashes against full refs, not a newer session. Original
+submission/technical refs share an explicit caller-established job artifact root;
+existing CatalogPin paths remain commit-directory relative. Original producer and
+scientific-source refs keep their independently established source roots. Root
+scope is never inferred by matching basenames. A binding shares 1 MiB outer/raw
+embedded ceilings and one 4096-node budget across all retained decoded roots;
+callers still enforce the original input byte budget before decoding.
+
+Generated TypeScript exports `TelemetryEnvelope`, `TelemetryCommit`,
+`TelemetryPointer`, `TelemetrySummary`, `TelemetrySourceBinding`, `TelemetryBinding`
+and `Telemetry_*` helpers, all deeply readonly. Existing scientific aliases keep
+their prior mutability. These contracts do not establish producer mapping, optional
+capture admission, actual retention/durability, selected native export, installed
+interoperability or runtime overhead; those are separate owning gates.
+
+CPU rollup consistency uses the supplied typed allocation coverage. Without a
+Baseline, cumulative CPU/capacity/counter totals equal the local allocation sums.
+`validate_telemetry_commit` uses its immediate previous summary: rotation adds the
+new local page once; the same session adds only current-local minus previous-local
+coverage. Count sums are exact integers; finite Float64 sums use `math.fsum`
+(with negative delta terms first). Missing/discontinuous counts sum represented
+allocation fields; unidentified and excluded-profile samples stay separate in
+CpuCoverage. No stable interval leaves CPU/capacity null with a reason; a real
+measured zero remains available. Missing capacity propagates without erasing known
+CPU. Summation overflow remains error/null with an overflow reason and measured
+interval counts. The checks require no Parquet reads or ancestor replay.
+
+A standalone summary/binding with a nonnull Baseline contains only parent pins,
+not parent summary contents. It checks local lower bounds and known-unavailable
+constraints; exact inherited equality is established by the commit validator with
+its supplied previous-summary context. Caller byte/provenance verification and
+this relation gate remain required; the binding does not manufacture missing
+baseline evidence.

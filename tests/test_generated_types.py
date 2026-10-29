@@ -158,3 +158,12 @@ def test_generator_keeps_alias_collision_gate_after_pointer_decode(monkeypatch):
     docs=manufactured_documents(module,monkeypatch,{'collision/name':{'const':1},'collision_name':{'const':2}})
     with pytest.raises(ValueError,match='alias collision'):
         module.ts_export(docs)
+
+
+def test_technical_envelope_exports_are_deep_readonly_and_science_stays_unchanged():
+    module = generator()
+    documents = {name: json.loads((ROOT/'src/qcl_negf_contracts/schemas'/name).read_text()) for name in module.DOCUMENTS}
+    documents['model-help.schema.json'] = json.loads((ROOT/'src/qcl_negf_contracts/schemas/model-help.schema.json').read_text())
+    exported = module.ts_export(documents)
+    for name in ('TelemetryEnvelope','TelemetryCommit','TelemetryPointer','TelemetrySummary','TelemetrySourceBinding','TelemetryBinding'):
+        assert 'export type '+name+' = Telemetry_Readonly<' in exported, name+' missing or mutable'

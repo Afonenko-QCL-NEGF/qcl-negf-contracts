@@ -1,0 +1,660 @@
+{
+  "summary": {
+    "schema": "qcl-negf.telemetry-summary.v1",
+    "contract_set": "qcl-negf.results.v2",
+    "session": {
+      "source": {
+        "session_id": "collector1",
+        "clock_domain_id": "collector:1",
+        "utc_anchor_ns": "9007199254740993",
+        "monotonic_anchor_ns": "0"
+      },
+      "allocation_id": "alloc"
+    },
+    "transport": {
+      "selection": {
+        "calcjob_uuid": "job3",
+        "execution_id": "transport-ex",
+        "attempt": 3,
+        "plan_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "frozen_plan": {
+        "path": "plan.json",
+        "bytes": "129",
+        "sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8",
+        "media_type": "application/json",
+        "schema": "qcl-negf-scientific-plan-v2"
+      }
+    },
+    "generation": "1",
+    "closed": true,
+    "baseline": null,
+    "source_cursors": [],
+    "totals": {
+      "rows": {
+        "spans": "0",
+        "resources": "2",
+        "control_events": "0"
+      },
+      "accepted_source_rows": "0",
+      "accepted_aggregate_calls": "0",
+      "accepted_diagnostic_events": "0",
+      "coalesced_source_events": "0",
+      "collector_dropped_rows": "0"
+    },
+    "rows": {
+      "spans": "0",
+      "resources": "2",
+      "control_events": "0"
+    },
+    "max_observed_rss_bytes": "12345",
+    "cpu_coverage": {
+      "schema": "qcl-negf.cpu-coverage.v2",
+      "allocations": [
+        {
+          "allocation_id": "alloc",
+          "execution_id": "transport-ex",
+          "samples": "2",
+          "valid_intervals": "1",
+          "missing_samples": "0",
+          "discontinuous_intervals": "0",
+          "covered_wall_seconds": 2.0,
+          "cpu_seconds": 3.0,
+          "allocated_cpu_seconds": 4.0,
+          "observed_capacity_cpu_seconds": 4.0,
+          "coarse_intervals": "0",
+          "coarse_wall_seconds": 0.0,
+          "fine_resolution_wall_seconds": 2.0,
+          "maximum_observed_interval_seconds": 2.0,
+          "first_sample_monotonic_ns": "0",
+          "last_sample_monotonic_ns": "2000000000",
+          "observed_window_seconds": 2.0,
+          "fraction_of_observed_window_covered": 1.0,
+          "mean_busy_logical_cpus": 1.5,
+          "fraction_of_allocated_cpu": 0.75,
+          "fraction_of_observed_capacity": 0.75,
+          "cpu_unavailable_reason": null,
+          "capacity_unavailable_reason": null
+        }
+      ],
+      "unidentified_samples": "0",
+      "profile_samples_excluded": "0",
+      "temporal_resolution_target_seconds": 10.0,
+      "maximum_interval_seconds": null,
+      "missing_is_zero": false,
+      "intervals_overlap_across_allocations": true,
+      "scope": "baseline process-group CPU deltas / allocated logical CPU time; not host utilization",
+      "long_interval_policy": "retain stable counter deltas as coarse interval averages",
+      "phase_attribution": "not inferred from resource endpoints; use producer phase counters",
+      "observed_capacity_scope": "minimum of allocation width and observed node quota; ancestor quotas may be unavailable"
+    },
+    "cpu_totals": {
+      "cpu_seconds": {
+        "value": 3.0,
+        "status": "measured",
+        "reason": null
+      },
+      "allocated_cpu_seconds": {
+        "value": 4.0,
+        "status": "measured",
+        "reason": null
+      },
+      "observed_capacity_cpu_seconds": {
+        "value": 4.0,
+        "status": "measured",
+        "reason": null
+      },
+      "covered_wall_seconds": 2.0,
+      "valid_intervals": "1",
+      "missing_samples": "0",
+      "discontinuous_intervals": "0",
+      "scope": "sum_of_accepted_disjoint_baseline_intervals_per_allocation",
+      "intervals_overlap_across_allocations": true,
+      "incomplete": false,
+      "reasons": []
+    },
+    "span_aggregates": [],
+    "producer_phase_aggregates": [],
+    "control_events": [],
+    "coverage": {
+      "scope": "accepted_rows_only",
+      "detail_scope": "collector_session_since_baseline",
+      "all_observed_sources_consumed": null,
+      "terminal_tail": "unknown",
+      "source_closed": null,
+      "capture_error_events": "0",
+      "gaps": [],
+      "incomplete": false,
+      "reasons": [],
+      "jit_separately_measured": false,
+      "initialization_includes_possible_compilation": true,
+      "warmup": "first observed call per phase/source session; not measured JIT",
+      "absent_phase": "not measured, never zero",
+      "phase_scopes": "inclusive unless explicitly exclusive; do not sum overlapping scopes",
+      "process_scope": "root_julia_process_including_threads",
+      "descendants_included": false,
+      "total_scheduler_grant": "not_measured",
+      "scientific_acceptance": "not_assessed"
+    },
+    "retention": {
+      "mode": "windows_and_cumulative",
+      "retained_bytes": "0",
+      "retained_source_rows": "0",
+      "omitted_source_rows": "0",
+      "omitted_resource_rows": "0",
+      "omitted_span_rows": "0",
+      "omissions": [],
+      "incomplete": false,
+      "reasons": [],
+      "pinned_retention_refused": false
+    },
+    "observer_self_cost": {
+      "scope": "collector_session_only",
+      "probe_seconds": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "read_seconds": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "hash_seconds": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "parse_validate_seconds": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "serialize_seconds": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "parquet_seconds": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "flush_sync_seconds": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "process_cpu_seconds": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "bytes_read": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "bytes_written": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "physical_read_bytes": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "physical_write_bytes": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "polls": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "flushes": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "source_reopens": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "reverified_bytes": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "pending_rows": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "pending_bytes": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "buffer_high_water_bytes": {
+        "value": null,
+        "status": "not_measured",
+        "reason": "not_requested"
+      },
+      "arrow_io_forecast_bytes": {
+        "value": null,
+        "status": "unavailable",
+        "reason": "not_requested"
+      }
+    },
+    "recorded_until_monotonic_ns": "2000000000",
+    "durability": {
+      "maximum_staged_batch_rows": "256",
+      "maximum_synchronous_flush_rows": "512",
+      "maximum_batch_payload_bytes": "4194304",
+      "maximum_buffer_seconds": 15.0,
+      "uncommitted_resource_batch_at_risk": false,
+      "published_rows": "summary_ranges_and_cursors_share_this_commit",
+      "live_rows": "staged_after_commit_excluded",
+      "source_recovery": "explicit_verified_commit_cursor",
+      "resource_tail_recovery": "unpublished_samples_may_be_lost",
+      "latency_bound": "buffer_age_plus_coordinator_polling_and_scheduling",
+      "parquet_compression": "zstd-3 lossless",
+      "barriers": [
+        "flush",
+        "control_transition",
+        "checkpoint",
+        "export",
+        "close"
+      ]
+    },
+    "science_window_policy": {
+      "period_seconds": 900.0,
+      "maximum_batch_rows": "256",
+      "cutoff_tail_segments_per_table": "3",
+      "selection": "first closed batch per table/period and after control transition",
+      "scope": "selected actual rows; not a complete profile"
+    }
+  },
+  "commit": {
+    "schema": "qcl-negf.telemetry-commit.v1",
+    "contract_set": "qcl-negf.results.v2",
+    "session": {
+      "source": {
+        "session_id": "collector1",
+        "clock_domain_id": "collector:1",
+        "utc_anchor_ns": "9007199254740993",
+        "monotonic_anchor_ns": "0"
+      },
+      "allocation_id": "alloc"
+    },
+    "transport": {
+      "selection": {
+        "calcjob_uuid": "job3",
+        "execution_id": "transport-ex",
+        "attempt": 3,
+        "plan_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "frozen_plan": {
+        "path": "plan.json",
+        "bytes": "129",
+        "sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8",
+        "media_type": "application/json",
+        "schema": "qcl-negf-scientific-plan-v2"
+      }
+    },
+    "generation": "1",
+    "closed": true,
+    "published_unix": 1.0,
+    "previous": null,
+    "baseline": null,
+    "summary": {
+      "path": "performance/sessions/collector1/summary.json",
+      "bytes": "7587",
+      "sha256": "4ff9953a5099abc6b914314e60e0162ccd12134546415554b02442753af6cda0",
+      "media_type": "application/json",
+      "schema": "qcl-negf.telemetry-summary.v1"
+    },
+    "catalog": null,
+    "source_cursors": [],
+    "accepted_ranges": []
+  },
+  "summary_ref": {
+    "path": "performance/sessions/collector1/summary.json",
+    "bytes": "7587",
+    "sha256": "4ff9953a5099abc6b914314e60e0162ccd12134546415554b02442753af6cda0",
+    "media_type": "application/json",
+    "schema": "qcl-negf.telemetry-summary.v1"
+  },
+  "commit_ref": {
+    "path": "performance/sessions/collector1/commit.json",
+    "bytes": "1145",
+    "sha256": "fd5ab414401a4f30e3e6a27f20e5e7b05d027b8d98adb7614aac79cd44372edc",
+    "media_type": "application/json",
+    "schema": "qcl-negf.telemetry-commit.v1"
+  },
+  "pointer": {
+    "schema": "qcl-negf.telemetry-pointer.v1",
+    "contract_set": "qcl-negf.results.v2",
+    "commit": {
+      "path": "performance/sessions/collector1/commit.json",
+      "bytes": "1145",
+      "sha256": "fd5ab414401a4f30e3e6a27f20e5e7b05d027b8d98adb7614aac79cd44372edc",
+      "media_type": "application/json",
+      "schema": "qcl-negf.telemetry-commit.v1"
+    }
+  },
+  "binding": {
+    "schema": "qcl-negf.telemetry-binding.v1",
+    "contract_set": "qcl-negf.results.v2",
+    "scope": "selected_state_with_execution_attempt_telemetry",
+    "selected_state": {
+      "identity": {
+        "run_id": "canonical-run",
+        "execution_id": "canonical-ex",
+        "point_id": "point",
+        "attempt": "2",
+        "branch_id": "branch",
+        "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "plan_sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8"
+      },
+      "state_id": "selected-state2",
+      "state_sequence": "1",
+      "manifest": {
+        "path": "point/manifest.json",
+        "bytes": "1641",
+        "sha256": "38dc9c90680bdec5c45deb5b5dae73f18966092025ca535e64f3da84056edc3f",
+        "media_type": "application/json",
+        "schema": "qcl-negf.result-manifest.v1"
+      }
+    },
+    "transport": {
+      "selection": {
+        "calcjob_uuid": "job3",
+        "execution_id": "transport-ex",
+        "attempt": 3,
+        "plan_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "frozen_plan": {
+        "path": "plan.json",
+        "bytes": "129",
+        "sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8",
+        "media_type": "application/json",
+        "schema": "qcl-negf-scientific-plan-v2"
+      }
+    },
+    "source_binding": {
+      "ref": {
+        "path": "source-binding.json",
+        "bytes": "2307",
+        "sha256": "e7f0c506333af5d2dc35faa33fc64bac8ea0180139d3b2630691747fcac5889e",
+        "media_type": "application/json",
+        "schema": "qcl-negf.telemetry-source-binding.v1"
+      },
+      "raw_utf8": "{\n \"schema\": \"qcl-negf.telemetry-source-binding.v1\",\n \"contract_set\": \"qcl-negf.results.v2\",\n \"enclosing_transport\": {\n  \"selection\": {\n   \"calcjob_uuid\": \"job3\",\n   \"execution_id\": \"transport-ex\",\n   \"attempt\": 3,\n   \"plan_fingerprint\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n  },\n  \"frozen_plan\": {\n   \"path\": \"plan.json\",\n   \"bytes\": \"129\",\n   \"sha256\": \"90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8\",\n   \"media_type\": \"application/json\",\n   \"schema\": \"qcl-negf-scientific-plan-v2\"\n  }\n },\n \"source_transport\": {\n  \"selection\": {\n   \"calcjob_uuid\": \"job2\",\n   \"execution_id\": \"transport-ex\",\n   \"attempt\": 2,\n   \"plan_fingerprint\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n  },\n  \"frozen_plan\": {\n   \"path\": \"plan.json\",\n   \"bytes\": \"129\",\n   \"sha256\": \"90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8\",\n   \"media_type\": \"application/json\",\n   \"schema\": \"qcl-negf-scientific-plan-v2\"\n  }\n },\n \"selected_state\": {\n  \"identity\": {\n   \"run_id\": \"canonical-run\",\n   \"execution_id\": \"canonical-ex\",\n   \"point_id\": \"point\",\n   \"attempt\": \"2\",\n   \"branch_id\": \"branch\",\n   \"model_sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n   \"plan_sha256\": \"90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8\"\n  },\n  \"state_id\": \"selected-state2\",\n  \"state_sequence\": \"1\",\n  \"manifest\": {\n   \"path\": \"point/manifest.json\",\n   \"bytes\": \"1641\",\n   \"sha256\": \"38dc9c90680bdec5c45deb5b5dae73f18966092025ca535e64f3da84056edc3f\",\n   \"media_type\": \"application/json\",\n   \"schema\": \"qcl-negf.result-manifest.v1\"\n  }\n },\n \"invocation\": {\n  \"source_epoch\": \"actual-epoch2\"\n },\n \"relation\": \"borrowed\",\n \"canonical_plan\": {\n  \"path\": \"plan.json\",\n  \"bytes\": \"129\",\n  \"sha256\": \"90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8\",\n  \"media_type\": \"application/json\",\n  \"schema\": \"qcl-negf-scientific-plan-v2\"\n },\n \"plan_relation\": \"identical_frozen_bytes\",\n \"producer_provenance\": {\n  \"format\": \"qcl-negf.git-graph.v1\",\n  \"revision\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"components\": [\n   {\n    \"path\": \"components/QCLNEGFRunner.jl\",\n    \"revision\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n    \"url\": \"https://github.com/Afonenko-QCL-NEGF/QCLNEGFRunner.jl\"\n   }\n  ]\n }\n}\n"
+    },
+    "commit": {
+      "ref": {
+        "path": "performance/sessions/collector1/commit.json",
+        "bytes": "1145",
+        "sha256": "fd5ab414401a4f30e3e6a27f20e5e7b05d027b8d98adb7614aac79cd44372edc",
+        "media_type": "application/json",
+        "schema": "qcl-negf.telemetry-commit.v1"
+      },
+      "raw_utf8": "{\n \"schema\": \"qcl-negf.telemetry-commit.v1\",\n \"contract_set\": \"qcl-negf.results.v2\",\n \"session\": {\n  \"source\": {\n   \"session_id\": \"collector1\",\n   \"clock_domain_id\": \"collector:1\",\n   \"utc_anchor_ns\": \"9007199254740993\",\n   \"monotonic_anchor_ns\": \"0\"\n  },\n  \"allocation_id\": \"alloc\"\n },\n \"transport\": {\n  \"selection\": {\n   \"calcjob_uuid\": \"job3\",\n   \"execution_id\": \"transport-ex\",\n   \"attempt\": 3,\n   \"plan_fingerprint\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n  },\n  \"frozen_plan\": {\n   \"path\": \"plan.json\",\n   \"bytes\": \"129\",\n   \"sha256\": \"90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8\",\n   \"media_type\": \"application/json\",\n   \"schema\": \"qcl-negf-scientific-plan-v2\"\n  }\n },\n \"generation\": \"1\",\n \"closed\": true,\n \"published_unix\": 1.0,\n \"previous\": null,\n \"baseline\": null,\n \"summary\": {\n  \"path\": \"performance/sessions/collector1/summary.json\",\n  \"bytes\": \"7587\",\n  \"sha256\": \"4ff9953a5099abc6b914314e60e0162ccd12134546415554b02442753af6cda0\",\n  \"media_type\": \"application/json\",\n  \"schema\": \"qcl-negf.telemetry-summary.v1\"\n },\n \"catalog\": null,\n \"source_cursors\": [],\n \"accepted_ranges\": []\n}\n"
+    },
+    "summary": {
+      "ref": {
+        "path": "performance/sessions/collector1/summary.json",
+        "bytes": "7587",
+        "sha256": "4ff9953a5099abc6b914314e60e0162ccd12134546415554b02442753af6cda0",
+        "media_type": "application/json",
+        "schema": "qcl-negf.telemetry-summary.v1"
+      },
+      "raw_utf8": "{\n \"schema\": \"qcl-negf.telemetry-summary.v1\",\n \"contract_set\": \"qcl-negf.results.v2\",\n \"session\": {\n  \"source\": {\n   \"session_id\": \"collector1\",\n   \"clock_domain_id\": \"collector:1\",\n   \"utc_anchor_ns\": \"9007199254740993\",\n   \"monotonic_anchor_ns\": \"0\"\n  },\n  \"allocation_id\": \"alloc\"\n },\n \"transport\": {\n  \"selection\": {\n   \"calcjob_uuid\": \"job3\",\n   \"execution_id\": \"transport-ex\",\n   \"attempt\": 3,\n   \"plan_fingerprint\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n  },\n  \"frozen_plan\": {\n   \"path\": \"plan.json\",\n   \"bytes\": \"129\",\n   \"sha256\": \"90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8\",\n   \"media_type\": \"application/json\",\n   \"schema\": \"qcl-negf-scientific-plan-v2\"\n  }\n },\n \"generation\": \"1\",\n \"closed\": true,\n \"baseline\": null,\n \"source_cursors\": [],\n \"totals\": {\n  \"rows\": {\n   \"spans\": \"0\",\n   \"resources\": \"2\",\n   \"control_events\": \"0\"\n  },\n  \"accepted_source_rows\": \"0\",\n  \"accepted_aggregate_calls\": \"0\",\n  \"accepted_diagnostic_events\": \"0\",\n  \"coalesced_source_events\": \"0\",\n  \"collector_dropped_rows\": \"0\"\n },\n \"rows\": {\n  \"spans\": \"0\",\n  \"resources\": \"2\",\n  \"control_events\": \"0\"\n },\n \"max_observed_rss_bytes\": \"12345\",\n \"cpu_coverage\": {\n  \"schema\": \"qcl-negf.cpu-coverage.v2\",\n  \"allocations\": [\n   {\n    \"allocation_id\": \"alloc\",\n    \"execution_id\": \"transport-ex\",\n    \"samples\": \"2\",\n    \"valid_intervals\": \"1\",\n    \"missing_samples\": \"0\",\n    \"discontinuous_intervals\": \"0\",\n    \"covered_wall_seconds\": 2.0,\n    \"cpu_seconds\": 3.0,\n    \"allocated_cpu_seconds\": 4.0,\n    \"observed_capacity_cpu_seconds\": 4.0,\n    \"coarse_intervals\": \"0\",\n    \"coarse_wall_seconds\": 0.0,\n    \"fine_resolution_wall_seconds\": 2.0,\n    \"maximum_observed_interval_seconds\": 2.0,\n    \"first_sample_monotonic_ns\": \"0\",\n    \"last_sample_monotonic_ns\": \"2000000000\",\n    \"observed_window_seconds\": 2.0,\n    \"fraction_of_observed_window_covered\": 1.0,\n    \"mean_busy_logical_cpus\": 1.5,\n    \"fraction_of_allocated_cpu\": 0.75,\n    \"fraction_of_observed_capacity\": 0.75,\n    \"cpu_unavailable_reason\": null,\n    \"capacity_unavailable_reason\": null\n   }\n  ],\n  \"unidentified_samples\": \"0\",\n  \"profile_samples_excluded\": \"0\",\n  \"temporal_resolution_target_seconds\": 10.0,\n  \"maximum_interval_seconds\": null,\n  \"missing_is_zero\": false,\n  \"intervals_overlap_across_allocations\": true,\n  \"scope\": \"baseline process-group CPU deltas / allocated logical CPU time; not host utilization\",\n  \"long_interval_policy\": \"retain stable counter deltas as coarse interval averages\",\n  \"phase_attribution\": \"not inferred from resource endpoints; use producer phase counters\",\n  \"observed_capacity_scope\": \"minimum of allocation width and observed node quota; ancestor quotas may be unavailable\"\n },\n \"cpu_totals\": {\n  \"cpu_seconds\": {\n   \"value\": 3.0,\n   \"status\": \"measured\",\n   \"reason\": null\n  },\n  \"allocated_cpu_seconds\": {\n   \"value\": 4.0,\n   \"status\": \"measured\",\n   \"reason\": null\n  },\n  \"observed_capacity_cpu_seconds\": {\n   \"value\": 4.0,\n   \"status\": \"measured\",\n   \"reason\": null\n  },\n  \"covered_wall_seconds\": 2.0,\n  \"valid_intervals\": \"1\",\n  \"missing_samples\": \"0\",\n  \"discontinuous_intervals\": \"0\",\n  \"scope\": \"sum_of_accepted_disjoint_baseline_intervals_per_allocation\",\n  \"intervals_overlap_across_allocations\": true,\n  \"incomplete\": false,\n  \"reasons\": []\n },\n \"span_aggregates\": [],\n \"producer_phase_aggregates\": [],\n \"control_events\": [],\n \"coverage\": {\n  \"scope\": \"accepted_rows_only\",\n  \"detail_scope\": \"collector_session_since_baseline\",\n  \"all_observed_sources_consumed\": null,\n  \"terminal_tail\": \"unknown\",\n  \"source_closed\": null,\n  \"capture_error_events\": \"0\",\n  \"gaps\": [],\n  \"incomplete\": false,\n  \"reasons\": [],\n  \"jit_separately_measured\": false,\n  \"initialization_includes_possible_compilation\": true,\n  \"warmup\": \"first observed call per phase/source session; not measured JIT\",\n  \"absent_phase\": \"not measured, never zero\",\n  \"phase_scopes\": \"inclusive unless explicitly exclusive; do not sum overlapping scopes\",\n  \"process_scope\": \"root_julia_process_including_threads\",\n  \"descendants_included\": false,\n  \"total_scheduler_grant\": \"not_measured\",\n  \"scientific_acceptance\": \"not_assessed\"\n },\n \"retention\": {\n  \"mode\": \"windows_and_cumulative\",\n  \"retained_bytes\": \"0\",\n  \"retained_source_rows\": \"0\",\n  \"omitted_source_rows\": \"0\",\n  \"omitted_resource_rows\": \"0\",\n  \"omitted_span_rows\": \"0\",\n  \"omissions\": [],\n  \"incomplete\": false,\n  \"reasons\": [],\n  \"pinned_retention_refused\": false\n },\n \"observer_self_cost\": {\n  \"scope\": \"collector_session_only\",\n  \"probe_seconds\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"read_seconds\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"hash_seconds\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"parse_validate_seconds\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"serialize_seconds\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"parquet_seconds\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"flush_sync_seconds\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"process_cpu_seconds\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"bytes_read\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"bytes_written\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"physical_read_bytes\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"physical_write_bytes\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"polls\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"flushes\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"source_reopens\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"reverified_bytes\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"pending_rows\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"pending_bytes\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"buffer_high_water_bytes\": {\n   \"value\": null,\n   \"status\": \"not_measured\",\n   \"reason\": \"not_requested\"\n  },\n  \"arrow_io_forecast_bytes\": {\n   \"value\": null,\n   \"status\": \"unavailable\",\n   \"reason\": \"not_requested\"\n  }\n },\n \"recorded_until_monotonic_ns\": \"2000000000\",\n \"durability\": {\n  \"maximum_staged_batch_rows\": \"256\",\n  \"maximum_synchronous_flush_rows\": \"512\",\n  \"maximum_batch_payload_bytes\": \"4194304\",\n  \"maximum_buffer_seconds\": 15.0,\n  \"uncommitted_resource_batch_at_risk\": false,\n  \"published_rows\": \"summary_ranges_and_cursors_share_this_commit\",\n  \"live_rows\": \"staged_after_commit_excluded\",\n  \"source_recovery\": \"explicit_verified_commit_cursor\",\n  \"resource_tail_recovery\": \"unpublished_samples_may_be_lost\",\n  \"latency_bound\": \"buffer_age_plus_coordinator_polling_and_scheduling\",\n  \"parquet_compression\": \"zstd-3 lossless\",\n  \"barriers\": [\n   \"flush\",\n   \"control_transition\",\n   \"checkpoint\",\n   \"export\",\n   \"close\"\n  ]\n },\n \"science_window_policy\": {\n  \"period_seconds\": 900.0,\n  \"maximum_batch_rows\": \"256\",\n  \"cutoff_tail_segments_per_table\": \"3\",\n  \"selection\": \"first closed batch per table/period and after control transition\",\n  \"scope\": \"selected actual rows; not a complete profile\"\n }\n}\n"
+    },
+    "capture_status": {
+      "terminal_tail": "unknown",
+      "scalar_live_route": "direct",
+      "scalar_live_reason": null,
+      "performance_status": "available",
+      "reason": null
+    }
+  },
+  "source_binding": {
+    "schema": "qcl-negf.telemetry-source-binding.v1",
+    "contract_set": "qcl-negf.results.v2",
+    "enclosing_transport": {
+      "selection": {
+        "calcjob_uuid": "job3",
+        "execution_id": "transport-ex",
+        "attempt": 3,
+        "plan_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "frozen_plan": {
+        "path": "plan.json",
+        "bytes": "129",
+        "sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8",
+        "media_type": "application/json",
+        "schema": "qcl-negf-scientific-plan-v2"
+      }
+    },
+    "source_transport": {
+      "selection": {
+        "calcjob_uuid": "job2",
+        "execution_id": "transport-ex",
+        "attempt": 2,
+        "plan_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "frozen_plan": {
+        "path": "plan.json",
+        "bytes": "129",
+        "sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8",
+        "media_type": "application/json",
+        "schema": "qcl-negf-scientific-plan-v2"
+      }
+    },
+    "selected_state": {
+      "identity": {
+        "run_id": "canonical-run",
+        "execution_id": "canonical-ex",
+        "point_id": "point",
+        "attempt": "2",
+        "branch_id": "branch",
+        "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "plan_sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8"
+      },
+      "state_id": "selected-state2",
+      "state_sequence": "1",
+      "manifest": {
+        "path": "point/manifest.json",
+        "bytes": "1641",
+        "sha256": "38dc9c90680bdec5c45deb5b5dae73f18966092025ca535e64f3da84056edc3f",
+        "media_type": "application/json",
+        "schema": "qcl-negf.result-manifest.v1"
+      }
+    },
+    "invocation": {
+      "source_epoch": "actual-epoch2"
+    },
+    "relation": "borrowed",
+    "canonical_plan": {
+      "path": "plan.json",
+      "bytes": "129",
+      "sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8",
+      "media_type": "application/json",
+      "schema": "qcl-negf-scientific-plan-v2"
+    },
+    "plan_relation": "identical_frozen_bytes",
+    "producer_provenance": {
+      "format": "qcl-negf.git-graph.v1",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "components": [
+        {
+          "path": "components/QCLNEGFRunner.jl",
+          "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "url": "https://github.com/Afonenko-QCL-NEGF/QCLNEGFRunner.jl"
+        }
+      ]
+    }
+  },
+  "source_binding_ref": {
+    "path": "source-binding.json",
+    "bytes": "2307",
+    "sha256": "e7f0c506333af5d2dc35faa33fc64bac8ea0180139d3b2630691747fcac5889e",
+    "media_type": "application/json",
+    "schema": "qcl-negf.telemetry-source-binding.v1"
+  },
+  "manifest": {
+    "schema": "qcl-negf.result-manifest.v1",
+    "contract_set": "qcl-negf.results.v2",
+    "identity": {
+      "run_id": "canonical-run",
+      "execution_id": "canonical-ex",
+      "point_id": "point",
+      "attempt": "2",
+      "branch_id": "branch",
+      "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "plan_sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8"
+    },
+    "lineage": {
+      "parent_state": null
+    },
+    "invocation": {
+      "source_epoch": "actual-epoch2"
+    },
+    "provenance": {
+      "format": "qcl-negf.git-graph.v1",
+      "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "components": [
+        {
+          "path": "components/QCLNEGFRunner.jl",
+          "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "url": "https://github.com/Afonenko-QCL-NEGF/QCLNEGFRunner.jl"
+        }
+      ]
+    },
+    "numerical_binding": null,
+    "state_id": "selected-state2",
+    "state_sequence": "1",
+    "generation": "1",
+    "closed": true,
+    "status": {
+      "process": {
+        "state": "succeeded",
+        "exit_code": 0,
+        "reason": null
+      },
+      "convergence": {
+        "state": "not_measured",
+        "reason": "not_requested",
+        "evidence": null
+      },
+      "physics": {
+        "state": "not_measured",
+        "reason": "not_requested",
+        "evidence": null
+      },
+      "discretization": {
+        "state": "not_measured",
+        "reason": "not_requested",
+        "evidence": null
+      },
+      "experimental": {
+        "state": "not_measured",
+        "reason": "not_requested",
+        "evidence": null
+      }
+    },
+    "artifacts": [],
+    "history": {
+      "head": null,
+      "entries": "0",
+      "records": "0",
+      "scba_rows": "0",
+      "outer_rows": "0",
+      "witness_updates": "0",
+      "last_record": "0"
+    },
+    "checkpoint": null
+  },
+  "manifest_ref": {
+    "path": "point/manifest.json",
+    "bytes": "1641",
+    "sha256": "38dc9c90680bdec5c45deb5b5dae73f18966092025ca535e64f3da84056edc3f",
+    "media_type": "application/json",
+    "schema": "qcl-negf.result-manifest.v1"
+  },
+  "expected_state": {
+    "identity": {
+      "run_id": "canonical-run",
+      "execution_id": "canonical-ex",
+      "point_id": "point",
+      "attempt": "2",
+      "branch_id": "branch",
+      "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "plan_sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8"
+    },
+    "state_id": "selected-state2",
+    "state_sequence": "1",
+    "manifest": {
+      "path": "point/manifest.json",
+      "bytes": "1641",
+      "sha256": "38dc9c90680bdec5c45deb5b5dae73f18966092025ca535e64f3da84056edc3f",
+      "media_type": "application/json",
+      "schema": "qcl-negf.result-manifest.v1"
+    }
+  },
+  "expected_transport": {
+    "selection": {
+      "calcjob_uuid": "job3",
+      "execution_id": "transport-ex",
+      "attempt": 3,
+      "plan_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "frozen_plan": {
+      "path": "plan.json",
+      "bytes": "129",
+      "sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8",
+      "media_type": "application/json",
+      "schema": "qcl-negf-scientific-plan-v2"
+    }
+  },
+  "source_transport": {
+    "selection": {
+      "calcjob_uuid": "job2",
+      "execution_id": "transport-ex",
+      "attempt": 2,
+      "plan_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "frozen_plan": {
+      "path": "plan.json",
+      "bytes": "129",
+      "sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8",
+      "media_type": "application/json",
+      "schema": "qcl-negf-scientific-plan-v2"
+    }
+  },
+  "canonical_plan_ref": {
+    "path": "plan.json",
+    "bytes": "129",
+    "sha256": "90bbc19466cb155dfb278def5922e50f198f27677e5c86d8383c92fd0017f6c8",
+    "media_type": "application/json",
+    "schema": "qcl-negf-scientific-plan-v2"
+  },
+  "expected_producer_provenance": {
+    "format": "qcl-negf.git-graph.v1",
+    "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "components": [
+      {
+        "path": "components/QCLNEGFRunner.jl",
+        "revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "url": "https://github.com/Afonenko-QCL-NEGF/QCLNEGFRunner.jl"
+      }
+    ]
+  }
+}
