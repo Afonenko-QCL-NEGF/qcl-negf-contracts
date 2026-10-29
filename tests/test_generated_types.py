@@ -45,6 +45,20 @@ def test_ts_generator_refuses_unknown_schema_keyword():
         module.ts_type({'type':'object','unevaluatedProperties':False}, 'test', {})
 
 
+def test_outward_extension_index_is_bounded_to_its_new_named_data():
+    """TS literal compile fixture exercises the result; old index policy stays strict."""
+    module=generator()
+    node={'type':'object','properties':{'named':{'type':'object','properties':{},'additionalProperties':False}},
+          'required':['named'],'additionalProperties':{'type':['string','null']}}
+    old=module.ts_type(node,'unchanged-schema.json',{})
+    new=module.ts_type(node,'outward-result.schema.json',{})
+    assert '[key: string]: (string | null)' in old
+    assert '[key: string]: (string | null) | {  }' in new
+    # Unknown keywords keep failing even in the new schema's generation path.
+    with pytest.raises(ValueError,match='unevaluatedProperties'):
+        module.ts_type({**node,'unevaluatedProperties':False},'outward-result.schema.json',{})
+
+
 # Independent literal oracles for URI-fragment encoding AFTER Pointer token escaping.
 URI_CASES = [
     ('CoreArray{ComplexF64}', '#/$defs/CoreArray%7BComplexF64%7D', 'Core_CoreArray_ComplexF64_'),

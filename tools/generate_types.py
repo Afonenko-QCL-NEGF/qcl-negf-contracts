@@ -21,7 +21,8 @@ DOCUMENTS = ('result-common.schema.json', 'core-state.schema.json', 'result-mani
              'producer-phase-segment.schema.json', 'producer-phase-source.schema.json',
              'telemetry-envelope.schema.json',
              'final-diagnostics.schema.json', 'final-observations.schema.json',
-             'nested-sweep-plan.schema.json')
+             'nested-sweep-plan.schema.json', 'scientific-worker-result.schema.json',
+             'outward-result.schema.json')
 
 
 def obj(properties):
@@ -169,6 +170,11 @@ def ts_type(schema, source, names):
         key = reference_key(schema['$ref'], source)
         if key not in names:
             raise ValueError(f"Unresolved TS schema reference {schema['$ref']}")
+        if source == 'outward-result.schema.json':
+            if key == ('nested-sweep-plan.schema.json', ('$defs', 'PortableValue')):
+                return 'OutwardPortableValue'
+            if key[0] == 'result-common.schema.json':
+                return 'OutwardReadonly<'+names[key]+'>'
         return names[key]
     if 'const' in schema:
         return quoted(schema['const'])
@@ -194,10 +200,20 @@ def ts_type(schema, source, names):
         return 'ReadonlyArray<'+ts_type(schema.get('items', True), source, names)+'>'
     if kind == 'object':
         required = schema.get('required', [])
-        fields = [quoted(name)+('' if name in required else '?')+': '+ts_type(value, source, names)
+        readonly = 'readonly ' if source == 'outward-result.schema.json' else ''
+        fields = [readonly+quoted(name)+('' if name in required else '?')+': '+ts_type(value, source, names)
                   for name, value in schema.get('properties', {}).items()]
         if schema.get('additionalProperties') not in (False, None):
-            fields.append('[key: string]: '+ts_type(schema['additionalProperties'], source, names))
+            index = ts_type(schema['additionalProperties'], source, names)
+            if (source == 'outward-result.schema.json' and
+                    schema['additionalProperties'] == {'type': ['string', 'null']}):
+                # JSON Schema explicit properties override additionalProperties.
+                # TS cannot exclude literal keys from a string index. Widen only
+                # new outward DTO indexes; runtime still rejects unknown objects.
+                explicit = [ts_type(value, source, names) + ('' if name in required else ' | undefined')
+                            for name, value in schema.get('properties', {}).items()]
+                index = ' | '.join(dict.fromkeys([index, *explicit]))
+            fields.append(readonly+'[key: string]: '+index)
         return '{ '+('; '.join(fields))+' }'
     raise ValueError(f'Unsupported schema construct at {source}: {schema}')
 
@@ -216,8 +232,13 @@ def ts_export(documents):
                     'final-diagnostics.schema.json': 'FinalDiagnostics',
                     'final-observations.schema.json': 'FinalObservations',
                     'nested-sweep-plan.schema.json': 'NestedSweepPlan',
-                    'telemetry-envelope.schema.json': 'TelemetryEnvelope'}.get(file)
+                    'telemetry-envelope.schema.json': 'TelemetryEnvelope',
+                    'outward-result.schema.json': 'OutwardResult'}.get(file)
             return base
+        if file == 'outward-result.schema.json':
+            return 'Outward' + re.sub('[^A-Za-z0-9_]', '_', parts[-1])
+        if file == 'scientific-worker-result.schema.json':
+            return 'OutwardLegacy_' + '_'.join(re.sub('[^A-Za-z0-9_]', '_', part) for part in parts)
         if file == 'telemetry-envelope.schema.json' and parts[-1] in ('TelemetryCommit', 'TelemetryPointer', 'TelemetrySummary', 'TelemetryBinding', 'TelemetrySourceBinding'):
             return parts[-1]
         prefix = ('Telemetry_' if file == 'telemetry-envelope.schema.json' else
@@ -259,7 +280,9 @@ def ts_export(documents):
     lines = ['// Generated from bundled schemas and actual public Core reflection. Do not edit.',
              'export const contractSet = "qcl-negf.results.v2" as const;',
              'export type Phase_Readonly<T> = T extends object ? { readonly [K in keyof T]: Phase_Readonly<T[K]> } : T;',
-             'export type Telemetry_Readonly<T> = T extends object ? { readonly [K in keyof T]: Telemetry_Readonly<T[K]> } : T;']
+             'export type Telemetry_Readonly<T> = T extends object ? { readonly [K in keyof T]: Telemetry_Readonly<T[K]> } : T;',
+             'export type OutwardReadonly<T> = { readonly [K in keyof T]: OutwardReadonly<T[K]> };',
+             'export type OutwardPortableValue = null | boolean | string | number | ReadonlyArray<OutwardPortableValue> | { readonly [key: string]: OutwardPortableValue };']
     for (file, parts), name in sorted(names.items(), key=lambda item: item[1]):
         node = schema_at(documents, file, parts)
         value = ts_type(node, file, names)
@@ -269,6 +292,8 @@ def ts_export(documents):
             value = 'Phase_Readonly<'+value+'>'
         if name.startswith('Telemetry'):
             value = 'Telemetry_Readonly<'+value+'>'
+        if name.startswith('OutwardLegacy_'):
+            value = 'OutwardReadonly<'+value+'>'
         lines.append('export type '+name+' = '+value+';')
     lines.append('export const schemas = '+quoted({name: documents[name] for name in
                  (*DOCUMENTS, 'model-help.schema.json')})+' as const;')

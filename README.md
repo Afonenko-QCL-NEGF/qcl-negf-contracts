@@ -794,3 +794,92 @@ constraints; exact inherited equality is established by the commit validator wit
 its supplied previous-summary context. Caller byte/provenance verification and
 this relation gate remain required; the binding does not manufacture missing
 baseline evidence.
+
+### Explicit outward native sources
+
+`outward-result.schema.json` and `qcl_negf_contracts.outward` publish separate
+`qcl-negf-series-result-v4`, `qcl-negf-current-point-v2`,
+`qcl-negf-configured-point-result-v2` and `qcl-negf-configured-point-status-v2`
+boundaries. The registry selects series v4 for new producers and explicitly lists
+v3/v4 read versions. Old v3 schemas/validators retain their original semantics;
+this does not enable old contract sets. Readers must support the new version
+before producers emit it to them. An old-only reader must report unsupported.
+
+```python
+from qcl_negf_contracts.outward import (
+    validate_outward_result, validate_outward_native_source,
+)
+```
+
+`validate_outward_result(value: object) -> Object` returns detached finite JSON,
+checks the selected closed shape and local source/point/history/lifecycle joins.
+Scientific `points` and `attempt_history` share the same new point definition.
+Their data keeps arbitrary string/null scalar extension names and three required
+named fields: `native_source`, `phase_source`, `optical_attachment`. Other object
+extensions remain invalid. Native authority slots cannot be relabelled as legacy
+`result_commit`, `full_state`, `analysis_physics`, `optical` or
+`checkpoint_source_attempt`. Existing legacy validation is not a native fallback.
+
+`native_source` has exactly eight fields: `schema`, `kind`, `artifact_root`,
+`relation`, `selected_state`, `diagnostics`, `observations`, `reason`.
+Its schema is `qcl-negf.native-point-source.v1`. Absent sources have null refs and
+an explicit reason. Checkpoints have a full existing StateRef and null analysis
+refs with a reason. Finals have that StateRef plus both complete native5 analysis
+FileRefs. `current_point_attempt` matches the native point counter;
+`retained_source` preserves an older original counter and a reason. These counters
+are distinct from CalcJob attempts. Parent/child identity and pinned history cutoff
+remain in the selected manifest/checkpoint/restoration declarations.
+
+Native paths are resolved against the explicit owning outward root:
+scientific output directory or configured run workspace, never the point-attempt
+directory or the JSON file's parent. `artifact_root="."` selects that root;
+otherwise it is a canonical relative directory. All FileRef members remain exact.
+Scratch/retrieval owners preserve the same relative paths and independently
+verify traversal, same-open bytes, hashes and closure. These pure APIs read no files.
+
+`phase_source` has exactly `status`, `session_id`, `current_path`, `reason`.
+Available means the async source was configured; its first durable head may still
+be pending. Disabled/unavailable have null session/path and an explicit reason,
+including writer busy. Mutable phase locators are separate technical metadata,
+not scientific FileRefs or evidence. Native metric names/types/units, including
+empty units, measured zero, Bool/String values and nonfinite error reasons retain
+their source semantics. Unavailable never becomes a measured zero.
+
+`validate_outward_native_source(value, *, manifest, manifest_ref, checkpoint,
+diagnostics=None, observations=None, plan=None, model=None, parent_manifest=None,
+parent_checkpoint=None) -> Object` additionally joins caller-verified immutable
+contexts through the existing manifest/checkpoint/final diagnostics/observations
+validators. Checkpoint-only sources accept no extra final contexts. Finals require
+both analysis contexts and original plan/model contexts. Full recorded convergence
+and physics evidence must reference the selected observations exactly; recorded
+does not mean pass. Existing original evidence/current revalidation/independent
+oracle distinctions are preserved. This API verifies neither hashes/native storage
+nor numerical correctness. Callers decode with an explicit byte budget first.
+
+Nullable `optical_attachment` is structurally limited to `source_state`,
+`publication_state`, `artifact`; it uses the same root and leaves the stationary
+selection/triple unchanged. Its artifact declares existing optical-v5. A separate
+immutable publication edge must retain the original state coordinates. Actual
+optical declaration, native codec and dependency-DAG verification remain an owning
+gate; passing this structural API does not close it. `postprocessing.optical`
+(`result.postprocessing.optical` for configured results) separates not_requested,
+pending/running, completed and failed. Completed requires an attachment; failed
+requires the original error, no attachment and `OPTIONAL_OPTICS_FAILED` warning.
+Terminal outward results do not claim an unfinished optical publication completed.
+
+New `Outward*` TypeScript types are readonly, with an equivalent readonly recursive
+portable-value alias for existing configured metadata. Existing aliases keep their
+prior declarations. The new data index union includes scalar extensions, named
+property types and optional-property `undefined` for TypeScript assignment rules.
+TypeScript cannot exclude a valid named carrier under an unknown string key;
+runtime JSON Schema rejects it. It also cannot express every numeric/path/schema
+constraint. The literal compile fixture checks representable constraints; runtime
+validation remains required. This limitation does not widen the JSON wire format.
+
+Producer transport/canonical-plan/source-owner binding, portable native recovery
+progress, optical codec qualification, independent Results readers/export and the
+actual producer-to-reader native checks remain separate gates. Original plan byte
+SHA, semantic fingerprints, model preimage digest and envelope hash are different
+facts; none is inferred from a UUID, filename or counter. Missing binding remains
+unbound/unsupported where a consumer needs it. No new scientific acceptance or
+physics policy is introduced by these outward declarations.
