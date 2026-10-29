@@ -19,6 +19,7 @@ DOCUMENTS = ('result-common.schema.json', 'core-state.schema.json', 'result-mani
              'result-pointer.schema.json', 'scientific-catalog.schema.json', 'result-cursor.schema.json',
              'checkpoint-declaration.schema.json', 'scientific-record.schema.json',
              'producer-phase-segment.schema.json', 'producer-phase-source.schema.json',
+             'telemetry-envelope.schema.json',
              'final-diagnostics.schema.json', 'final-observations.schema.json',
              'nested-sweep-plan.schema.json')
 
@@ -214,9 +215,13 @@ def ts_export(documents):
                     'producer-phase-source.schema.json': 'ProducerPhaseSource',
                     'final-diagnostics.schema.json': 'FinalDiagnostics',
                     'final-observations.schema.json': 'FinalObservations',
-                    'nested-sweep-plan.schema.json': 'NestedSweepPlan'}.get(file)
+                    'nested-sweep-plan.schema.json': 'NestedSweepPlan',
+                    'telemetry-envelope.schema.json': 'TelemetryEnvelope'}.get(file)
             return base
-        prefix = ('Core_' if file == 'core-state.schema.json' else
+        if file == 'telemetry-envelope.schema.json' and parts[-1] in ('TelemetryCommit', 'TelemetryPointer', 'TelemetrySummary', 'TelemetryBinding', 'TelemetrySourceBinding'):
+            return parts[-1]
+        prefix = ('Telemetry_' if file == 'telemetry-envelope.schema.json' else
+                  'Core_' if file == 'core-state.schema.json' else
                   'Common_' if file == 'result-common.schema.json' else
                   'Phase_' if file in ('producer-phase-segment.schema.json', 'producer-phase-source.schema.json') else
                   'Final_' if file == 'final-diagnostics.schema.json' else
@@ -253,7 +258,8 @@ def ts_export(documents):
         register('core-state.schema.json', ('$defs', field))
     lines = ['// Generated from bundled schemas and actual public Core reflection. Do not edit.',
              'export const contractSet = "qcl-negf.results.v2" as const;',
-             'export type Phase_Readonly<T> = T extends object ? { readonly [K in keyof T]: Phase_Readonly<T[K]> } : T;']
+             'export type Phase_Readonly<T> = T extends object ? { readonly [K in keyof T]: Phase_Readonly<T[K]> } : T;',
+             'export type Telemetry_Readonly<T> = T extends object ? { readonly [K in keyof T]: Telemetry_Readonly<T[K]> } : T;']
     for (file, parts), name in sorted(names.items(), key=lambda item: item[1]):
         node = schema_at(documents, file, parts)
         value = ts_type(node, file, names)
@@ -261,6 +267,8 @@ def ts_export(documents):
         # Existing public scientific aliases retain their published declarations.
         if name.startswith(('Phase_', 'ProducerPhase')):
             value = 'Phase_Readonly<'+value+'>'
+        if name.startswith('Telemetry'):
+            value = 'Telemetry_Readonly<'+value+'>'
         lines.append('export type '+name+' = '+value+';')
     lines.append('export const schemas = '+quoted({name: documents[name] for name in
                  (*DOCUMENTS, 'model-help.schema.json')})+' as const;')
