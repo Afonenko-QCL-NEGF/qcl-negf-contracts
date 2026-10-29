@@ -1,8 +1,10 @@
-"""Private DOC07 bindings over finite, schema-valid documents and detached evidence.
+"""Documentation validation and private DOC07 bindings over detached evidence.
 
-The caller owns IO, child selection, finite/C1 validation, and the association of
-an opaque review receipt with its reviewed source and recipe. These routines
-verify exact bytes and relationships; they never import targets, read files,
+The public bundle boundary owns finite/C1 validation; private DOC07 callers
+still supply finite, schema-valid documents. The caller owns target IO, child
+selection, and the association of an opaque review receipt with its reviewed
+source and recipe. C1 loads packaged schemas offline. These routines verify
+exact bytes and relationships; they never import targets, read target files,
 fetch locators, convert units, infer scientific origin, or mutate their inputs.
 The retained argument is the internal owner layout documented by the DOC07 C2
 fixtures, not a public receipt, registry, or capture interface.
@@ -15,6 +17,7 @@ from html.parser import HTMLParser
 import re
 from urllib.parse import unquote, urlsplit
 
+from . import schema_validator
 from .messages import ContractError, MAX_MESSAGE_BYTES, MAX_PLAN_BYTES, decode, encode
 
 
@@ -32,6 +35,10 @@ _FORMATS = {
 
 class _MissingProof(Exception):
     """Unavailable evidence, distinct from contradictory retained evidence."""
+
+
+class DocumentationProofMissing(Exception):
+    """Required detached documentation proof is unavailable, not contradictory."""
 
 
 def _require(condition, message):
@@ -1059,3 +1066,54 @@ def _validate_model_help_bindings(document, *, retained):
         raise ContractError("model help: required retained binding proof is missing") from error
     except (KeyError, IndexError, TypeError, UnicodeError, OverflowError) as error:
         raise ContractError("model help: malformed detached binding evidence") from error
+
+
+def validate_documentation_bundle(document, *, retained, required_sources=()):
+    """Validate finite/C1/C2 bundle and every explicit source; return document.
+
+    ``retained`` is the detached caller-owned layout used by the DOC07 fixtures,
+    including exact byte records, selected graph, allowlists and owning review
+    associations. ``required_sources`` is a detached list/tuple of PublicRefs,
+    such as coverage and source-media references. No target IO, source execution,
+    presentation filename policy or payload/source equality is performed here.
+    The caller retains those presentation checks after these proofs succeed.
+
+    Missing proofs raise DocumentationProofMissing with the original cause
+    chain. Contradictions and malformed data remain ContractError. Inputs are
+    neither normalized into acceptance nor mutated; success returns the same
+    document object. The optional validation dependency is needed for C1.
+    """
+    from jsonschema import ValidationError
+
+    _require(isinstance(required_sources, (list, tuple)),
+             "required sources must be a detached list or tuple")
+    try:
+        _require(len(encode(document)) <= 2 * _MIB, "help document exceeds byte budget")
+        _require(len(encode({"required_sources": list(required_sources)})) <= MAX_MESSAGE_BYTES,
+                 "required sources exceed byte budget")
+        validator = schema_validator("model-help.schema.json")
+        validator.validate(document)
+        _require(document["format"] == "qcl-negf.docs-bundle.v1", "documentation bundle required")
+        reference_validator = validator.evolve(schema={
+            "$defs": validator.schema["$defs"], "$ref": "#/$defs/PublicRef"})
+        for source in required_sources:
+            reference_validator.validate(source)
+    except ValidationError as error:
+        raise ContractError("model help: documentation C1 validation failed") from error
+    except UnicodeError as error:
+        raise ContractError("model help: invalid UTF-8 documentation input") from error
+
+    try:
+        _validate_model_help_bindings(document, retained=retained)
+        session = _Evidence(retained)
+        for source in required_sources:
+            session.source(source)
+    except _MissingProof as error:
+        raise DocumentationProofMissing("required documentation proof is missing") from error
+    except ContractError as error:
+        if isinstance(error.__cause__, _MissingProof):
+            raise DocumentationProofMissing("required documentation proof is missing") from error
+        raise
+    except (KeyError, IndexError, TypeError, UnicodeError, OverflowError) as error:
+        raise ContractError("model help: malformed detached binding evidence") from error
+    return document
