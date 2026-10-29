@@ -435,3 +435,93 @@ def test_negative_g_s_is_rejected_by_the_accepted_count_bound(count):
 def test_nonnegative_g_s_preserves_zero_and_the_full_nonnegative_int64_range(count):
     value,ctx=inputs();value['context']['inputs']['g_s']=integer(count)
     assert validate(value,ctx)['context']['inputs']['g_s']==integer(count)
+
+
+def multi_family_inputs(dictionary_order=('IFR','LO','electron_electron'),
+                        core_order=('LO','IFR','electron_electron')):
+    """Literal distinct source arrays; Dict order is independent of Core family_order."""
+    value,ctx=inputs();state=ctx['checkpoint']['state']['fields'];scba=state['scba']['fields']
+    template=scba['embedding'];families={};bindings={}
+    for family in core_order:
+        source=deepcopy(template);binding={'family':family}
+        for name,field in (('retarded','Σᴿ'),('lesser','Σˡ'),('greater','Σᵍ')):
+            source['fields'][field]['dataset']='/arrays/'+family+'_'+name
+            binding[name]=deepcopy(source['fields'][field])
+        families[family]=source;bindings[family]=binding
+    scba['scattering']['entries']=[dict(key=sym(name),value=families[name]) for name in dictionary_order]
+    state['family_order']=[sym(name) for name in (*core_order,'embedding_plus','embedding_minus')]
+    value['context']['selfenergy_families']=list(core_order)
+    value['context']['enabled_scattering']=[name for name in core_order if name!='electron_electron']
+    value['state_bindings']['scattering']=[bindings[name] for name in core_order]
+    return value,ctx
+
+
+@pytest.mark.parametrize('dictionary_order',[
+    ('LO','IFR','electron_electron'),('LO','electron_electron','IFR'),
+    ('IFR','LO','electron_electron'),('IFR','electron_electron','LO'),
+    ('electron_electron','LO','IFR'),('electron_electron','IFR','LO'),
+])
+def test_scattering_dictionary_permutations_preserve_actual_core_family_order(dictionary_order):
+    value,ctx=multi_family_inputs(dictionary_order)
+    original=deepcopy(value)
+    assert validate(value,ctx)==original
+    assert value['context']['selfenergy_families']==['LO','IFR','electron_electron']
+    assert value['context']['enabled_scattering']==['LO','IFR']
+
+
+def test_scattering_order_authority_is_the_explicit_checkpoint_not_a_hardcoded_sort():
+    value,ctx=multi_family_inputs(core_order=('IFR','LO','electron_electron'))
+    assert validate(value,ctx)==value
+    assert value['state_bindings']['scattering'][0]['family']=='IFR'
+
+
+def test_all_five_families_and_electron_electron_keep_core_order_with_canonical_dict():
+    value,ctx=multi_family_inputs(
+        dictionary_order=('IFR','LO','acoustic','alloy','electron_electron','impurity'),
+        core_order=('LO','acoustic','impurity','IFR','alloy','electron_electron'))
+    for flags in (value['request']['scattering_requested'],value['context']['problem_scattering']['fields'],
+                  ctx['model']['configuration']['inputs']['scattering']):flags['alloy']=True
+    assert validate(value,ctx)==value
+    assert value['context']['enabled_scattering']==['LO','acoustic','impurity','IFR','alloy']
+
+
+def test_empty_actual_scattering_keeps_requested_flags_without_fabricated_zero_families():
+    value,ctx=multi_family_inputs(dictionary_order=(),core_order=())
+    assert validate(value,ctx)==value
+    assert value['request']['scattering_requested']['LO'] is True
+    assert value['state_bindings']['scattering']==[]
+
+
+@pytest.mark.parametrize('component',['retarded','lesser','greater'])
+def test_scattering_join_binds_each_component_to_its_named_source_family(component):
+    value,ctx=multi_family_inputs()
+    value['state_bindings']['scattering'][0][component]=deepcopy(
+        value['state_bindings']['scattering'][1][component])
+    with pytest.raises(ContractError,match='scattering'):validate(value,ctx)
+
+
+@pytest.mark.parametrize('violation',[
+    'duplicate_dict','missing_dict','extra_dict','duplicate_order','missing_order','extra_order',
+    'wrong_suffix','short_suffix','missing_suffix','family_after_suffix','embedding_in_prefix',
+    'context_order','binding_order','enabled_order','enabled_electron_electron','source_file_ref',
+])
+def test_scattering_join_rejects_ambiguous_sources_and_order_binding_conflicts(violation):
+    value,ctx=multi_family_inputs();state=ctx['checkpoint']['state']['fields']
+    entries=state['scba']['fields']['scattering']['entries'];order=state['family_order']
+    if violation=='duplicate_dict':entries.append(deepcopy(entries[0]))
+    elif violation=='missing_dict':entries.pop()
+    elif violation=='extra_dict':entries.append(dict(key=sym('acoustic'),value=deepcopy(entries[0]['value'])))
+    elif violation=='duplicate_order':order.insert(1,sym('LO'))
+    elif violation=='missing_order':order.pop(0)
+    elif violation=='extra_order':order.insert(0,sym('acoustic'))
+    elif violation=='wrong_suffix':order[-2:]=[sym('embedding_minus'),sym('embedding_plus')]
+    elif violation=='short_suffix':order[:]=[sym('embedding_minus')]
+    elif violation=='missing_suffix':order[:]=order[:-2]
+    elif violation=='family_after_suffix':order.append(sym('LO'))
+    elif violation=='embedding_in_prefix':order.insert(0,sym('embedding_plus'))
+    elif violation=='context_order':value['context']['selfenergy_families']=['IFR','LO','electron_electron']
+    elif violation=='binding_order':value['state_bindings']['scattering'][:2]=value['state_bindings']['scattering'][1::-1]
+    elif violation=='enabled_order':value['context']['enabled_scattering']=['IFR','LO']
+    elif violation=='enabled_electron_electron':value['context']['enabled_scattering'].append('electron_electron')
+    else:value['state_bindings']['scattering'][0]['retarded']['file']['sha256']='f'*64
+    with pytest.raises(ContractError):validate(value,ctx)
