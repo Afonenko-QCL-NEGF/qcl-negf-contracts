@@ -1,0 +1,451 @@
+{
+  "source": {
+    "schema": "qcl-negf.native-point-source.v1",
+    "kind": "final",
+    "artifact_root": ".",
+    "relation": "current_point_attempt",
+    "selected_state": {
+      "identity": {
+        "run_id": "run",
+        "execution_id": "exec",
+        "point_id": "point",
+        "attempt": "1",
+        "branch_id": "branch",
+        "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "state_id": "state-1",
+      "state_sequence": "1",
+      "manifest": {
+        "path": "manifests/m1.json",
+        "bytes": "101",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "media_type": "application/json",
+        "schema": "qcl-negf.result-manifest.v1"
+      }
+    },
+    "diagnostics": {
+      "path": "analysis/diagnostics.h5",
+      "bytes": "202",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "media_type": "application/x-hdf5",
+      "schema": "qcl-negf-physics-analysis-v5"
+    },
+    "observations": {
+      "path": "analysis/observations.h5",
+      "bytes": "303",
+      "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "media_type": "application/x-hdf5",
+      "schema": "qcl-negf-physics-analysis-v5"
+    },
+    "reason": null
+  },
+  "absent": {
+    "schema": "qcl-negf.native-point-source.v1",
+    "kind": "absent",
+    "artifact_root": ".",
+    "relation": null,
+    "selected_state": null,
+    "diagnostics": null,
+    "observations": null,
+    "reason": "solver_not_run"
+  },
+  "phase": {
+    "status": "available",
+    "session_id": "phase-session",
+    "current_path": "executions/exec/point/attempt-1/phase/phase-current.json",
+    "reason": null
+  },
+  "series": {
+    "schema": "qcl-negf-series-result-v4",
+    "contract_set": "qcl-negf.results.v2",
+    "plan_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "plan_scientific_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+    "root_definition_id": "study",
+    "name": "literal",
+    "status": "completed",
+    "model_version": "manufactured",
+    "inclusions": [],
+    "executions": [
+      {
+        "id": "exec",
+        "definition_id": "study",
+        "variant_id": "v",
+        "method_id": "m",
+        "purpose": "physical_sweep",
+        "label": "literal",
+        "operation": "stationary",
+        "point_ids": [
+          "point"
+        ],
+        "repetition": 1
+      }
+    ],
+    "expected_point_count": 1,
+    "available_point_count": 1,
+    "points": [
+      {
+        "id": "point",
+        "execution_id": "exec",
+        "attempt": 1,
+        "coordinates": {
+          "temperature_K": 70,
+          "voltage_per_period_V": 0.05,
+          "branch": "forward",
+          "order": 1
+        },
+        "initialization": {
+          "kind": "cold_start",
+          "source_point_id": null,
+          "checkpoint": null,
+          "fallback_reason": null
+        },
+        "status": "completed",
+        "quality": "invalid",
+        "converged": false,
+        "warnings": [],
+        "observables": {
+          "current_density_A_per_m2": 0,
+          "scientific_assessment": {
+            "scientific_accepted": false
+          }
+        },
+        "data": {
+          "native_source": {
+            "schema": "qcl-negf.native-point-source.v1",
+            "kind": "final",
+            "artifact_root": ".",
+            "relation": "current_point_attempt",
+            "selected_state": {
+              "identity": {
+                "run_id": "run",
+                "execution_id": "exec",
+                "point_id": "point",
+                "attempt": "1",
+                "branch_id": "branch",
+                "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "state_id": "state-1",
+              "state_sequence": "1",
+              "manifest": {
+                "path": "manifests/m1.json",
+                "bytes": "101",
+                "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "media_type": "application/json",
+                "schema": "qcl-negf.result-manifest.v1"
+              }
+            },
+            "diagnostics": {
+              "path": "analysis/diagnostics.h5",
+              "bytes": "202",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+              "media_type": "application/x-hdf5",
+              "schema": "qcl-negf-physics-analysis-v5"
+            },
+            "observations": {
+              "path": "analysis/observations.h5",
+              "bytes": "303",
+              "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "media_type": "application/x-hdf5",
+              "schema": "qcl-negf-physics-analysis-v5"
+            },
+            "reason": null
+          },
+          "phase_source": {
+            "status": "available",
+            "session_id": "phase-session",
+            "current_path": "executions/exec/point/attempt-1/phase/phase-current.json",
+            "reason": null
+          },
+          "optical_attachment": null,
+          "progress_events": "executions/exec/point/progress/events.jsonl",
+          "literal_scalar_extension": "kept"
+        },
+        "postprocessing": {
+          "optical": {
+            "status": "not_requested",
+            "error": null
+          }
+        }
+      }
+    ],
+    "attempt_history": [
+      {
+        "id": "point",
+        "execution_id": "exec",
+        "attempt": 1,
+        "coordinates": {
+          "temperature_K": 70,
+          "voltage_per_period_V": 0.05,
+          "branch": "forward",
+          "order": 1
+        },
+        "initialization": {
+          "kind": "cold_start",
+          "source_point_id": null,
+          "checkpoint": null,
+          "fallback_reason": null
+        },
+        "status": "completed",
+        "quality": "invalid",
+        "converged": false,
+        "warnings": [],
+        "observables": {
+          "current_density_A_per_m2": 0,
+          "scientific_assessment": {
+            "scientific_accepted": false
+          }
+        },
+        "data": {
+          "native_source": {
+            "schema": "qcl-negf.native-point-source.v1",
+            "kind": "final",
+            "artifact_root": ".",
+            "relation": "current_point_attempt",
+            "selected_state": {
+              "identity": {
+                "run_id": "run",
+                "execution_id": "exec",
+                "point_id": "point",
+                "attempt": "1",
+                "branch_id": "branch",
+                "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              },
+              "state_id": "state-1",
+              "state_sequence": "1",
+              "manifest": {
+                "path": "manifests/m1.json",
+                "bytes": "101",
+                "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "media_type": "application/json",
+                "schema": "qcl-negf.result-manifest.v1"
+              }
+            },
+            "diagnostics": {
+              "path": "analysis/diagnostics.h5",
+              "bytes": "202",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+              "media_type": "application/x-hdf5",
+              "schema": "qcl-negf-physics-analysis-v5"
+            },
+            "observations": {
+              "path": "analysis/observations.h5",
+              "bytes": "303",
+              "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "media_type": "application/x-hdf5",
+              "schema": "qcl-negf-physics-analysis-v5"
+            },
+            "reason": null
+          },
+          "phase_source": {
+            "status": "available",
+            "session_id": "phase-session",
+            "current_path": "executions/exec/point/attempt-1/phase/phase-current.json",
+            "reason": null
+          },
+          "optical_attachment": null,
+          "progress_events": "executions/exec/point/progress/events.jsonl",
+          "literal_scalar_extension": "kept"
+        },
+        "postprocessing": {
+          "optical": {
+            "status": "not_requested",
+            "error": null
+          }
+        }
+      }
+    ],
+    "selected_execution_id": "exec",
+    "evidence": []
+  },
+  "current": {
+    "schema": "qcl-negf-current-point-v2",
+    "point_id": "point",
+    "execution_id": "exec",
+    "attempt": 1,
+    "status": "running",
+    "updated_unix": 100,
+    "artifact_root": "executions/exec/point/attempt-1",
+    "native_source": {
+      "schema": "qcl-negf.native-point-source.v1",
+      "kind": "final",
+      "artifact_root": ".",
+      "relation": "current_point_attempt",
+      "selected_state": {
+        "identity": {
+          "run_id": "run",
+          "execution_id": "exec",
+          "point_id": "point",
+          "attempt": "1",
+          "branch_id": "branch",
+          "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "state_id": "state-1",
+        "state_sequence": "1",
+        "manifest": {
+          "path": "manifests/m1.json",
+          "bytes": "101",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "media_type": "application/json",
+          "schema": "qcl-negf.result-manifest.v1"
+        }
+      },
+      "diagnostics": {
+        "path": "analysis/diagnostics.h5",
+        "bytes": "202",
+        "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "media_type": "application/x-hdf5",
+        "schema": "qcl-negf-physics-analysis-v5"
+      },
+      "observations": {
+        "path": "analysis/observations.h5",
+        "bytes": "303",
+        "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "media_type": "application/x-hdf5",
+        "schema": "qcl-negf-physics-analysis-v5"
+      },
+      "reason": null
+    },
+    "phase_source": {
+      "status": "available",
+      "session_id": "phase-session",
+      "current_path": "executions/exec/point/attempt-1/phase/phase-current.json",
+      "reason": null
+    },
+    "stage": "scba",
+    "iteration": 1,
+    "total": 2,
+    "metrics": [
+      {
+        "name": "native_count",
+        "value": 0,
+        "unit": "",
+        "measurement_status": "measured",
+        "reason": null
+      },
+      {
+        "name": "backend",
+        "value": "exact",
+        "unit": "",
+        "measurement_status": "measured",
+        "reason": null
+      },
+      {
+        "name": "enabled",
+        "value": false,
+        "unit": "",
+        "measurement_status": "measured",
+        "reason": null
+      }
+    ],
+    "message": "literal"
+  },
+  "configured": {
+    "schema": "qcl-negf-configured-point-result-v2",
+    "run_id": "run",
+    "point_id": "point",
+    "ordinal": 1,
+    "leaf": "solver",
+    "coordinates": {
+      "temperature_K": 70,
+      "voltage_per_period_V": 0.05
+    },
+    "attempt": 1,
+    "status": "incomplete",
+    "result": {
+      "quality": "invalid",
+      "warnings": [],
+      "native_source": {
+        "schema": "qcl-negf.native-point-source.v1",
+        "kind": "final",
+        "artifact_root": ".",
+        "relation": "current_point_attempt",
+        "selected_state": {
+          "identity": {
+            "run_id": "run",
+            "execution_id": "exec",
+            "point_id": "point",
+            "attempt": "1",
+            "branch_id": "branch",
+            "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "plan_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "state_id": "state-1",
+          "state_sequence": "1",
+          "manifest": {
+            "path": "manifests/m1.json",
+            "bytes": "101",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "media_type": "application/json",
+            "schema": "qcl-negf.result-manifest.v1"
+          }
+        },
+        "diagnostics": {
+          "path": "analysis/diagnostics.h5",
+          "bytes": "202",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "media_type": "application/x-hdf5",
+          "schema": "qcl-negf-physics-analysis-v5"
+        },
+        "observations": {
+          "path": "analysis/observations.h5",
+          "bytes": "303",
+          "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "media_type": "application/x-hdf5",
+          "schema": "qcl-negf-physics-analysis-v5"
+        },
+        "reason": null
+      },
+      "phase_source": {
+        "status": "available",
+        "session_id": "phase-session",
+        "current_path": "executions/exec/point/attempt-1/phase/phase-current.json",
+        "reason": null
+      },
+      "optical_attachment": null,
+      "postprocessing": {
+        "optical": {
+          "status": "not_requested",
+          "error": null
+        }
+      }
+    },
+    "artifacts": {},
+    "latest_checkpoint": null
+  },
+  "configured_status": {
+    "schema": "qcl-negf-configured-point-status-v2",
+    "run_id": "run",
+    "point_id": "point",
+    "ordinal": 1,
+    "leaf": "solver",
+    "coordinates": {
+      "temperature_K": 70
+    },
+    "status": "pending",
+    "attempt": 0,
+    "message": "",
+    "result_sha256": null,
+    "updated_unix_seconds": 100,
+    "latest_checkpoint": null,
+    "native_source": {
+      "schema": "qcl-negf.native-point-source.v1",
+      "kind": "absent",
+      "artifact_root": ".",
+      "relation": null,
+      "selected_state": null,
+      "diagnostics": null,
+      "observations": null,
+      "reason": "solver_not_run"
+    },
+    "phase_source": {
+      "status": "disabled",
+      "session_id": null,
+      "current_path": null,
+      "reason": "telemetry_disabled"
+    }
+  }
+}

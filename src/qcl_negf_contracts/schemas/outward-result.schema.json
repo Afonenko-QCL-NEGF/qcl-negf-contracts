@@ -1,0 +1,988 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Explicit outward native source and result versions; declarations are not byte or scientific proof",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/NativePointSource"
+    },
+    {
+      "$ref": "#/$defs/ScientificSeriesResultV4"
+    },
+    {
+      "$ref": "#/$defs/CurrentPointV2"
+    },
+    {
+      "$ref": "#/$defs/ConfiguredPointResultV2"
+    },
+    {
+      "$ref": "#/$defs/ConfiguredPointStatusV2"
+    }
+  ],
+  "$defs": {
+    "ManifestRef": {
+      "allOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "qcl-negf.result-manifest.v1"
+            },
+            "media_type": {
+              "const": "application/json"
+            }
+          },
+          "required": [
+            "schema",
+            "media_type"
+          ]
+        }
+      ]
+    },
+    "AnalysisRef": {
+      "allOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "qcl-negf-physics-analysis-v5"
+            },
+            "media_type": {
+              "const": "application/x-hdf5"
+            }
+          },
+          "required": [
+            "schema",
+            "media_type"
+          ]
+        }
+      ]
+    },
+    "OpticalRef": {
+      "allOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "qcl-negf-optical-v5"
+            },
+            "media_type": {
+              "const": "application/x-hdf5"
+            }
+          },
+          "required": [
+            "schema",
+            "media_type"
+          ]
+        }
+      ]
+    },
+    "NativeStateRef": {
+      "allOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/StateRef"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "manifest": {
+              "$ref": "#/$defs/ManifestRef"
+            }
+          },
+          "required": [
+            "manifest"
+          ]
+        }
+      ]
+    },
+    "AbsentSource": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.native-point-source.v1"
+        },
+        "kind": {
+          "const": "absent"
+        },
+        "artifact_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation": {
+          "type": "null"
+        },
+        "selected_state": {
+          "type": "null"
+        },
+        "diagnostics": {
+          "type": "null"
+        },
+        "observations": {
+          "type": "null"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "artifact_root",
+        "relation",
+        "selected_state",
+        "diagnostics",
+        "observations",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "CheckpointSource": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.native-point-source.v1"
+        },
+        "kind": {
+          "const": "checkpoint"
+        },
+        "artifact_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation": {
+          "enum": [
+            "current_point_attempt",
+            "retained_source"
+          ]
+        },
+        "selected_state": {
+          "$ref": "#/$defs/NativeStateRef"
+        },
+        "diagnostics": {
+          "type": "null"
+        },
+        "observations": {
+          "type": "null"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "artifact_root",
+        "relation",
+        "selected_state",
+        "diagnostics",
+        "observations",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "CurrentFinalSource": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.native-point-source.v1"
+        },
+        "kind": {
+          "const": "final"
+        },
+        "artifact_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation": {
+          "const": "current_point_attempt"
+        },
+        "selected_state": {
+          "$ref": "#/$defs/NativeStateRef"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/AnalysisRef"
+        },
+        "observations": {
+          "$ref": "#/$defs/AnalysisRef"
+        },
+        "reason": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "artifact_root",
+        "relation",
+        "selected_state",
+        "diagnostics",
+        "observations",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "RetainedFinalSource": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.native-point-source.v1"
+        },
+        "kind": {
+          "const": "final"
+        },
+        "artifact_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relation": {
+          "const": "retained_source"
+        },
+        "selected_state": {
+          "$ref": "#/$defs/NativeStateRef"
+        },
+        "diagnostics": {
+          "$ref": "#/$defs/AnalysisRef"
+        },
+        "observations": {
+          "$ref": "#/$defs/AnalysisRef"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "schema",
+        "kind",
+        "artifact_root",
+        "relation",
+        "selected_state",
+        "diagnostics",
+        "observations",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "NativePointSource": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AbsentSource"
+        },
+        {
+          "$ref": "#/$defs/CheckpointSource"
+        },
+        {
+          "$ref": "#/$defs/CurrentFinalSource"
+        },
+        {
+          "$ref": "#/$defs/RetainedFinalSource"
+        }
+      ]
+    },
+    "PhaseLocator": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "available"
+            },
+            "session_id": {
+              "$ref": "result-common.schema.json#/$defs/Id"
+            },
+            "current_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "status",
+            "session_id",
+            "current_path",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "disabled",
+                "unavailable"
+              ]
+            },
+            "session_id": {
+              "type": "null"
+            },
+            "current_path": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "status",
+            "session_id",
+            "current_path",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "OpticalAttachment": {
+      "type": "object",
+      "properties": {
+        "source_state": {
+          "$ref": "#/$defs/NativeStateRef"
+        },
+        "publication_state": {
+          "$ref": "#/$defs/NativeStateRef"
+        },
+        "artifact": {
+          "$ref": "#/$defs/OpticalRef"
+        }
+      },
+      "required": [
+        "source_state",
+        "publication_state",
+        "artifact"
+      ],
+      "additionalProperties": false
+    },
+    "OpticalStatus": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "enum": [
+            "not_requested",
+            "pending",
+            "running",
+            "completed",
+            "failed"
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "Postprocessing": {
+      "type": "object",
+      "properties": {
+        "optical": {
+          "$ref": "#/$defs/OpticalStatus"
+        }
+      },
+      "required": [
+        "optical"
+      ],
+      "additionalProperties": {
+        "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+      }
+    },
+    "Data": {
+      "type": "object",
+      "properties": {
+        "native_source": {
+          "$ref": "#/$defs/NativePointSource"
+        },
+        "phase_source": {
+          "$ref": "#/$defs/PhaseLocator"
+        },
+        "optical_attachment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpticalAttachment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "checkpoint_source_attempt": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "native_source",
+        "phase_source",
+        "optical_attachment"
+      ],
+      "additionalProperties": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "Initialization": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_point_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "checkpoint": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fallback_reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "source_point_id",
+        "checkpoint",
+        "fallback_reason"
+      ],
+      "additionalProperties": false
+    },
+    "ScientificPointV4": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "scientific-worker-result.schema.json#/properties/points/items/properties/id"
+        },
+        "execution_id": {
+          "$ref": "scientific-worker-result.schema.json#/properties/points/items/properties/execution_id"
+        },
+        "attempt": {
+          "$ref": "scientific-worker-result.schema.json#/properties/points/items/properties/attempt"
+        },
+        "coordinates": {
+          "$ref": "scientific-worker-result.schema.json#/properties/points/items/properties/coordinates"
+        },
+        "initialization": {
+          "$ref": "#/$defs/Initialization"
+        },
+        "status": {
+          "$ref": "scientific-worker-result.schema.json#/properties/points/items/properties/status"
+        },
+        "quality": {
+          "$ref": "scientific-worker-result.schema.json#/properties/points/items/properties/quality"
+        },
+        "converged": {
+          "$ref": "scientific-worker-result.schema.json#/properties/points/items/properties/converged"
+        },
+        "warnings": {
+          "$ref": "scientific-worker-result.schema.json#/properties/points/items/properties/warnings"
+        },
+        "observables": {
+          "$ref": "scientific-worker-result.schema.json#/properties/points/items/properties/observables"
+        },
+        "data": {
+          "$ref": "#/$defs/Data"
+        },
+        "postprocessing": {
+          "$ref": "#/$defs/Postprocessing"
+        }
+      },
+      "required": [
+        "id",
+        "execution_id",
+        "attempt",
+        "coordinates",
+        "initialization",
+        "status",
+        "quality",
+        "converged",
+        "warnings",
+        "observables",
+        "data",
+        "postprocessing"
+      ],
+      "additionalProperties": false
+    },
+    "ScientificSeriesResultV4": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf-series-result-v4"
+        },
+        "plan_fingerprint": {
+          "$ref": "scientific-worker-result.schema.json#/properties/plan_fingerprint"
+        },
+        "plan_scientific_fingerprint": {
+          "$ref": "scientific-worker-result.schema.json#/properties/plan_scientific_fingerprint"
+        },
+        "root_definition_id": {
+          "$ref": "scientific-worker-result.schema.json#/properties/root_definition_id"
+        },
+        "name": {
+          "$ref": "scientific-worker-result.schema.json#/properties/name"
+        },
+        "status": {
+          "$ref": "scientific-worker-result.schema.json#/properties/status"
+        },
+        "model_version": {
+          "$ref": "scientific-worker-result.schema.json#/properties/model_version"
+        },
+        "inclusions": {
+          "$ref": "scientific-worker-result.schema.json#/properties/inclusions"
+        },
+        "executions": {
+          "$ref": "scientific-worker-result.schema.json#/properties/executions"
+        },
+        "expected_point_count": {
+          "$ref": "scientific-worker-result.schema.json#/properties/expected_point_count"
+        },
+        "available_point_count": {
+          "$ref": "scientific-worker-result.schema.json#/properties/available_point_count"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScientificPointV4"
+          }
+        },
+        "attempt_history": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScientificPointV4"
+          }
+        },
+        "selected_execution_id": {
+          "$ref": "scientific-worker-result.schema.json#/properties/selected_execution_id"
+        },
+        "evidence": {
+          "$ref": "scientific-worker-result.schema.json#/properties/evidence"
+        },
+        "contract_set": {
+          "$ref": "scientific-worker-result.schema.json#/properties/contract_set"
+        }
+      },
+      "required": [
+        "schema",
+        "plan_fingerprint",
+        "plan_scientific_fingerprint",
+        "root_definition_id",
+        "name",
+        "status",
+        "model_version",
+        "inclusions",
+        "executions",
+        "expected_point_count",
+        "available_point_count",
+        "points",
+        "contract_set"
+      ],
+      "additionalProperties": false
+    },
+    "Metric": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": [
+            "number",
+            "boolean",
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "measurement_status": {
+          "enum": [
+            "measured",
+            "not_measured",
+            "not_applicable",
+            "error"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "value",
+        "unit",
+        "measurement_status",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "CurrentPointV2": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf-current-point-v2"
+        },
+        "point_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "execution_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "updated_unix": {
+          "type": "number",
+          "minimum": 0
+        },
+        "artifact_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "native_source": {
+          "$ref": "#/$defs/NativePointSource"
+        },
+        "phase_source": {
+          "$ref": "#/$defs/PhaseLocator"
+        },
+        "stage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "iteration": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Metric"
+          }
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema",
+        "point_id",
+        "execution_id",
+        "attempt",
+        "status",
+        "updated_unix",
+        "artifact_root",
+        "native_source",
+        "phase_source"
+      ],
+      "additionalProperties": false
+    },
+    "AdapterCheckpoint": {
+      "type": "object",
+      "properties": {
+        "generation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "iteration": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sha256": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        }
+      },
+      "required": [
+        "generation",
+        "attempt",
+        "kind",
+        "iteration",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "ConfiguredMetadata": {
+      "type": "object",
+      "properties": {
+        "native_source": {
+          "$ref": "#/$defs/NativePointSource"
+        },
+        "phase_source": {
+          "$ref": "#/$defs/PhaseLocator"
+        },
+        "optical_attachment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OpticalAttachment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "postprocessing": {
+          "$ref": "#/$defs/Postprocessing"
+        }
+      },
+      "required": [
+        "native_source",
+        "phase_source",
+        "optical_attachment",
+        "postprocessing"
+      ],
+      "additionalProperties": {
+        "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+      }
+    },
+    "ConfiguredPointResultV2": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf-configured-point-result-v2"
+        },
+        "run_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "point_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "leaf": {
+          "type": "string",
+          "minLength": 1
+        },
+        "coordinates": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+          }
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "incomplete"
+          ]
+        },
+        "result": {
+          "$ref": "#/$defs/ConfiguredMetadata"
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+          }
+        },
+        "latest_checkpoint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AdapterCheckpoint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "run_id",
+        "point_id",
+        "ordinal",
+        "leaf",
+        "coordinates",
+        "attempt",
+        "status",
+        "result",
+        "artifacts",
+        "latest_checkpoint"
+      ],
+      "additionalProperties": false
+    },
+    "ConfiguredPointStatusV2": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf-configured-point-status-v2"
+        },
+        "run_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "point_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "leaf": {
+          "type": "string",
+          "minLength": 1
+        },
+        "coordinates": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "nested-sweep-plan.schema.json#/$defs/PortableValue"
+          }
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string"
+        },
+        "result_sha256": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updated_unix_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "latest_checkpoint": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AdapterCheckpoint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "native_source": {
+          "$ref": "#/$defs/NativePointSource"
+        },
+        "phase_source": {
+          "$ref": "#/$defs/PhaseLocator"
+        }
+      },
+      "required": [
+        "schema",
+        "run_id",
+        "point_id",
+        "ordinal",
+        "leaf",
+        "coordinates",
+        "attempt",
+        "status",
+        "message",
+        "result_sha256",
+        "updated_unix_seconds",
+        "latest_checkpoint",
+        "native_source",
+        "phase_source"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
