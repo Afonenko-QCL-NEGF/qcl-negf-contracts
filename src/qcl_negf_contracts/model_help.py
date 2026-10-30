@@ -1,13 +1,13 @@
-"""Documentation validation and private DOC07 bindings over detached evidence.
+"""Public documentation/View validation and private DOC07 proof relationships.
 
-The public bundle boundary owns finite/C1 validation; private DOC07 callers
+The public bundle and View boundaries own finite/C1 validation; private callers
 still supply finite, schema-valid documents. The caller owns target IO, child
 selection, and the association of an opaque review receipt with its reviewed
 source and recipe. C1 loads packaged schemas offline. These routines verify
 exact bytes and relationships; they never import targets, read target files,
 fetch locators, convert units, infer scientific origin, or mutate their inputs.
-The retained argument is the internal owner layout documented by the DOC07 C2
-fixtures, not a public receipt, registry, or capture interface.
+The retained argument is the detached owner layout documented by the DOC07 C2
+fixtures, not a serialized receipt, registry, or capture interface.
 """
 from __future__ import annotations
 
@@ -1117,3 +1117,40 @@ def validate_documentation_bundle(document, *, retained, required_sources=()):
     except (KeyError, IndexError, TypeError, UnicodeError, OverflowError) as error:
         raise ContractError("model help: malformed detached binding evidence") from error
     return document
+
+
+def validate_model_help_view(document, *, retained):
+    """Validate finite/64KiB/C1/C2 View and return the same input object.
+
+    ``retained`` uses the detached caller-owned layout of the bundle boundary:
+    selected child context/recorded release and exact metadata bytes+digests,
+    with source/mapping/snapshot proofs when available. Missing optional proof
+    never promotes unknowns to bound or erases independent retained identities.
+    The caller owns authenticated selection, target IO and review association;
+    this function neither captures evidence nor mutates/normalizes its inputs.
+
+    Only model-help-view.v1 is accepted. Invalid finite/C1/C2 data and missing
+    required proofs raise ContractError, preserving the primary cause; unlike
+    the bundle boundary, missing proof is not DocumentationProofMissing. The
+    optional validation dependency is imported only when this function is used.
+    """
+    from jsonschema import ValidationError
+
+    try:
+        _require(len(encode(document)) <= 64 * 1024, "help View exceeds byte budget")
+        schema_validator("model-help.schema.json").validate(document)
+        _require(document["format"] == "qcl-negf.model-help-view.v1", "model help View required")
+    except ContractError:
+        raise
+    except ValidationError as error:
+        raise ContractError("model help: View C1 validation failed") from error
+    except UnicodeError as error:
+        raise ContractError("model help: invalid UTF-8 View input") from error
+    except ValueError as error:
+        raise ContractError("model help: invalid View input") from error
+    try:
+        return _validate_model_help_bindings(document, retained=retained)
+    except ContractError:
+        raise
+    except (AttributeError, ValueError) as error:
+        raise ContractError("model help: malformed detached binding evidence") from error
