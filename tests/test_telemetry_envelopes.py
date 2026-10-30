@@ -973,3 +973,256 @@ def test_v1_commit_rejects_v2_summary_even_when_legacy_refs_are_supplied(api,m):
     with pytest.raises(ContractError) as error:
         api.validate_telemetry_commit(m['commit'],summary=v['summary'],summary_ref=m['summary_ref'])
     assert error.value.code=='unsupported_format'
+
+
+# Frozen P08/P30 S00 wire; manufactured assertions, never original-access proof.
+def sideband_case(m, *, pending=False, borrowed=False, checkpoint=False):
+    def raw(v):return json.dumps(v,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False)+'\n'
+    def ref(text,path,schema):return dict(path=path,bytes=str(len(text.encode())),sha256=hashlib.sha256(text.encode()).hexdigest(),media_type='application/json',schema=schema)
+    uid='11111111-1111-1111-1111-111111111111';native='22222222-2222-2222-2222-222222222222'
+    storage=dict(namespace_id='ns',storage_identity='store',relative_execution_root='run',computer_uuid=uid,execution_binding_uuid=native,retention_policy_id='retention',retention_owner_id='owner',hold_ref='hold',access_binding_ref='access')
+    root=dict(storage=storage,area='native_execution',relative_path='.')
+    technical=dict(storage=deepcopy(storage),area='native_workdir',relative_path='performance')
+    selection=dict(run_uuid=uid,execution_id='transport-ex',attempt=3,calcjob_uuid=uid)
+    origin=dict(calcjob_uuid=uid,native_execution_uuid=native)
+    manifest=deepcopy(m['manifest'])
+    # An actual published history-only claim, not a constructor/empty flush claim.
+    head=ref('{}','catalog.json','qcl-negf.scientific-catalog.v1')
+    manifest['history'].update(head=head,entries='1',records='1',scba_rows='1',last_record='1')
+    if checkpoint:
+        cp=ref('{}','checkpoint.json','qcl-negf.checkpoint-declaration.v1')
+        manifest['checkpoint']=cp;manifest['artifacts']=[dict(cp,role='recovery',profile='full-state',dependencies=[])]
+    text=raw(manifest);state=deepcopy(m['expected_state']);state['manifest']=ref(text,'point/manifest.json',manifest['schema'])
+    anchor=dict(schema='qcl-negf.performance-anchor.v1',contract_set='qcl-negf.results.v2',phase_identity=deepcopy(state['identity']),phase_source=dict(status='available',session_id='phase',current_path='phase-current.json',reason=None),origin=deepcopy(origin),invocation=deepcopy(manifest['invocation']),scientific=None)
+    source_origin=deepcopy(origin)
+    if borrowed:
+        anchor['phase_identity']['attempt']='3';anchor['invocation']['source_epoch']='current-epoch3';source_origin['calcjob_uuid']='33333333-3333-3333-3333-333333333333'
+    if not pending:anchor['scientific']=dict(artifact_root='point',selected_state=state,manifest_utf8=text,invocation=manifest['invocation'],source_origin=source_origin,relation='borrowed' if borrowed else 'produced')
+    if pending:anchor['invocation']=None
+    transport=deepcopy(m['expected_transport']);transport['selection']['calcjob_uuid']=uid
+    source_transport=deepcopy(transport)
+    if borrowed:source_transport['selection'].update(calcjob_uuid=source_origin['calcjob_uuid'],attempt=2)
+    telemetry=dict(commit_ref=deepcopy(m['commit_ref']),source_binding_ref=deepcopy(m['source_binding_ref']),expected_transport=transport,source_transport=source_transport,canonical_plan_ref=deepcopy(m['canonical_plan_ref']),expected_producer_provenance=deepcopy(m['expected_producer_provenance']),binding_ref=None,observed_unix=None,phase_context_refs=[],resume_context_refs=[])
+    atext=raw(anchor);ar=ref(atext,'x',anchor['schema']);ar['path']='performance-anchors/'+ar['sha256']+'.json'
+    operands=dict(scientific_root=root,selected_state=state,invocation=manifest['invocation'],source_transport=source_transport,source_origin=source_origin)
+    key=hashlib.sha256(json.dumps(operands,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False).encode()).hexdigest()
+    entry=dict(anchor_key=key,runner_anchor_ref=ar,runner_anchor_utf8=atext,runner_anchor_root=deepcopy(root),scientific_root=root,technical_root=deepcopy(technical),canonical_plan_root=deepcopy(root),telemetry=telemetry)
+    index=dict(schema='qcl-negf.performance-source-index.v1',contract_set='qcl-negf.results.v2',provider_selection=selection,generation='1',closed=False,technical=dict(root=technical,commit_ref=deepcopy(telemetry['commit_ref']),phase_context_refs=[],resume_context_refs=[]),entries=[] if pending else [entry])
+    itext=raw(index);ir=ref(itext,'x',index['schema']);ir['path']='sources/'+ir['sha256']+'.json'
+    integrity=dict(origin='verified_original_inputs',native_contexts='not_reverified',current_access='not_checked',scientific_acceptance='not_assessed')
+    node=lambda:dict(node_uuid=uid,bytes='2',sha256=hashlib.sha256(b'{}').hexdigest())
+    origin_projection=dict(mode='current',source_calcjob_uuid=source_origin['calcjob_uuid'],native_execution_uuid=native,input_nodes={k:node() for k in ('plan','source_graph','native_execution','submit_script')},create_nodes={k:None for k in ('performance_source','result','native_binding')},hops=[],native_epoch=manifest['invocation']['source_epoch'])
+    response=dict(schema='qcl-negf.performance-source.v2',status='available',stage='qualified_source',reason=None,provider_selection=selection,index=dict(ref=ir,raw_utf8=itext,node=None),anchor_key=key,entry=entry,origin=origin_projection,retained=dict(performance_source=None,native_result=None,native_binding=None),integrity=integrity)
+    return dict(anchor=anchor,index=index,pointer=dict(schema='qcl-negf.performance-source-pointer.v1',index=ir),response=response)
+
+
+@pytest.mark.parametrize('kind',['pending','history','checkpoint','borrowed'])
+def test_performance_sideband_public_shapes_are_pure_and_detached(m,kind):
+    import qcl_negf_contracts as public
+    case=sideband_case(m,pending=kind=='pending',borrowed=kind=='borrowed',checkpoint=kind=='checkpoint')
+    for name in ('anchor','source_index','source_pointer','source'):
+        assert callable(getattr(public,'validate_performance_'+name,None))
+    got=public.validate_performance_anchor(case['anchor']);assert got==case['anchor'];got['phase_identity']['attempt']='99';assert case['anchor']['phase_identity']['attempt']=='3' if kind=='borrowed' else case['anchor']['phase_identity']['attempt']=='2'
+    assert public.validate_performance_source_index(case['index'])==case['index']
+    assert public.validate_performance_source_pointer(case['pointer'])==case['pointer']
+    if kind!='pending':assert public.validate_performance_source(case['response'])==case['response']
+
+
+@pytest.mark.parametrize('mutation',['extra','identity_bool','native_number','path','raw','manifest_hash','produced_identity','phase_extra','surrogate'])
+def test_performance_anchor_rejects_malformed_and_inconsistent_originals(m,mutation):
+    from qcl_negf_contracts import validate_performance_anchor
+    a=sideband_case(m)['anchor']
+    if mutation=='extra':a['lease']=True
+    elif mutation=='identity_bool':a['phase_identity']['attempt']=True
+    elif mutation=='native_number':a['phase_identity']['attempt']=2
+    elif mutation=='path':a['scientific']['artifact_root']='../foreign'
+    elif mutation=='raw':a['scientific']['manifest_utf8']+=' '
+    elif mutation=='manifest_hash':a['scientific']['selected_state']['manifest']['sha256']='f'*64
+    elif mutation=='produced_identity':a['phase_identity']['attempt']='3'
+    elif mutation=='phase_extra':a['phase_source']['path']='/tmp/foreign'
+    else:a['scientific']['manifest_utf8']='\ud800'
+    with pytest.raises(ContractError):validate_performance_anchor(a)
+
+
+@pytest.mark.parametrize('mutation',['root','commit','phase','resume','key','duplicate','conflicting_duplicate','count','unsafe_provider','closed','unknown_key'])
+def test_performance_index_rejects_cross_transaction_and_bound_substitution(m,mutation):
+    from qcl_negf_contracts import validate_performance_source_index
+    i=sideband_case(m)['index'];e=i['entries'][0]
+    if mutation=='root':e['technical_root']['relative_path']='other'
+    elif mutation=='commit':e['telemetry']['commit_ref']['sha256']='f'*64
+    elif mutation=='phase':e['telemetry']['phase_context_refs']=[{}]
+    elif mutation=='resume':e['telemetry']['resume_context_refs']=[{}]
+    elif mutation=='key':e['anchor_key']='f'*64
+    elif mutation in ('duplicate','conflicting_duplicate'):
+        i['entries'].append(deepcopy(e))
+        if mutation=='conflicting_duplicate':i['entries'][1]['runner_anchor_root']['relative_path']='foreign-association'
+    elif mutation=='count':i['entries']=[deepcopy(e) for _ in range(257)]
+    elif mutation=='unsafe_provider':i['provider_selection']['attempt']=2**53
+    elif mutation=='closed':i['closed']=True
+    else:i['origin_verified']=True
+    with pytest.raises(ContractError):validate_performance_source_index(i)
+
+
+@pytest.mark.parametrize('status,stage,reason',[('staging','anchor_selection','scientific_anchor_pending'),('unavailable','origin_qualification','origin_unavailable')])
+def test_performance_refusals_have_no_operands_or_verified_authority(m,status,stage,reason):
+    from qcl_negf_contracts import validate_performance_source
+    r=sideband_case(m)['response'];v={k:r[k] for k in ('schema','provider_selection','integrity')};v.update(status=status,stage=stage,reason=reason,candidates=[]);v['integrity']['origin']='not_qualified'
+    assert validate_performance_source(v)==v
+    v['integrity']['origin']='verified_original_inputs'
+    with pytest.raises(ContractError):validate_performance_source(v)
+
+
+def test_performance_locator_requires_original_input_byte_and_node_consistency(m):
+    from qcl_negf_contracts import validate_performance_source
+    case=sideband_case(m);r=case['response'];uid=r['provider_selection']['run_uuid'];native=r['origin']['native_execution_uuid'];h=hashlib.sha256(b'{}').hexdigest()
+    pins=deepcopy(r['origin']['input_nodes']);pins['native_execution']['node_uuid']=native
+    launch=dict(request_id='launch',run_uuid=uid,execution_id='transport-ex',transport_attempt=3,code_uuid=uid,release_id='release',native_execution_uuid=native,input_plan_uuid=uid,source_graph_uuid=uid,relative_execution_root='run',files={k:dict(bytes=2,sha256=h) for k in pins},remote_workdir='/original/workdir')
+    locator=dict(technical_root=case['index']['technical']['root'],index_pointer=dict(schema='qcl-negf.performance-source-pointer.v1',path='current-source.json'),launch=launch,native_execution_utf8='{}',original_inputs=pins)
+    v={k:r[k] for k in ('schema','provider_selection','integrity')};v.update(status='staging',stage='current_locator',reason='current_snapshot_required',locator=locator);v['integrity']['origin']='not_qualified'
+    assert validate_performance_source(v)==v
+    for field,bad in [('native_execution_utf8','{} '),('original_inputs',dict(pins,submit_script=dict(pins['submit_script'],bytes='3')))]:
+        changed=deepcopy(v);changed['locator'][field]=bad
+        with pytest.raises(ContractError) as caught:validate_performance_source(changed)
+        assert caught.value.code=='invalid_input'
+
+
+@pytest.mark.parametrize('mutation',['extra','schema','stage','entry','key','raw','node','origin','epoch','hops','unknowns','retained'])
+def test_performance_available_rejects_substitution_without_refusal_laundering(m,mutation):
+    from qcl_negf_contracts import validate_performance_source
+    v=sideband_case(m)['response']
+    if mutation=='extra':v['lease']=True
+    elif mutation=='schema':v['schema']='qcl-negf.performance-source.v1'
+    elif mutation=='stage':v['stage']='payload'
+    elif mutation=='entry':v['entry']['technical_root']['relative_path']='changed'
+    elif mutation=='key':v['anchor_key']='f'*64
+    elif mutation=='raw':v['index']['raw_utf8']+=' '
+    elif mutation=='node':v['index']['node']=deepcopy(v['origin']['input_nodes']['plan'])
+    elif mutation=='origin':v['origin']['source_calcjob_uuid']='33333333-3333-3333-3333-333333333333'
+    elif mutation=='epoch':v['origin']['native_epoch']='foreign-epoch'
+    elif mutation=='hops':v['origin']['hops']=[dict(child_calcjob_uuid=v['provider_selection']['calcjob_uuid'],parent_binding_uuid=v['provider_selection']['run_uuid'])]*2
+    elif mutation=='unknowns':v['integrity']['scientific_acceptance']='verified'
+    else:v['retained']['performance_source']=v['origin']['input_nodes']['plan']
+    with pytest.raises(ContractError) as caught:validate_performance_source(v)
+    assert caught.value.code=='invalid_input'
+
+
+@pytest.mark.parametrize('mutation',['float_provider','uuid_newline','opaque','rootdot','rootextra','plan','transport','phase_original','resume_version','raw_budget','objects'])
+def test_performance_index_exact_types_roots_original_refs_and_whole_credit(m,mutation):
+    from qcl_negf_contracts import validate_performance_source_index
+    v=sideband_case(m)['index'];e=v['entries'][0]
+    if mutation=='float_provider':v['provider_selection']['attempt']=3.0
+    elif mutation=='uuid_newline':v['provider_selection']['run_uuid']+='\n'
+    elif mutation=='opaque':e['runner_anchor_root']['storage']['hold_ref']='/tmp/host'
+    elif mutation=='rootdot':e['canonical_plan_root']['relative_path']='a/../b'
+    elif mutation=='rootextra':e['runner_anchor_root']['fd']=3
+    elif mutation=='plan':e['telemetry']['canonical_plan_ref']['path']='hash-alias.json'
+    elif mutation=='transport':e['telemetry']['expected_transport']['selection']['attempt']=2
+    elif mutation=='phase_original':
+        p=json.loads((FIXTURES/'phase-telemetry/source-messages.json').read_text());pub=p['publication_ref'];seg=p['normal_ref'];rows=[dict(publication_ref=pub,segment_ref=seg,retained_publication_ref=dict(pub,sha256='0'*64 if pub['sha256']!='0'*64 else '1'*64),retained_segment_ref=seg)]
+        v['technical']['phase_context_refs']=e['telemetry']['phase_context_refs']=rows
+    elif mutation=='resume_version':
+        rows=[dict(commit_ref=m['commit_ref'],summary_ref=dict(m['summary_ref'],schema='qcl-negf.telemetry-summary.v2'))];v['technical']['resume_context_refs']=e['telemetry']['resume_context_refs']=rows
+    elif mutation=='raw_budget':e['runner_anchor_utf8']=' '*1048577
+    else:v['entries']=[deepcopy(e) for _ in range(256)]
+    with pytest.raises(ContractError) as caught:validate_performance_source_index(v)
+    assert caught.value.code=='invalid_input'
+
+
+def test_performance_self_consistent_foreign_graph_is_still_only_an_assertion(m):
+    from qcl_negf_contracts import validate_performance_source
+    m['manifest']['provenance']['revision']='b'*40;m['expected_producer_provenance']['revision']='b'*40
+    case=sideband_case(m);v=case['response']
+    assert validate_performance_source(v)==v
+    # Pure parsing cannot decide whether these supplied UUID/node/graph claims
+    # are genuine; owning provenance checks must independently reread originals.
+    assert set(validate_performance_source(v))==set(v)
+
+
+@pytest.mark.parametrize('mutation',['path','extra','bytes','schema','media'])
+def test_performance_pointer_is_closed_relative_and_bounded(m,mutation):
+    from qcl_negf_contracts import validate_performance_source_pointer
+    v=sideband_case(m)['pointer']
+    if mutation=='path':v['index']['path']='../sources/'+v['index']['sha256']+'.json'
+    elif mutation=='extra':v['current']=True
+    elif mutation=='bytes':v['index']['bytes']='1048577'
+    elif mutation=='schema':v['index']['schema']='qcl-negf.telemetry-commit.v1'
+    else:v['index']['media_type']='text/plain'
+    with pytest.raises(ContractError) as caught:validate_performance_source_pointer(v)
+    assert caught.value.code=='invalid_input'
+
+
+def test_performance_empty_ack_retains_phase_and_resume_operands(m):
+    from qcl_negf_contracts import validate_performance_source_index
+    v=sideband_case(m,pending=True)['index'];p=json.loads((FIXTURES/'phase-telemetry/source-messages.json').read_text());pub=p['publication_ref'];seg=p['normal_ref']
+    phase=dict(publication_ref=pub,segment_ref=seg,retained_publication_ref=dict(pub,path='retained/publication.json'),retained_segment_ref=dict(seg,path='retained/segment.json'))
+    v['technical']['phase_context_refs']=[phase];v['technical']['resume_context_refs']=[dict(commit_ref=m['commit_ref'],summary_ref=m['summary_ref'])]
+    assert validate_performance_source_index(v)==v
+    for key,count in [('phase_context_refs',129),('resume_context_refs',17)]:
+        bad=deepcopy(v);bad['technical'][key]*=count
+        with pytest.raises(ContractError):validate_performance_source_index(bad)
+
+
+def test_performance_selector_required_can_report_one_borrowed_candidate(m):
+    from qcl_negf_contracts import validate_performance_source
+    case=sideband_case(m,borrowed=True);a=case['anchor']['scientific'];r=case['response'];v={k:r[k] for k in ('schema','provider_selection','integrity')}
+    v.update(status='staging',stage='anchor_selection',reason='anchor_selector_required',candidates=[dict(anchor_key=r['anchor_key'],point_id=a['selected_state']['identity']['point_id'],native_attempt='18446744073709551615',source_epoch=a['invocation']['source_epoch'],relation='borrowed')]);v['integrity']['origin']='not_qualified'
+    assert validate_performance_source(v)==v  # no native_attempt <= provider_attempt shortcut
+    v['candidates'].append(deepcopy(v['candidates'][0]))
+    with pytest.raises(ContractError):validate_performance_source(v)
+
+
+def test_performance_retained_index_pin_is_whole_original_asserted_bytes(m):
+    from qcl_negf_contracts import validate_performance_source
+    v=sideband_case(m)['response'];pin=dict(node_uuid=v['provider_selection']['run_uuid'],**{k:v['index']['ref'][k] for k in ('bytes','sha256')})
+    v['index']['node']=pin;v['retained']['performance_source']=deepcopy(pin)
+    assert validate_performance_source(v)==v
+    v['index']['node']['sha256']='f'*64
+    with pytest.raises(ContractError):validate_performance_source(v)
+
+
+def whole_root_sideband_case(m,tmp_path,*,checkpoint=False):
+    """Actual root-relative immutable files, matching Runner's whole-root operand."""
+    c=sideband_case(m,checkpoint=checkpoint);a=c['anchor'];s=a['scientific']
+    s['artifact_root']='.';s['selected_state']['manifest']['path']='manifest.json'
+    manifest=s['manifest_utf8'].encode('utf-8');(tmp_path/'manifest.json').write_bytes(manifest)
+    (tmp_path/'catalog.json').write_bytes(b'{}')
+    if checkpoint:(tmp_path/'checkpoint.json').write_bytes(b'{}')
+    e=c['index']['entries'][0];text=json.dumps(a,sort_keys=True,separators=(',',':'),ensure_ascii=False)+'\n'
+    e['runner_anchor_utf8']=text;ref=e['runner_anchor_ref'];ref.update(bytes=str(len(text.encode())),sha256=hashlib.sha256(text.encode()).hexdigest());ref['path']='performance-anchors/'+ref['sha256']+'.json'
+    operands=dict(scientific_root=e['scientific_root'],selected_state=s['selected_state'],invocation=s['invocation'],source_transport=e['telemetry']['source_transport'],source_origin=s['source_origin'])
+    e['anchor_key']=hashlib.sha256(json.dumps(operands,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False).encode()).hexdigest()
+    r=c['response'];r['anchor_key']=e['anchor_key'];itext=json.dumps(c['index'],sort_keys=True,separators=(',',':'),ensure_ascii=False)+'\n';r['index']['raw_utf8']=itext
+    ir=r['index']['ref'];ir.update(bytes=str(len(itext.encode())),sha256=hashlib.sha256(itext.encode()).hexdigest());ir['path']='sources/'+ir['sha256']+'.json'
+    return c
+
+
+@pytest.mark.parametrize('checkpoint',[False,True])
+def test_performance_whole_root_history_and_checkpoint_keep_original_root_relative_bytes(m,tmp_path,checkpoint):
+    from qcl_negf_contracts import validate_performance_anchor,validate_performance_source_index,validate_performance_source
+    c=whole_root_sideband_case(m,tmp_path,checkpoint=checkpoint);a=c['anchor'];s=a['scientific'];before=deepcopy(c)
+    manifest=(tmp_path/'manifest.json').read_bytes();ref=s['selected_state']['manifest']
+    assert len(manifest)==int(ref['bytes']) and hashlib.sha256(manifest).hexdigest()==ref['sha256']
+    got=validate_performance_anchor(a);assert got==a and got['scientific']['artifact_root']=='.'
+    assert got['scientific']['manifest_utf8'].encode()==manifest
+    assert validate_performance_source_index(c['index'])==c['index']
+    assert validate_performance_source(c['response'])==c['response']
+    assert c==before and (tmp_path/'manifest.json').read_bytes()==manifest
+
+
+@pytest.mark.parametrize('path',['','..','../run','x/./y','/run','run/','x\\y','x\x00y','./','./x','x/.','x//y'])
+def test_performance_whole_root_exception_never_accepts_other_path_forms(m,tmp_path,path):
+    from qcl_negf_contracts import validate_performance_anchor
+    a=whole_root_sideband_case(m,tmp_path)['anchor'];a['scientific']['artifact_root']=path
+    with pytest.raises(ContractError) as exc:validate_performance_anchor(a)
+    assert exc.value.code=='invalid_input'
+
+
+@pytest.mark.parametrize('fault',['file_dot','raw','hash'])
+def test_performance_whole_root_exception_does_not_relax_file_refs_or_originals(m,tmp_path,fault):
+    from qcl_negf_contracts import validate_performance_anchor
+    a=whole_root_sideband_case(m,tmp_path)['anchor']
+    if fault=='file_dot':a['scientific']['selected_state']['manifest']['path']='.'
+    elif fault=='raw':a['scientific']['manifest_utf8']+=' '
+    else:a['scientific']['selected_state']['manifest']['sha256']='f'*64
+    with pytest.raises(ContractError) as exc:validate_performance_anchor(a)
+    assert exc.value.code=='invalid_input'

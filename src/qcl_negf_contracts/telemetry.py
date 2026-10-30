@@ -1677,3 +1677,240 @@ def _validate_telemetry_binding2(value: object, *, expected_state: object,
     _require(status['performance_status']=='available' or bool(status['reason']), '$.capture_status.reason', 'unavailable capture requires reason')
     _require(status['scalar_live_route']!='unavailable' or bool(status['scalar_live_reason']), '$.capture_status.scalar_live_reason', 'unavailable scalar route requires reason')
     return value
+
+
+# Fixed P08/P30 sideband declarations. These validate supplied assertions only;
+# they do not discover a source, qualify a creator, grant access or accept science.
+_PERFORMANCE_IDS = dict(anchor='qcl-negf.performance-anchor.v1',index='qcl-negf.performance-source-index.v1',
+    pointer='qcl-negf.performance-source-pointer.v1',source='qcl-negf.performance-source.v2')
+_PERFORMANCE_ROOTS = dict(anchor='PerformanceAnchor',index='PerformanceSourceIndex',
+    pointer='PerformanceSourcePointer',source='PerformanceSource')
+
+
+def _performance_require(condition, message):
+    if not condition:raise ContractError('performance sideband: '+message,'invalid_input')
+
+
+def _performance_budget(*values, maximum=1048576):
+    """One finite supplied forest, before detached JSON/schema materialization."""
+    stack=[iter(values)];nodes=0;characters=0
+    while stack:
+        try:item=next(stack[-1])
+        except StopIteration:stack.pop();continue
+        nodes+=1
+        _performance_require(nodes<=16384 and len(stack)<=65,'combined metadata object/depth bound exceeded')
+        kind=type(item)
+        _performance_require(item is None or kind in (bool,str,int,float,dict,list),'exact JSON types required')
+        if kind is str:characters+=len(item)
+        elif kind is dict:
+            _performance_require(len(item)<=16384 and all(type(k) is str for k in item),'bounded JSON string keys required')
+            characters+=sum(len(k) for k in item)
+            stack.append(iter(item.values()))
+        elif kind is list:stack.append(iter(item))
+        _performance_require(characters<=maximum,'combined metadata string bound exceeded')
+    try:
+        size=sum(len(encode(v)) for v in values)
+    except (UnicodeError,ValueError,RecursionError) as error:
+        raise ContractError('performance sideband: finite UTF-8 JSON required','invalid_input') from error
+    _performance_require(size<=maximum,'combined metadata byte bound exceeded')
+    return size
+
+
+def _performance_checked(kind,value):
+    _performance_budget(value,maximum=2097152 if kind=='source' else 1048576)
+    value=object_value(value)
+    _performance_require(value.get('schema')==_PERFORMANCE_IDS[kind],'unsupported schema')
+    from jsonschema import ValidationError
+    try:
+        validator=_validator('telemetry-envelope.schema.json')
+        validator.evolve(schema={'$ref':'#/$defs/'+_PERFORMANCE_ROOTS[kind],'$defs':validator.schema['$defs']}).validate(value)
+        _walk(value)
+    except (ValidationError,ContractError,UnicodeError) as error:
+        raise ContractError('performance sideband: '+str(error),'invalid_input') from error
+    # Count strings retain UInt64 precision; JSON Schema alone has no integer
+    # conversion. Native integers are used only by the original transport wire.
+    pending=[value]
+    while pending:
+        item=pending.pop()
+        if type(item) is dict:
+            if 'bytes' in item and type(item['bytes']) is str:
+                _performance_require(int(item['bytes'])<=_UINT64_MAX,'byte count exceeds UInt64')
+            if set(item)=={'selection','frozen_plan'}:
+                _performance_require(type(item['selection']['attempt']) is int,'exact transport attempt required')
+            pending.extend(item.values())
+        elif type(item) is list:pending.extend(item)
+    return value
+
+
+def _performance_raw(reference,text,schema,prefix=None):
+    import hashlib
+    from .messages import decode
+    try:raw=text.encode('utf-8')
+    except UnicodeError as error:raise ContractError('performance sideband: invalid original UTF-8','invalid_input') from error
+    _performance_require(len(raw)<=1048576,'original raw exceeds bound')
+    _performance_require(reference['schema']==schema and reference['media_type']=='application/json'
+        and reference['bytes']==str(len(raw)) and reference['sha256']==hashlib.sha256(raw).hexdigest(),'original reference/bytes/hash differ')
+    if prefix is not None:
+        _performance_require(reference['path']==prefix+reference['sha256']+'.json','immutable reference path differs')
+    return decode(raw,maximum=1048576)
+
+
+def _performance_root(root):
+    from .artifacts import relative_path
+    try:
+        relative_path(root['storage']['relative_execution_root'])
+        if root['relative_path']!='.':relative_path(root['relative_path'])
+    except ContractError as error:raise ContractError('performance sideband: '+str(error),'invalid_input') from error
+
+
+def _performance_ref_pairs(phases,resumes):
+    for row in phases:
+        for original,retained in (('publication_ref','retained_publication_ref'),('segment_ref','retained_segment_ref')):
+            _performance_require(all(row[original][k]==row[retained][k] for k in ('bytes','sha256','media_type','schema')),'retained phase original bytes differ')
+    for rows in (phases,resumes):
+        keys=[encode(row) for row in rows]
+        _performance_require(len(keys)==len(set(keys)),'duplicate technical context references')
+    for row in resumes:
+        _performance_require(row['commit_ref']['schema'][-2:]==row['summary_ref']['schema'][-2:],'resume schema versions differ')
+
+
+def validate_performance_anchor(value: object) -> Object:
+    """Pure pending/history/CP sideband checks; no publication/origin certificate."""
+    from .results import validate_manifest
+    value=_performance_checked('anchor',value)
+    if value['phase_source']['status']=='available':
+        from .artifacts import relative_path
+        try:relative_path(value['phase_source']['current_path'])
+        except ContractError as error:raise ContractError(str(error),'invalid_input') from error
+    scientific=value['scientific']
+    if scientific is not None:
+        from .artifacts import relative_path
+        try:
+            if scientific['artifact_root']!='.':relative_path(scientific['artifact_root'])
+        except ContractError as error:raise ContractError(str(error),'invalid_input') from error
+        state=scientific['selected_state']
+        manifest=_performance_raw(state['manifest'],scientific['manifest_utf8'],'qcl-negf.result-manifest.v1')
+        _performance_budget(value,manifest)
+        try:manifest=validate_manifest(manifest)
+        except ContractError as error:raise ContractError(str(error),'invalid_input') from error
+        _performance_budget(value,manifest)
+        _performance_require(all(state[k]==manifest[k] for k in ('identity','state_id','state_sequence')),'selected manifest state differs')
+        _performance_require(scientific['invocation']==manifest['invocation'],'selected invocation differs')
+        _performance_require(manifest['checkpoint'] is not None or int(manifest['history']['records'])>0,'empty unpublished science is not an anchor')
+        if scientific['relation']=='produced':
+            _performance_require(value['phase_identity']==state['identity'] and value['invocation']==scientific['invocation']
+                and value['origin']==scientific['source_origin'],'produced phase/source identity differs')
+        _performance_require(value['invocation'] is not None,'published scientific anchor lacks current recorder invocation')
+    return value
+
+
+def _performance_entry(entry,index):
+    import hashlib
+    anchor=validate_performance_anchor(_performance_raw(entry['runner_anchor_ref'],entry['runner_anchor_utf8'],
+        _PERFORMANCE_IDS['anchor'],'performance-anchors/'))
+    scientific=anchor['scientific'];_performance_require(scientific is not None,'pending anchor cannot be selected')
+    for name in ('runner_anchor_root','scientific_root','technical_root','canonical_plan_root'):_performance_root(entry[name])
+    _performance_require(entry['technical_root']==index['technical']['root'],'technical transaction root differs')
+    telemetry=entry['telemetry'];top=index['technical']
+    _performance_require(all(telemetry[k]==top[k] for k in ('commit_ref','phase_context_refs','resume_context_refs')),'technical transaction operands differ')
+    _performance_require((telemetry['binding_ref'] is not None)==index['closed'],'open/closed binding mismatch')
+    if telemetry['binding_ref'] is not None:
+        _performance_require(telemetry['binding_ref']['schema'][-2:]==telemetry['commit_ref']['schema'][-2:],'binding/commit schema versions differ')
+    _performance_ref_pairs(telemetry['phase_context_refs'],telemetry['resume_context_refs'])
+    provider=index['provider_selection'];transport=telemetry['expected_transport'];source=telemetry['source_transport']
+    _performance_require(all(transport['selection'][k]==provider[k] for k in ('calcjob_uuid','execution_id','attempt')),'enclosing provider transport differs')
+    if scientific['relation']=='produced':_performance_require(transport==source,'produced transports differ')
+    else:_performance_require(transport['selection']!=source['selection'],'borrowed requires distinct source transport')
+    if anchor['origin'] is not None:_performance_require(anchor['origin']['calcjob_uuid']==transport['selection']['calcjob_uuid'],'phase origin/transport differs')
+    if scientific['source_origin'] is not None:_performance_require(scientific['source_origin']['calcjob_uuid']==source['selection']['calcjob_uuid'],'source origin/transport differs')
+    _performance_require(source['frozen_plan']==telemetry['canonical_plan_ref'],'exact original source plan reference differs')
+    _performance_require(telemetry['canonical_plan_ref']['sha256']==scientific['selected_state']['identity']['plan_sha256'],'canonical plan/identity differs')
+    manifest=_performance_raw(scientific['selected_state']['manifest'],scientific['manifest_utf8'],'qcl-negf.result-manifest.v1')
+    _performance_require(telemetry['expected_producer_provenance']==manifest['provenance'],'producer graph assertion differs')
+    operands=dict(scientific_root=entry['scientific_root'],selected_state=scientific['selected_state'],invocation=scientific['invocation'],source_transport=source,source_origin=scientific['source_origin'])
+    _performance_require(entry['anchor_key']==hashlib.sha256(encode(operands)).hexdigest(),'anchor key differs from full operands')
+    return anchor,manifest
+
+
+def validate_performance_source_index(value: object) -> Object:
+    """Check one whole immutable asserted inventory; never select first/newest."""
+    value=_performance_checked('index',value)
+    _performance_require(type(value['provider_selection']['attempt']) is int,'exact safe provider attempt required')
+    _performance_require(int(value['generation'])<=_UINT64_MAX,'generation exceeds UInt64')
+    _performance_root(value['technical']['root'])
+    _performance_ref_pairs(value['technical']['phase_context_refs'],value['technical']['resume_context_refs'])
+    seen=set();roots=[value]
+    for entry in value['entries']:
+        _performance_require(entry['anchor_key'] not in seen,'duplicate/conflicting selector key')
+        seen.add(entry['anchor_key']);anchor,manifest=_performance_entry(entry,value);roots.extend((anchor,manifest))
+    _performance_budget(*roots)
+    return value
+
+
+def validate_performance_source_pointer(value: object) -> Object:
+    """Check an immutable index FileRef; no pointer dereference or access claim."""
+    value=_performance_checked('pointer',value);reference=value['index']
+    _performance_require(reference['path']=='sources/'+reference['sha256']+'.json','index immutable path differs')
+    _performance_require(0<int(reference['bytes'])<=1048576,'index raw byte bound exceeded')
+    return value
+
+
+_PERFORMANCE_REFUSALS = {
+    'current_locator':('origin_unavailable','origin_mismatch','root_mapping_unavailable','access_domain_unavailable','source_changed','budget_exceeded','cleanup_uncertain','unsupported_format'),
+    'anchor_selection':('anchor_not_selected','anchor_inventory_limit','budget_exceeded','unsupported_format','retained_performance_source_missing'),
+    'origin_qualification':('origin_unavailable','origin_mismatch','source_changed','budget_exceeded','unsupported_format','retained_performance_source_missing'),
+    'qualified_source':('technical_context_pending','source_binding_missing','close_binding_missing','root_mapping_unavailable','access_domain_unavailable','source_changed','budget_exceeded','cleanup_uncertain','unsupported_format'),
+    'payload':('technical_context_pending','source_binding_missing','close_binding_missing','root_mapping_unavailable','access_domain_unavailable','source_changed','budget_exceeded','cleanup_uncertain','unsupported_format')}
+
+
+def validate_performance_source(value: object) -> Object:
+    """Validate a closed getter assertion, without certifying graph/access claims."""
+    value=_performance_checked('source',value)
+    provider=value['provider_selection']
+    _performance_require(type(provider['attempt']) is int,'exact safe provider attempt required')
+    if value['status']!='available':
+        _performance_require(value['integrity']['origin']=='not_qualified','refusal cannot assert verified origin')
+        if 'locator' in value:
+            locator=value['locator'];_performance_root(locator['technical_root']);launch=locator['launch']
+            workdir=launch['remote_workdir']
+            _performance_require(workdir.startswith('/') and len(workdir.encode('utf-8'))<=4096
+                and all(p not in ('','.','..') for p in workdir.split('/')[1:])
+                and all(ord(c)>=32 for c in workdir),'original remote workdir shape differs')
+            _performance_require(all(launch[k]==provider[k] for k in ('run_uuid','execution_id'))
+                and type(launch['transport_attempt']) is int and launch['transport_attempt']==provider['attempt'],'locator launch/provider differs')
+            for name,pin in locator['original_inputs'].items():
+                _performance_require(str(launch['files'][name]['bytes'])==pin['bytes'] and launch['files'][name]['sha256']==pin['sha256'],'launch original input pin differs')
+                _performance_require(type(launch['files'][name]['bytes']) is int,'exact launch byte count required')
+            for name in ('plan','source_graph','native_execution'):
+                key={'plan':'input_plan_uuid','source_graph':'source_graph_uuid','native_execution':'native_execution_uuid'}[name]
+                _performance_require(locator['original_inputs'][name]['node_uuid']==launch[key],'launch original node differs')
+            pin=locator['original_inputs']['native_execution'];text=locator['native_execution_utf8']
+            _performance_raw(dict(pin,path='native-execution.json',media_type='application/json',schema='native-input'),text,'native-input')
+            _performance_budget(value,maximum=1048576)
+        else:
+            candidates=value['candidates'];keys=[r['anchor_key'] for r in candidates]
+            _performance_require(len(keys)==len(set(keys)),'duplicate candidate selector')
+            for candidate in candidates:_performance_require(int(candidate['native_attempt'])<=_UINT64_MAX,'native attempt exceeds UInt64')
+            if value['status']=='unavailable':
+                _performance_require(not candidates and value['reason'] in _PERFORMANCE_REFUSALS[value['stage']],'incompatible refusal stage/reason')
+            else:
+                _performance_require(value['stage']=='anchor_selection' and value['reason'] in ('scientific_anchor_pending','anchor_selector_required','anchor_not_selected','technical_context_pending'),'incompatible staging stage/reason')
+                _performance_require(bool(candidates)==(value['reason']=='anchor_selector_required'),'selector candidates missing or unexpected')
+        return value
+    pin=value['index'];index=validate_performance_source_index(_performance_raw(pin['ref'],pin['raw_utf8'],_PERFORMANCE_IDS['index'],'sources/'))
+    _performance_require(index['provider_selection']==provider,'index provider differs')
+    matches=[entry for entry in index['entries'] if entry['anchor_key']==value['anchor_key']]
+    _performance_require(len(matches)==1 and matches[0]==value['entry'],'selected exact entry differs')
+    anchor,manifest=_performance_entry(value['entry'],index);scientific=anchor['scientific'];origin=value['origin']
+    _performance_require(origin['native_epoch']==scientific['invocation']['source_epoch'],'origin epoch assertion differs')
+    if scientific['source_origin'] is not None:
+        _performance_require(origin['source_calcjob_uuid']==scientific['source_origin']['calcjob_uuid'] and origin['native_execution_uuid']==scientific['source_origin']['native_execution_uuid'],'source origin projection differs')
+    _performance_require(value['integrity']['origin']==('verified_original_inputs' if origin['mode']=='current' else 'verified_original_create'),'available origin assertion mode differs')
+    children=[h['child_calcjob_uuid'] for h in origin['hops']];bindings=[h['parent_binding_uuid'] for h in origin['hops']]
+    _performance_require(len(children)==len(set(children)) and len(bindings)==len(set(bindings)),'cyclic/repeated parent assertion')
+    _performance_require(value['retained']['performance_source']==pin['node'],'retained index node assertion differs')
+    if pin['node'] is not None:_performance_require(all(pin['node'][k]==pin['ref'][k] for k in ('bytes','sha256')),'index CREATE byte pin differs')
+    # Full pin/raw/decoded/returned assertions share one metadata forest, not a
+    # separate allowance per entry. Response serialization has its own 2 MiB cap.
+    _performance_budget(value,index,anchor,manifest,maximum=1048576)
+    return value

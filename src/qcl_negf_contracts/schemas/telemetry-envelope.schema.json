@@ -34,6 +34,18 @@
     },
     {
       "$ref": "#/$defs/PerformanceIndex3"
+    },
+    {
+      "$ref": "#/$defs/PerformanceAnchor"
+    },
+    {
+      "$ref": "#/$defs/PerformanceSourceIndex"
+    },
+    {
+      "$ref": "#/$defs/PerformanceSourcePointer"
+    },
+    {
+      "$ref": "#/$defs/PerformanceSource"
     }
   ],
   "$defs": {
@@ -3176,6 +3188,1156 @@
         "scope"
       ],
       "additionalProperties": false
+    },
+    "PerformanceUUID": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![\\s\\S])"
+    },
+    "PerformanceOpaque": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^/\\u0000-\\u001f\\u007f][^\\u0000-\\u001f\\u007f]*$"
+    },
+    "PerformanceProviderSelection": {
+      "type": "object",
+      "properties": {
+        "run_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "execution_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "calcjob_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        }
+      },
+      "required": [
+        "run_uuid",
+        "execution_id",
+        "attempt",
+        "calcjob_uuid"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceNodePin": {
+      "type": "object",
+      "properties": {
+        "node_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "bytes": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "sha256": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        }
+      },
+      "required": [
+        "node_uuid",
+        "bytes",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceStorage": {
+      "type": "object",
+      "properties": {
+        "namespace_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "storage_identity": {
+          "$ref": "#/$defs/PerformanceOpaque"
+        },
+        "relative_execution_root": {
+          "$ref": "#/$defs/Path"
+        },
+        "computer_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "execution_binding_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "retention_policy_id": {
+          "$ref": "#/$defs/PerformanceOpaque"
+        },
+        "retention_owner_id": {
+          "$ref": "#/$defs/PerformanceOpaque"
+        },
+        "hold_ref": {
+          "$ref": "#/$defs/PerformanceOpaque"
+        },
+        "access_binding_ref": {
+          "$ref": "#/$defs/PerformanceOpaque"
+        }
+      },
+      "required": [
+        "namespace_id",
+        "storage_identity",
+        "relative_execution_root",
+        "computer_uuid",
+        "execution_binding_uuid",
+        "retention_policy_id",
+        "retention_owner_id",
+        "hold_ref",
+        "access_binding_ref"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceRoot": {
+      "type": "object",
+      "properties": {
+        "storage": {
+          "$ref": "#/$defs/PerformanceStorage"
+        },
+        "area": {
+          "enum": [
+            "native_execution",
+            "native_workdir"
+          ]
+        },
+        "relative_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "storage",
+        "area",
+        "relative_path"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceOrigin": {
+      "type": "object",
+      "properties": {
+        "calcjob_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "native_execution_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        }
+      },
+      "required": [
+        "calcjob_uuid",
+        "native_execution_uuid"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceScientificAnchor": {
+      "type": "object",
+      "properties": {
+        "artifact_root": {
+          "$ref": "#/$defs/Path"
+        },
+        "selected_state": {
+          "$ref": "result-common.schema.json#/$defs/StateRef"
+        },
+        "manifest_utf8": {
+          "type": "string",
+          "maxLength": 1048576
+        },
+        "invocation": {
+          "$ref": "result-common.schema.json#/$defs/Invocation"
+        },
+        "source_origin": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceOrigin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "relation": {
+          "enum": [
+            "produced",
+            "borrowed"
+          ]
+        }
+      },
+      "required": [
+        "artifact_root",
+        "selected_state",
+        "manifest_utf8",
+        "invocation",
+        "source_origin",
+        "relation"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceAnchor": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.performance-anchor.v1"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "phase_identity": {
+          "$ref": "result-common.schema.json#/$defs/Identity"
+        },
+        "phase_source": {
+          "$ref": "outward-result.schema.json#/$defs/PhaseLocator"
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceOrigin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "invocation": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Invocation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scientific": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceScientificAnchor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "contract_set",
+        "phase_identity",
+        "phase_source",
+        "origin",
+        "invocation",
+        "scientific"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceResumePair": {
+      "type": "object",
+      "properties": {
+        "commit_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommitRef"
+            },
+            {
+              "$ref": "#/$defs/CommitRef2"
+            }
+          ]
+        },
+        "summary_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SummaryRef"
+            },
+            {
+              "$ref": "#/$defs/SummaryRef2"
+            }
+          ]
+        }
+      },
+      "required": [
+        "commit_ref",
+        "summary_ref"
+      ],
+      "additionalProperties": false
+    },
+    "PerformancePhaseRefs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PhaseContextRef2"
+      },
+      "maxItems": 128
+    },
+    "PerformanceResumeRefs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PerformanceResumePair"
+      },
+      "maxItems": 16
+    },
+    "PerformanceTelemetry": {
+      "type": "object",
+      "properties": {
+        "commit_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommitRef"
+            },
+            {
+              "$ref": "#/$defs/CommitRef2"
+            }
+          ]
+        },
+        "source_binding_ref": {
+          "$ref": "#/$defs/SourceBindingRef"
+        },
+        "expected_transport": {
+          "$ref": "#/$defs/Transport"
+        },
+        "source_transport": {
+          "$ref": "#/$defs/Transport"
+        },
+        "canonical_plan_ref": {
+          "$ref": "#/$defs/PlanRef"
+        },
+        "expected_producer_provenance": {
+          "$ref": "model-help.schema.json#/$defs/SourceGraph"
+        },
+        "binding_ref": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "allOf": [
+                    {
+                      "$ref": "result-common.schema.json#/$defs/FileRef"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "schema": {
+                          "const": "qcl-negf.telemetry-binding.v1"
+                        },
+                        "media_type": {
+                          "const": "application/json"
+                        }
+                      },
+                      "required": [
+                        "schema",
+                        "media_type"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "allOf": [
+                    {
+                      "$ref": "result-common.schema.json#/$defs/FileRef"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "schema": {
+                          "const": "qcl-negf.telemetry-binding.v2"
+                        },
+                        "media_type": {
+                          "const": "application/json"
+                        }
+                      },
+                      "required": [
+                        "schema",
+                        "media_type"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_unix": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phase_context_refs": {
+          "$ref": "#/$defs/PerformancePhaseRefs"
+        },
+        "resume_context_refs": {
+          "$ref": "#/$defs/PerformanceResumeRefs"
+        }
+      },
+      "required": [
+        "commit_ref",
+        "source_binding_ref",
+        "expected_transport",
+        "source_transport",
+        "canonical_plan_ref",
+        "expected_producer_provenance",
+        "binding_ref",
+        "observed_unix",
+        "phase_context_refs",
+        "resume_context_refs"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceEntry": {
+      "type": "object",
+      "properties": {
+        "anchor_key": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        },
+        "runner_anchor_ref": {
+          "allOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/FileRef"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "schema": {
+                  "const": "qcl-negf.performance-anchor.v1"
+                },
+                "media_type": {
+                  "const": "application/json"
+                }
+              },
+              "required": [
+                "schema",
+                "media_type"
+              ]
+            }
+          ]
+        },
+        "runner_anchor_utf8": {
+          "type": "string",
+          "maxLength": 1048576
+        },
+        "runner_anchor_root": {
+          "$ref": "#/$defs/PerformanceRoot"
+        },
+        "scientific_root": {
+          "$ref": "#/$defs/PerformanceRoot"
+        },
+        "technical_root": {
+          "$ref": "#/$defs/PerformanceRoot"
+        },
+        "canonical_plan_root": {
+          "$ref": "#/$defs/PerformanceRoot"
+        },
+        "telemetry": {
+          "$ref": "#/$defs/PerformanceTelemetry"
+        }
+      },
+      "required": [
+        "anchor_key",
+        "runner_anchor_ref",
+        "runner_anchor_utf8",
+        "runner_anchor_root",
+        "scientific_root",
+        "technical_root",
+        "canonical_plan_root",
+        "telemetry"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceTechnical": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "$ref": "#/$defs/PerformanceRoot"
+        },
+        "commit_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommitRef"
+            },
+            {
+              "$ref": "#/$defs/CommitRef2"
+            }
+          ]
+        },
+        "phase_context_refs": {
+          "$ref": "#/$defs/PerformancePhaseRefs"
+        },
+        "resume_context_refs": {
+          "$ref": "#/$defs/PerformanceResumeRefs"
+        }
+      },
+      "required": [
+        "root",
+        "commit_ref",
+        "phase_context_refs",
+        "resume_context_refs"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceSourceIndex": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.performance-source-index.v1"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "provider_selection": {
+          "$ref": "#/$defs/PerformanceProviderSelection"
+        },
+        "generation": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "technical": {
+          "$ref": "#/$defs/PerformanceTechnical"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PerformanceEntry"
+          },
+          "maxItems": 256
+        }
+      },
+      "required": [
+        "schema",
+        "contract_set",
+        "provider_selection",
+        "generation",
+        "closed",
+        "technical",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceSourcePointer": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.performance-source-pointer.v1"
+        },
+        "index": {
+          "allOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/FileRef"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "schema": {
+                  "const": "qcl-negf.performance-source-index.v1"
+                },
+                "media_type": {
+                  "const": "application/json"
+                }
+              },
+              "required": [
+                "schema",
+                "media_type"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "index"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceIndexPin": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "allOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/FileRef"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "schema": {
+                  "const": "qcl-negf.performance-source-index.v1"
+                },
+                "media_type": {
+                  "const": "application/json"
+                }
+              },
+              "required": [
+                "schema",
+                "media_type"
+              ]
+            }
+          ]
+        },
+        "raw_utf8": {
+          "type": "string",
+          "maxLength": 1048576
+        },
+        "node": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceNodePin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "ref",
+        "raw_utf8",
+        "node"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceOriginalInputs": {
+      "type": "object",
+      "properties": {
+        "plan": {
+          "$ref": "#/$defs/PerformanceNodePin"
+        },
+        "source_graph": {
+          "$ref": "#/$defs/PerformanceNodePin"
+        },
+        "native_execution": {
+          "$ref": "#/$defs/PerformanceNodePin"
+        },
+        "submit_script": {
+          "$ref": "#/$defs/PerformanceNodePin"
+        }
+      },
+      "required": [
+        "plan",
+        "source_graph",
+        "native_execution",
+        "submit_script"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceCreateNodes": {
+      "type": "object",
+      "properties": {
+        "performance_source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceNodePin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceNodePin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "native_binding": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceNodePin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "performance_source",
+        "result",
+        "native_binding"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceOriginProjection": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "current",
+            "retained"
+          ]
+        },
+        "source_calcjob_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "native_execution_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "input_nodes": {
+          "$ref": "#/$defs/PerformanceOriginalInputs"
+        },
+        "create_nodes": {
+          "$ref": "#/$defs/PerformanceCreateNodes"
+        },
+        "hops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "child_calcjob_uuid": {
+                "$ref": "#/$defs/PerformanceUUID"
+              },
+              "parent_binding_uuid": {
+                "$ref": "#/$defs/PerformanceUUID"
+              }
+            },
+            "required": [
+              "child_calcjob_uuid",
+              "parent_binding_uuid"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 16
+        },
+        "native_epoch": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        }
+      },
+      "required": [
+        "mode",
+        "source_calcjob_uuid",
+        "native_execution_uuid",
+        "input_nodes",
+        "create_nodes",
+        "hops",
+        "native_epoch"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceRetained": {
+      "type": "object",
+      "properties": {
+        "performance_source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceNodePin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "native_result": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceNodePin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "native_binding": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerformanceNodePin"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "performance_source",
+        "native_result",
+        "native_binding"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceIntegrity": {
+      "type": "object",
+      "properties": {
+        "origin": {
+          "enum": [
+            "not_qualified",
+            "verified_original_inputs",
+            "verified_original_create"
+          ]
+        },
+        "native_contexts": {
+          "const": "not_reverified"
+        },
+        "current_access": {
+          "const": "not_checked"
+        },
+        "scientific_acceptance": {
+          "const": "not_assessed"
+        }
+      },
+      "required": [
+        "origin",
+        "native_contexts",
+        "current_access",
+        "scientific_acceptance"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceCandidate": {
+      "type": "object",
+      "properties": {
+        "anchor_key": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        },
+        "point_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "native_attempt": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "source_epoch": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "relation": {
+          "enum": [
+            "produced",
+            "borrowed"
+          ]
+        }
+      },
+      "required": [
+        "anchor_key",
+        "point_id",
+        "native_attempt",
+        "source_epoch",
+        "relation"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceLaunchFile": {
+      "type": "object",
+      "properties": {
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "sha256": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        }
+      },
+      "required": [
+        "bytes",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceLaunch": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "run_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "execution_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "transport_attempt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "code_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "release_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "native_execution_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "input_plan_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "source_graph_uuid": {
+          "$ref": "#/$defs/PerformanceUUID"
+        },
+        "relative_execution_root": {
+          "$ref": "#/$defs/Path"
+        },
+        "files": {
+          "type": "object",
+          "properties": {
+            "plan": {
+              "$ref": "#/$defs/PerformanceLaunchFile"
+            },
+            "source_graph": {
+              "$ref": "#/$defs/PerformanceLaunchFile"
+            },
+            "native_execution": {
+              "$ref": "#/$defs/PerformanceLaunchFile"
+            },
+            "submit_script": {
+              "$ref": "#/$defs/PerformanceLaunchFile"
+            }
+          },
+          "required": [
+            "plan",
+            "source_graph",
+            "native_execution",
+            "submit_script"
+          ],
+          "additionalProperties": false
+        },
+        "remote_workdir": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "request_id",
+        "run_uuid",
+        "execution_id",
+        "transport_attempt",
+        "code_uuid",
+        "release_id",
+        "native_execution_uuid",
+        "input_plan_uuid",
+        "source_graph_uuid",
+        "relative_execution_root",
+        "files",
+        "remote_workdir"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceLocator": {
+      "type": "object",
+      "properties": {
+        "technical_root": {
+          "$ref": "#/$defs/PerformanceRoot"
+        },
+        "index_pointer": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "qcl-negf.performance-source-pointer.v1"
+            },
+            "path": {
+              "const": "current-source.json"
+            }
+          },
+          "required": [
+            "schema",
+            "path"
+          ],
+          "additionalProperties": false
+        },
+        "launch": {
+          "$ref": "#/$defs/PerformanceLaunch"
+        },
+        "native_execution_utf8": {
+          "type": "string",
+          "maxLength": 1048576
+        },
+        "original_inputs": {
+          "$ref": "#/$defs/PerformanceOriginalInputs"
+        }
+      },
+      "required": [
+        "technical_root",
+        "index_pointer",
+        "launch",
+        "native_execution_utf8",
+        "original_inputs"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceSourceAvailable": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.performance-source.v2"
+        },
+        "status": {
+          "const": "available"
+        },
+        "stage": {
+          "const": "qualified_source"
+        },
+        "reason": {
+          "type": "null"
+        },
+        "provider_selection": {
+          "$ref": "#/$defs/PerformanceProviderSelection"
+        },
+        "index": {
+          "$ref": "#/$defs/PerformanceIndexPin"
+        },
+        "anchor_key": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        },
+        "entry": {
+          "$ref": "#/$defs/PerformanceEntry"
+        },
+        "origin": {
+          "$ref": "#/$defs/PerformanceOriginProjection"
+        },
+        "retained": {
+          "$ref": "#/$defs/PerformanceRetained"
+        },
+        "integrity": {
+          "$ref": "#/$defs/PerformanceIntegrity"
+        }
+      },
+      "required": [
+        "schema",
+        "status",
+        "stage",
+        "reason",
+        "provider_selection",
+        "index",
+        "anchor_key",
+        "entry",
+        "origin",
+        "retained",
+        "integrity"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceSourceLocator": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.performance-source.v2"
+        },
+        "status": {
+          "const": "staging"
+        },
+        "stage": {
+          "const": "current_locator"
+        },
+        "reason": {
+          "const": "current_snapshot_required"
+        },
+        "provider_selection": {
+          "$ref": "#/$defs/PerformanceProviderSelection"
+        },
+        "locator": {
+          "$ref": "#/$defs/PerformanceLocator"
+        },
+        "integrity": {
+          "$ref": "#/$defs/PerformanceIntegrity"
+        }
+      },
+      "required": [
+        "schema",
+        "status",
+        "stage",
+        "reason",
+        "provider_selection",
+        "locator",
+        "integrity"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceSourceRefusal": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.performance-source.v2"
+        },
+        "status": {
+          "enum": [
+            "staging",
+            "unavailable"
+          ]
+        },
+        "stage": {
+          "enum": [
+            "current_locator",
+            "anchor_selection",
+            "origin_qualification",
+            "qualified_source",
+            "payload"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "enum": [
+                "current_snapshot_required",
+                "scientific_anchor_pending",
+                "anchor_selector_required",
+                "anchor_not_selected",
+                "anchor_inventory_limit",
+                "origin_unavailable",
+                "origin_mismatch",
+                "technical_context_pending",
+                "source_binding_missing",
+                "close_binding_missing",
+                "root_mapping_unavailable",
+                "access_domain_unavailable",
+                "source_changed",
+                "budget_exceeded",
+                "cleanup_uncertain",
+                "retained_performance_source_missing",
+                "unsupported_format"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_selection": {
+          "$ref": "#/$defs/PerformanceProviderSelection"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PerformanceCandidate"
+          },
+          "maxItems": 256
+        },
+        "integrity": {
+          "$ref": "#/$defs/PerformanceIntegrity"
+        }
+      },
+      "required": [
+        "schema",
+        "status",
+        "stage",
+        "reason",
+        "provider_selection",
+        "candidates",
+        "integrity"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceSource": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/PerformanceSourceAvailable"
+        },
+        {
+          "$ref": "#/$defs/PerformanceSourceLocator"
+        },
+        {
+          "$ref": "#/$defs/PerformanceSourceRefusal"
+        }
+      ]
     }
   }
 }
