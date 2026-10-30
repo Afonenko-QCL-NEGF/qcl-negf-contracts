@@ -40,3 +40,8 @@ def schema_validator(name: str):
     if name not in documents:
         raise ValueError(f"not a validation schema: {name}")
     return Draft202012Validator(documents[name], registry=registry)
+
+
+# Pure sideband assertions only; no discovery, original-creator or access proof.
+from .telemetry import (validate_performance_anchor, validate_performance_source_index,
+                        validate_performance_source_pointer, validate_performance_source)
