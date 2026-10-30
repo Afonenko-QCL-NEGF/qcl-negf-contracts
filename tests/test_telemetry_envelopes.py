@@ -547,3 +547,429 @@ def test_cpu_rollup_rotation_may_reset_local_to_measured_zero_without_global_los
     check_commit(api,m,**previous)
     assert m['summary']['cpu_totals']['cpu_seconds']['value']==3.0
     assert a['cpu_seconds']==0.0
+
+
+# Retained v2 is manufactured metadata: these fixtures confer no filesystem authority.
+_COST_SECONDS = ('probe_seconds', 'read_seconds', 'hash_seconds', 'parse_validate_seconds',
+                 'serialize_seconds', 'parquet_seconds', 'flush_sync_seconds', 'process_cpu_seconds')
+_COST_COUNTS = ('bytes_read', 'bytes_written', 'physical_read_bytes', 'physical_write_bytes',
+                'polls', 'flushes', 'source_reopens', 'reverified_bytes')
+_PHASE_KINDS = dict(duration_seconds=False, process_cpu_seconds=False,
+                    allocated_bytes=True, gc_seconds=False, gc_count=True)
+
+
+def _acc(known=None, covered='0', unavailable='0', overflow='0', reasons=()):
+    return dict(known=known, covered=covered, unavailable=unavailable,
+                overflow=overflow, reasons=list(reasons))
+
+
+def _v2_ref(kind, generation):
+    return dict(path=f'performance/{kind}-{generation}.json', bytes='100',
+                sha256=hashlib.sha256(f'{kind}-{generation}'.encode()).hexdigest(),
+                schema=f'qcl-negf.telemetry-{kind}.v'+('3' if kind=='catalog' else '2'),
+                media_type='application/json')
+
+
+def _v2(m):
+    m=deepcopy(m)
+    for kind in ('commit', 'summary'):
+        m[kind]['schema']=f'qcl-negf.telemetry-{kind}.v2'
+        del m[kind]['baseline']
+        m[kind]['closed']=False
+        m[kind+'_ref']=_v2_ref(kind, 1)
+    c,s=m['commit'],m['summary']
+    s['durability']['uncommitted_resource_batch_at_risk']=True
+    s['coverage']['detail_scope']='collector_session_local'
+    s['rows']['resources']=s['totals']['rows']['resources']='0'
+    metrics={k:_acc(1.0 if k in _COST_SECONDS else '1', '1') for k in (*_COST_SECONDS,*_COST_COUNTS)}
+    c.update(summary=deepcopy(m['summary_ref']),catalog=_v2_ref('catalog',1),
+        contexts=dict(phase_context_refs=[],resume_context_refs=[]),
+        window_delta=dict(introduced=[],removed=[],pending_unlink=[]),
+        cost_delta=dict(observer_id='observer-1',first_operation='0',stop_operation='1',
+            as_of_monotonic_ns='100',metrics=deepcopy(metrics),arrow_io_forecast_bytes='0',
+            publication_tail='not_included',restart_gap=False))
+    m['catalog']=dict(schema='qcl-negf.telemetry-catalog.v3',contract_set='qcl-negf.results.v2',
+        transport=deepcopy(c['transport']),generation='1',artifacts=[])
+    s['cumulative']=dict(scope='enclosing_transport_since_v2_genesis',prior_capture='none',
+        cost=dict(scope='observer_process_completed_operations',position=dict(observer_id='observer-1',stop_operation='1'),
+            metrics=deepcopy(metrics),arrow_io_forecast_bytes='0',uncovered_restarts='0',publication_tail='not_included'),
+        phases=dict(scope='accepted_source_rows_across_sources_no_cross_clock_bounds',entries=[],
+            overflow=dict(call_count='0',metrics={k:_acc() for k in _PHASE_KINDS}),incomplete=False,reasons=[]),
+        coverage=dict(gap_events='0',incomplete=True,reasons=['publication_tail']),
+        max_observed_rss_bytes=dict(value='12345',status='measured',reason=None))
+    return m
+
+
+def _metadata(ref):
+    return dict(ref=deepcopy(ref),role='performance.provenance',table=None,rows=None,accepted=[])
+
+
+def _v2_next(m, *, rotate=False, restart=False):
+    old=deepcopy(m)
+    n=int(m['commit']['generation'])+1
+    for kind in ('commit','summary'):
+        m[kind]['generation']=str(n)
+        m[kind+'_ref']=_v2_ref(kind,n)
+    c,s=m['commit'],m['summary']
+    c['summary']=deepcopy(m['summary_ref']); c['catalog']=_v2_ref('catalog',n)
+    c['previous']=dict(commit=old['commit_ref'],summary=old['summary_ref'])
+    if rotate:
+        for value in (c,s):value['session']['source'].update(session_id=f'collector-{n}',clock_domain_id=f'collector-clock-{n}')
+        s['rows']={k:'0' for k in s['rows']};s['cpu_coverage']['allocations']=[]
+    metrics={k:_acc(float(n) if k in _COST_SECONDS else str(n),str(n)) for k in (*_COST_SECONDS,*_COST_COUNTS)}
+    c['cost_delta'].update(first_operation=str(n-1),stop_operation=str(n),as_of_monotonic_ns=str(100*n))
+    s['cumulative']['cost']['position']['stop_operation']=str(n)
+    s['cumulative']['cost']['metrics']=metrics
+    if restart:
+        c['cost_delta'].update(observer_id=f'observer-{n}',first_operation='0',stop_operation='1',restart_gap=True)
+        s['cumulative']['cost'].update(position=dict(observer_id=f'observer-{n}',stop_operation='1'),uncovered_restarts='1')
+        s['cumulative']['coverage'].update(gap_events='1',incomplete=True,reasons=['publication_tail','collector_restart'])
+    leaf=_metadata(old['commit']['catalog'])
+    c['window_delta']=dict(introduced=[leaf],removed=deepcopy(old['catalog']['artifacts']),pending_unlink=[])
+    m['catalog']=dict(old['catalog'],generation=str(n),artifacts=[deepcopy(leaf)])
+    s['retention']['retained_bytes']=leaf['ref']['bytes']
+    return dict(previous=old['commit'],previous_ref=old['commit_ref'],previous_summary=old['summary'],
+                previous_summary_ref=old['summary_ref'],previous_catalog=old['catalog'])
+
+
+def _check2(api,m,**context):
+    return check_commit(api,m,catalog=m['catalog'],**context)
+
+
+def test_retained_v2_genesis_has_explicit_typed_summary_catalog_and_index(api,m):
+    v=_v2(m)
+    assert _check2(api,v)==v['commit']
+    assert api.validate_telemetry_summary(v['summary'])==v['summary']
+    assert api.validate_telemetry_catalog(v['catalog'],expected_transport=v['commit']['transport'])==v['catalog']
+    index=dict(schema='qcl-negf.performance-index.v3',contract_set='qcl-negf.results.v2',
+        transport=v['commit']['transport'],current=dict(commit=v['commit_ref'],summary=v['summary_ref']),retained=[])
+    assert api.validate_telemetry_index(index,expected_transport=v['commit']['transport'])==index
+    pointer=dict(schema='qcl-negf.telemetry-pointer.v2',contract_set='qcl-negf.results.v2',commit=v['commit_ref'])
+    assert api.validate_telemetry_pointer(pointer,commit=v['commit'],commit_ref=v['commit_ref'])==pointer
+    assert v['commit']['cost_delta']['publication_tail']=='not_included'
+
+
+@pytest.mark.parametrize('field', ['summary','baseline','generation','transport','catalog','extra','tail','bool_count'])
+def test_retained_v2_genesis_rejects_mixed_formats_and_false_measurements(api,m,field):
+    v=_v2(m);c=v['commit']
+    if field=='summary':c['summary']['schema']='qcl-negf.telemetry-summary.v1'
+    elif field=='baseline':c['baseline']=None
+    elif field=='generation':c['generation']=v['summary']['generation']='2';v['catalog']['generation']='2'
+    elif field=='transport':c['transport']=v['summary']['transport']=None
+    elif field=='catalog':v['catalog']['generation']='2'
+    elif field=='tail':c['cost_delta']['publication_tail']='included'
+    elif field=='bool_count':c['cost_delta']['metrics']['polls']['covered']=True
+    else:c['extra']=None
+    with pytest.raises(ContractError):_check2(api,v)
+
+
+def test_v1_rejects_new_contexts_and_keeps_same_detached_outputs(api,m):
+    assert api.validate_telemetry_summary(m['summary'])==m['summary']
+    assert check_commit(api,m)==m['commit']
+    for extra in ({'catalog':{}},{'previous_catalog':{}}):
+        with pytest.raises(ContractError):check_commit(api,m,**extra)
+
+
+@pytest.mark.parametrize('metric', [*_COST_SECONDS,*_COST_COUNTS])
+def test_every_completed_cost_operation_requires_classification(api,m,metric):
+    v=_v2(m);v['commit']['cost_delta']['metrics'][metric]=_acc()
+    with pytest.raises(ContractError):_check2(api,v)
+
+
+def test_cost_unknown_survives_measured_next_operation_and_zero_is_measured(api,m):
+    v=_v2(m);k='physical_read_bytes'
+    v['commit']['cost_delta']['metrics'][k]=_acc(unavailable='1',reasons=['missing_observation'])
+    v['summary']['cumulative']['cost']['metrics'][k]=_acc(unavailable='1',reasons=['missing_observation'])
+    v['summary']['cumulative']['coverage']['reasons'].append('missing_observation')
+    _check2(api,v)
+    context=_v2_next(v)
+    v['commit']['cost_delta']['metrics'][k]=_acc('0','1')
+    v['summary']['cumulative']['cost']['metrics'][k]=_acc('0','1','1',reasons=['missing_observation'])
+    _check2(api,v,**context)
+    v['summary']['cumulative']['cost']['metrics'][k]=_acc('0','2')
+    with pytest.raises(ContractError):_check2(api,v,**context)
+
+
+@pytest.mark.parametrize('bad', ['gap','start','position','known','reasons','catalog_leaf','catalog_self','old_format','previous_summary','missing_catalog'])
+def test_retained_successor_rejects_false_merge_or_inventory(api,m,bad):
+    v=_v2(m);context=_v2_next(v,restart=True)
+    if bad=='gap':v['commit']['cost_delta']['restart_gap']=False
+    elif bad=='start':v['commit']['cost_delta']['first_operation']='1'
+    elif bad=='position':v['summary']['cumulative']['cost']['position']['stop_operation']='2'
+    elif bad=='known':v['summary']['cumulative']['cost']['metrics']['read_seconds']['known']=1.0
+    elif bad=='reasons':v['summary']['cumulative']['coverage']['reasons']=[]
+    elif bad=='catalog_leaf':v['catalog']['artifacts']=[];v['commit']['window_delta']['introduced']=[];v['summary']['retention']['retained_bytes']='0'
+    elif bad=='catalog_self':v['catalog']['artifacts'].append(_metadata(v['commit']['catalog']))
+    elif bad=='old_format':v['commit']['previous']['commit']['schema']='qcl-negf.telemetry-commit.v1'
+    elif bad=='previous_summary':v['commit']['previous']['summary']['path']='other.json'
+    else:context.pop('previous_catalog')
+    with pytest.raises(ContractError):_check2(api,v,**context)
+
+
+def test_rotation_keeps_observer_position_restart_carries_subtotal_and_tail(api,m):
+    v=_v2(m)
+    v['commit']['closed']=v['summary']['closed']=True;v['summary']['durability']['uncommitted_resource_batch_at_risk']=False
+    context=_v2_next(v,rotate=True)
+    v['commit']['closed']=v['summary']['closed']=False;v['summary']['durability']['uncommitted_resource_batch_at_risk']=True
+    _check2(api,v,**context)
+    assert v['summary']['cumulative']['cost']['metrics']['bytes_read']['known']=='2'
+    context=_v2_next(v,restart=True)
+    _check2(api,v,**context)
+    assert v['summary']['cumulative']['cost']['metrics']['bytes_read']['known']=='3'
+    assert v['summary']['cumulative']['cost']['uncovered_restarts']=='1'
+
+
+def test_empty_cost_delta_is_not_a_measured_zero_operation(api,m):
+    v=_v2(m);d=v['commit']['cost_delta'];d['stop_operation']='0'
+    d['metrics']={k:_acc(reasons=['no_observations']) for k in d['metrics']}
+    roll=v['summary']['cumulative']['cost'];roll['position']['stop_operation']='0';roll['metrics']=deepcopy(d['metrics'])
+    _check2(api,v)
+    d['arrow_io_forecast_bytes']='1'
+    with pytest.raises(ContractError):_check2(api,v)
+
+
+def test_catalog_metadata_retirement_and_failed_unlink_debt_use_authenticated_inventory(api,m):
+    v=_v2(m);_check2(api,v)
+    contexts=[]
+    for generation in range(2,7):
+        context=_v2_next(v)
+        if generation==3:
+            v['commit']['window_delta']['pending_unlink']=[deepcopy(context['previous_catalog']['artifacts'][0]['ref'])]
+        elif generation==4:
+            # Failed debt remains eligible even after leaving the retained inventory.
+            v['commit']['window_delta']['pending_unlink']=deepcopy(context['previous']['window_delta']['pending_unlink'])
+        _check2(api,v,**context);contexts.append(context)
+        assert len(v['catalog']['artifacts'])==1
+    assert v['commit']['window_delta']['pending_unlink']==[]
+    bad=deepcopy(v);bad['commit']['window_delta']['pending_unlink']=[_v2_ref('catalog',99)]
+    with pytest.raises(ContractError):_check2(api,bad,**contexts[-1])
+    # Historical descriptors are opaque: no recursively required K1/C1/S1 inputs.
+    assert contexts[-1]['previous']['previous']['commit']['path'].endswith('commit-4.json')
+
+
+@pytest.mark.parametrize('bad', ['transport','duplicate','order','rows','overlap','schema','unselected'])
+def test_catalog_and_index_reject_bad_typed_membership(api,m,bad):
+    v=_v2(m);cat=v['catalog'];a=_metadata(_v2_ref('summary',9));b=_metadata(_v2_ref('summary',8))
+    cat['artifacts']=[b,a]
+    if bad=='transport':cat['transport']['selection']['attempt']=77
+    elif bad=='duplicate':cat['artifacts']=[a,a]
+    elif bad=='order':cat['artifacts']=[a,b]
+    elif bad=='rows':cat['artifacts'][0]['rows']='0'
+    elif bad=='schema':cat['schema']='qcl-negf.telemetry-catalog.v2'
+    elif bad=='unselected':cat['artifacts'][0]['role']='physics.full'
+    else:
+        ex=dict(source_key='a'*64,segment=dict(a['ref'],schema='qcl-negf.producer-phase-segment.v1'),first_row='0',stop_row='2')
+        for row in cat['artifacts']:row['ref']['schema']='qcl-negf.producer-phase-segment.v1';row['accepted']=[deepcopy(ex)]
+    with pytest.raises(ContractError):api.validate_telemetry_catalog(cat,expected_transport=m['commit']['transport'])
+
+
+def _v2_phase(m, *, overflow=False):
+    v=_v2(m);ctx=phase_case(v);c,s=v['commit'],v['summary'];ar=c['accepted_ranges'][0]
+    c['contexts']['phase_context_refs']=[dict(publication_ref=ctx['publication_ref'],segment_ref=ctx['segment_ref'],
+        retained_publication_ref=ar['retained_publication'],retained_segment_ref=ar['retained_segment'])]
+    raw=_metadata(ar['retained_segment']);raw['role']='performance.full'
+    raw['accepted']=[{k:deepcopy(ar[k]) for k in ('source_key','segment','first_row','stop_row')}]
+    leaves=sorted([_metadata(ar['retained_publication']),raw],key=lambda row:(row['ref']['path'],row['ref']['sha256']))
+    v['catalog']['artifacts']=deepcopy(leaves);c['window_delta']['introduced']=deepcopy(leaves)
+    s['retention'].update(retained_bytes=str(sum(int(row['ref']['bytes']) for row in leaves)),retained_source_rows='1')
+    phase=dict(key=dict(stage='scba',phase='iteration',status='ok',task_width='2',
+        counter_scope='process_inclusive_delta_on_end',representation='normal_aggregate'),call_count='2',
+        metrics=dict(duration_seconds=_acc(4.5,'2'),process_cpu_seconds=_acc(3.0,'2'),
+                     allocated_bytes=_acc('9007199254740993','2'),gc_seconds=_acc(0.125,'2'),gc_count=_acc('3','2')))
+    p=s['cumulative']['phases']
+    if overflow:
+        p.update(overflow={k:deepcopy(phase[k]) for k in ('call_count','metrics')},incomplete=True,reasons=['phase_key_limit'])
+        s['cumulative']['coverage']['reasons'].append('phase_key_limit')
+    else:p['entries']=[phase]
+    return v,ctx
+
+
+@pytest.mark.parametrize('overflow',[False,True])
+def test_phase_rollup_uses_only_accepted_physical_prefix_and_explicit_overflow(api,m,overflow):
+    v,ctx=_v2_phase(m,overflow=overflow)
+    _check2(api,v,phase_contexts=[ctx])
+    assert v['summary']['totals']['accepted_source_rows']=='1'
+    phase=v['summary']['cumulative']['phases']
+    assert (phase['overflow'] if overflow else phase['entries'][0])['metrics']['allocated_bytes']['known']=='9007199254740993'
+    context=_v2_next(v)
+    # No new accepted row on flush: cumulative calls stay2, including overflow.
+    v['commit']['accepted_ranges']=[];v['commit']['contexts']['phase_context_refs']=[]
+    v['summary']['retention'].update(retained_source_rows='0',omitted_source_rows='1',incomplete=True,reasons=['retention_omission'])
+    v['summary']['cumulative']['coverage']['reasons'].append('retention_omission')
+    _check2(api,v,**context)
+    bucket=v['summary']['cumulative']['phases']['overflow'] if overflow else v['summary']['cumulative']['phases']['entries'][0]
+    bucket['call_count']='4'
+    for metric in bucket['metrics'].values():metric['covered']='4'
+    with pytest.raises(ContractError):_check2(api,v,**context)
+
+
+@pytest.mark.parametrize('bad',['raw_context','retained_alias','extent','unknown_metric','phase_calls','invented_key','rss','phase_reason'])
+def test_phase_retention_and_cumulative_relations_reject_false_evidence(api,m,bad):
+    v,ctx=_v2_phase(m,overflow=bad=='phase_reason')
+    if bad=='raw_context':v['commit']['contexts']['phase_context_refs']=[]
+    elif bad=='retained_alias':v['commit']['contexts']['phase_context_refs'][0]['retained_segment_ref']['path']='different/raw.json'
+    elif bad=='extent':v['catalog']['artifacts'][1]['accepted'][0]['stop_row']='2';v['commit']['window_delta']['introduced']=deepcopy(v['catalog']['artifacts'])
+    elif bad=='unknown_metric':v['summary']['cumulative']['phases']['entries'][0]['metrics']['gc_count']=_acc()
+    elif bad=='phase_calls':v['summary']['cumulative']['phases']['entries'][0]['metrics']['duration_seconds']['known']=9.0
+    elif bad=='invented_key':v['summary']['cumulative']['phases']['entries'][0]['key']['phase']='invented'
+    elif bad=='rss':v['summary']['cumulative']['max_observed_rss_bytes']['value']='12346'
+    else:v['summary']['cumulative']['phases'].update(incomplete=False,reasons=[])
+    with pytest.raises(ContractError):_check2(api,v,phase_contexts=[ctx])
+
+
+def test_retained_parquet_removal_counts_footer_rows_and_does_not_erase_totals(api,m):
+    v=_v2(m);ref=dict(path='performance/resources-1.parquet',bytes='200',sha256='f'*64,
+        media_type='application/vnd.apache.parquet',schema='qcl-negf.performance.v2')
+    leaf=dict(ref=ref,role='performance.window',table='resources',rows='2',accepted=[])
+    v['commit']['window_delta']['introduced']=[deepcopy(leaf)];v['catalog']['artifacts']=[deepcopy(leaf)]
+    v['summary']['retention']['retained_bytes']='200';v['summary']['rows']['resources']=v['summary']['totals']['rows']['resources']='2'
+    _check2(api,v)
+    context=_v2_next(v)
+    v['summary']['retention'].update(omitted_resource_rows='2',incomplete=True,reasons=['retention_omission'])
+    v['summary']['cumulative']['coverage']['reasons'].append('retention_omission')
+    _check2(api,v,**context)
+    assert v['summary']['totals']['rows']['resources']=='2'
+    v['summary']['retention']['omitted_resource_rows']='0'
+    with pytest.raises(ContractError):_check2(api,v,**context)
+
+
+def _v2_binding(m):
+    v=_v2(m)
+    v['commit']['closed']=v['summary']['closed']=True;v['summary']['durability']['uncommitted_resource_batch_at_risk']=False
+    v['binding']['schema']='qcl-negf.telemetry-binding.v2'
+    for kind in ('commit','summary'):
+        raw=json.dumps(v[kind],ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n'
+        ref=dict(v[kind+'_ref'],bytes=str(len(raw.encode())),sha256=hashlib.sha256(raw.encode()).hexdigest())
+        v[kind+'_ref']=ref;v['binding'][kind]=dict(ref=deepcopy(ref),raw_utf8=raw)
+        if kind=='summary':
+            v['commit']['summary']=deepcopy(ref)
+    # Commit bytes freeze after its exact SummaryRef2 is known.
+    raw=json.dumps(v['commit'],ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n'
+    v['commit_ref'].update(bytes=str(len(raw.encode())),sha256=hashlib.sha256(raw.encode()).hexdigest())
+    v['binding']['commit']=dict(ref=deepcopy(v['commit_ref']),raw_utf8=raw)
+    return v
+
+
+def test_v2_binding_preserves_exact_original_close_and_source_binding1(api,m):
+    v=_v2_binding(m)
+    got=api.validate_telemetry_binding(v['binding'],**binding_args(v))
+    assert got==v['binding']
+    assert got['source_binding']==m['binding']['source_binding']
+    v['binding']['commit']['raw_utf8']+=' '
+    with pytest.raises(ContractError):api.validate_telemetry_binding(v['binding'],**binding_args(v))
+
+
+@pytest.mark.parametrize('bad',['summary_reuse','catalog_reuse','alias_extent','phase_unknown_complete','index_pair'])
+def test_retained_cross_reference_boundaries_do_not_fabricate_evidence(api,m,bad):
+    if bad=='index_pair':
+        v=_v2(m);pair=dict(commit=v['commit_ref'],summary=v['summary_ref']);other=deepcopy(pair);other['summary']=_v2_ref('summary',3)
+        index=dict(schema='qcl-negf.performance-index.v3',contract_set='qcl-negf.results.v2',transport=v['commit']['transport'],current=pair,retained=[other])
+        with pytest.raises(ContractError):api.validate_telemetry_index(index,expected_transport=v['commit']['transport'])
+        return
+    if bad=='alias_extent':
+        v,ctx=_v2_phase(m);a=deepcopy(v['catalog']['artifacts'][1]);a['ref']['path']='performance/raw/seg-alias.json';a['accepted'][0]['segment']['path']='original-alias.json'
+        v['catalog']['artifacts'].append(a);v['catalog']['artifacts'].sort(key=lambda r:(r['ref']['path'],r['ref']['sha256']))
+        with pytest.raises(ContractError):api.validate_telemetry_catalog(v['catalog'],expected_transport=v['commit']['transport'])
+        return
+    if bad=='phase_unknown_complete':
+        v,ctx=_v2_phase(m)
+        metric=v['summary']['cumulative']['phases']['entries'][0]['metrics']['gc_count']
+        metric.update(known=None,covered='0',unavailable='2',reasons=['missing_observation'])
+        with pytest.raises(ContractError):api.validate_telemetry_summary(v['summary'])
+        return
+    v=_v2(m);context=_v2_next(v)
+    if bad=='summary_reuse':
+        v['summary_ref']['path']=context['previous_summary_ref']['path'];v['commit']['summary']=deepcopy(v['summary_ref'])
+    else:v['commit']['catalog']['path']=context['previous_summary_ref']['path']
+    with pytest.raises(ContractError):_check2(api,v,**context)
+
+
+@pytest.mark.parametrize('rotate',[False,True])
+def test_v2_partial_source_descriptor_expands_once_across_collector_rotation(api,m,rotate):
+    v,ctx=_v2_phase(m)
+    if rotate:
+        v['commit']['closed']=v['summary']['closed']=True;v['summary']['durability']['uncommitted_resource_batch_at_risk']=False
+    before=deepcopy(v)
+    context=_v2_next(v,rotate=rotate)
+    v['commit']['closed']=v['summary']['closed']=False;v['summary']['durability']['uncommitted_resource_batch_at_risk']=True
+    phase_case(v,2);ar=v['commit']['accepted_ranges'][0];ar['first_row']='1'
+    v['commit']['contexts']['phase_context_refs']=deepcopy(before['commit']['contexts']['phase_context_refs'])
+    if rotate:v['summary']['producer_phase_aggregates']=v['summary']['producer_phase_aggregates'][1:]
+    nested=dict(key=dict(stage='scba',phase='nested',status='ok',task_width=None,
+        representation='normal_aggregate',counter_scope='process_inclusive_delta_on_end'),call_count='1',
+        metrics={k:_acc(unavailable='1',reasons=['missing_observation']) for k in _PHASE_KINDS})
+    p=v['summary']['cumulative']['phases'];p['entries'].append(nested)
+    p['entries'].sort(key=lambda row:json.dumps(row['key'],sort_keys=True,separators=(',',':')).encode())
+    p.update(incomplete=True,reasons=['missing_observation']);v['summary']['cumulative']['coverage']['reasons'].append('missing_observation')
+    updated=deepcopy(before['catalog']['artifacts'][1]);updated['accepted'][0]['stop_row']='2'
+    previous_catalog_leaf=deepcopy(v['catalog']['artifacts'][0])
+    v['catalog']['artifacts']=[previous_catalog_leaf,deepcopy(before['catalog']['artifacts'][0]),updated]
+    v['commit']['window_delta'].update(introduced=[deepcopy(previous_catalog_leaf),deepcopy(updated)],removed=[])
+    v['summary']['retention'].update(retained_bytes=str(sum(int(row['ref']['bytes']) for row in v['catalog']['artifacts'])),retained_source_rows='2')
+    _check2(api,v,**context,phase_contexts=[ctx])
+    assert p['entries'][0]['call_count']=='2' and p['entries'][1]['call_count']=='1'
+    assert p['entries'][1]['metrics']['gc_count']['known'] is None
+    # Same immutable segment may extend accepted extents, never forget its prefix.
+    v['catalog']['artifacts'][2]['accepted'][0]['first_row']='1'
+    v['commit']['window_delta']['introduced'][1]['accepted'][0]['first_row']='1'
+    with pytest.raises(ContractError):_check2(api,v,**context,phase_contexts=[ctx])
+
+
+@pytest.mark.parametrize('which',['cost_overflow','count_overflow','asof','coverage_sticky','prior_capture','unimported','phase_limit'])
+def test_v2_accumulation_limits_and_scope_are_fail_closed(api,m,which):
+    v=_v2(m)
+    if which=='phase_limit':
+        template=dict(key=dict(stage='s',phase='p',status='ok',task_width=None,representation='normal_aggregate',counter_scope='process_inclusive_delta_on_end'),call_count='0',metrics={k:_acc() for k in _PHASE_KINDS})
+        v['summary']['cumulative']['phases']['entries']=[dict(deepcopy(template),key=dict(template['key'],phase=f'p{i:02}')) for i in range(65)]
+        with pytest.raises(ContractError):api.validate_telemetry_summary(v['summary'])
+        return
+    if which=='unimported':
+        v['summary']['cumulative']['prior_capture']='unimported'
+        with pytest.raises(ContractError):_check2(api,v)
+        v['summary']['cumulative']['coverage']['reasons'].append('unimported_capture')
+        _check2(api,v)
+        return
+    if which in ('cost_overflow','count_overflow'):
+        name='read_seconds' if which=='cost_overflow' else 'bytes_read'
+        number=1.7e308 if which=='cost_overflow' else str(2**64-1)
+        v['commit']['cost_delta']['metrics'][name]['known']=number;v['summary']['cumulative']['cost']['metrics'][name]['known']=number
+        _check2(api,v)
+    context=_v2_next(v)
+    if which=='cost_overflow':v['commit']['cost_delta']['metrics']['read_seconds']['known']=1.7e308
+    elif which=='count_overflow':v['commit']['cost_delta']['metrics']['bytes_read']['known']='1'
+    elif which=='asof':v['commit']['cost_delta']['as_of_monotonic_ns']='99'
+    elif which=='coverage_sticky':v['summary']['cumulative']['coverage'].update(incomplete=False,reasons=[])
+    else:v['summary']['cumulative']['prior_capture']='unimported';v['summary']['cumulative']['coverage']['reasons'].append('unimported_capture')
+    with pytest.raises(ContractError):_check2(api,v,**context)
+
+
+def test_local_uncovered_gap_cannot_be_complete_in_cumulative_summary(api,m):
+    v=_v2(m);s=v['summary']
+    s['coverage'].update(incomplete=True,reasons=['endpoint_reset'],gaps=[dict(source_key=None,clock_domain_id=None,
+        kind='detail_page_rotation',first_monotonic_ns=None,last_monotonic_ns=None,reason='conservative_reset')])
+    s['cumulative']['coverage'].update(gap_events='1',incomplete=False,reasons=[])
+    with pytest.raises(ContractError):_check2(api,v)
+    s['cumulative']['coverage'].update(incomplete=True,reasons=['missing_observation'])
+    _check2(api,v)
+
+
+def test_scientific_reference_cannot_enter_retirement_via_old_debt(api,m):
+    v=_v2(m);context=_v2_next(v)
+    ref=deepcopy(m['manifest_ref'])
+    context['previous']['window_delta']['pending_unlink']=[ref]
+    v['commit']['window_delta']['pending_unlink']=[deepcopy(ref)]
+    with pytest.raises(ContractError):_check2(api,v,**context)
+
+
+def test_pointer_rejects_its_own_commit_as_debt_even_without_filesystem_authority(api,m):
+    v=_v2(m)
+    v['commit']['window_delta']['pending_unlink']=[deepcopy(v['commit_ref'])]
+    pointer=dict(schema='qcl-negf.telemetry-pointer.v2',contract_set='qcl-negf.results.v2',commit=v['commit_ref'])
+    with pytest.raises(ContractError):api.validate_telemetry_pointer(pointer,commit=v['commit'],commit_ref=v['commit_ref'])
+
+
+def test_v1_commit_rejects_v2_summary_even_when_legacy_refs_are_supplied(api,m):
+    v=_v2(m);m['commit']['closed']=False
+    with pytest.raises(ContractError) as error:
+        api.validate_telemetry_commit(m['commit'],summary=v['summary'],summary_ref=m['summary_ref'])
+    assert error.value.code=='unsupported_format'

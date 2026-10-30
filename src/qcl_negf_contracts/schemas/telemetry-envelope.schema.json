@@ -16,6 +16,24 @@
     },
     {
       "$ref": "#/$defs/TelemetryBinding"
+    },
+    {
+      "$ref": "#/$defs/TelemetryCommit2"
+    },
+    {
+      "$ref": "#/$defs/TelemetrySummary2"
+    },
+    {
+      "$ref": "#/$defs/TelemetryPointer2"
+    },
+    {
+      "$ref": "#/$defs/TelemetryBinding2"
+    },
+    {
+      "$ref": "#/$defs/RetainedCatalog3"
+    },
+    {
+      "$ref": "#/$defs/PerformanceIndex3"
     }
   ],
   "$defs": {
@@ -1959,6 +1977,1185 @@
         },
         "schema": {
           "const": "qcl-negf.telemetry-binding.v1"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "scope": {
+          "const": "selected_state_with_execution_attempt_telemetry"
+        }
+      },
+      "required": [
+        "selected_state",
+        "transport",
+        "source_binding",
+        "commit",
+        "summary",
+        "capture_status",
+        "schema",
+        "contract_set",
+        "scope"
+      ],
+      "additionalProperties": false
+    },
+    "CommitRef2": {
+      "allOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "qcl-negf.telemetry-commit.v2"
+            },
+            "media_type": {
+              "const": "application/json"
+            }
+          },
+          "required": [
+            "schema",
+            "media_type"
+          ]
+        }
+      ]
+    },
+    "SummaryRef2": {
+      "allOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "qcl-negf.telemetry-summary.v2"
+            },
+            "media_type": {
+              "const": "application/json"
+            }
+          },
+          "required": [
+            "schema",
+            "media_type"
+          ]
+        }
+      ]
+    },
+    "CatalogRef3": {
+      "allOf": [
+        {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "const": "qcl-negf.telemetry-catalog.v3"
+            },
+            "media_type": {
+              "const": "application/json"
+            }
+          },
+          "required": [
+            "schema",
+            "media_type"
+          ]
+        }
+      ]
+    },
+    "TransactionRef2": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "$ref": "#/$defs/CommitRef2"
+        },
+        "summary": {
+          "$ref": "#/$defs/SummaryRef2"
+        }
+      },
+      "required": [
+        "commit",
+        "summary"
+      ],
+      "additionalProperties": false
+    },
+    "PhaseContextRef2": {
+      "type": "object",
+      "properties": {
+        "publication_ref": {
+          "$ref": "#/$defs/PublicationRef"
+        },
+        "segment_ref": {
+          "$ref": "#/$defs/SegmentRef"
+        },
+        "retained_publication_ref": {
+          "$ref": "#/$defs/PublicationRef"
+        },
+        "retained_segment_ref": {
+          "$ref": "#/$defs/SegmentRef"
+        }
+      },
+      "required": [
+        "publication_ref",
+        "segment_ref",
+        "retained_publication_ref",
+        "retained_segment_ref"
+      ],
+      "additionalProperties": false
+    },
+    "ContextRefs2": {
+      "type": "object",
+      "properties": {
+        "phase_context_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PhaseContextRef2"
+          },
+          "maxItems": 128
+        },
+        "resume_context_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TransactionRef2"
+          },
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "phase_context_refs",
+        "resume_context_refs"
+      ],
+      "additionalProperties": false
+    },
+    "ReasonCode2": {
+      "enum": [
+        "unimported_capture",
+        "collector_restart",
+        "missing_observation",
+        "counter_overflow",
+        "phase_key_limit",
+        "retention_omission",
+        "pin_refused",
+        "publication_tail",
+        "source_context_missing",
+        "storage_unavailable",
+        "capture_error",
+        "source_capability_unavailable",
+        "no_observations"
+      ]
+    },
+    "Reasons2": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ReasonCode2"
+      },
+      "maxItems": 32,
+      "uniqueItems": true
+    },
+    "AccumulationCount2": {
+      "type": "object",
+      "properties": {
+        "known": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "covered": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "unavailable": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "overflow": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "reasons": {
+          "$ref": "#/$defs/Reasons2"
+        }
+      },
+      "required": [
+        "known",
+        "covered",
+        "unavailable",
+        "overflow",
+        "reasons"
+      ],
+      "additionalProperties": false
+    },
+    "AccumulationSeconds2": {
+      "type": "object",
+      "properties": {
+        "known": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Seconds"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "covered": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "unavailable": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "overflow": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "reasons": {
+          "$ref": "#/$defs/Reasons2"
+        }
+      },
+      "required": [
+        "known",
+        "covered",
+        "unavailable",
+        "overflow",
+        "reasons"
+      ],
+      "additionalProperties": false
+    },
+    "AccumulationFloat2": {
+      "type": "object",
+      "properties": {
+        "known": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/F64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "covered": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "unavailable": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "overflow": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "reasons": {
+          "$ref": "#/$defs/Reasons2"
+        }
+      },
+      "required": [
+        "known",
+        "covered",
+        "unavailable",
+        "overflow",
+        "reasons"
+      ],
+      "additionalProperties": false
+    },
+    "CostMetrics2": {
+      "type": "object",
+      "properties": {
+        "probe_seconds": {
+          "$ref": "#/$defs/AccumulationSeconds2"
+        },
+        "read_seconds": {
+          "$ref": "#/$defs/AccumulationSeconds2"
+        },
+        "hash_seconds": {
+          "$ref": "#/$defs/AccumulationSeconds2"
+        },
+        "parse_validate_seconds": {
+          "$ref": "#/$defs/AccumulationSeconds2"
+        },
+        "serialize_seconds": {
+          "$ref": "#/$defs/AccumulationSeconds2"
+        },
+        "parquet_seconds": {
+          "$ref": "#/$defs/AccumulationSeconds2"
+        },
+        "flush_sync_seconds": {
+          "$ref": "#/$defs/AccumulationSeconds2"
+        },
+        "process_cpu_seconds": {
+          "$ref": "#/$defs/AccumulationSeconds2"
+        },
+        "bytes_read": {
+          "$ref": "#/$defs/AccumulationCount2"
+        },
+        "bytes_written": {
+          "$ref": "#/$defs/AccumulationCount2"
+        },
+        "physical_read_bytes": {
+          "$ref": "#/$defs/AccumulationCount2"
+        },
+        "physical_write_bytes": {
+          "$ref": "#/$defs/AccumulationCount2"
+        },
+        "polls": {
+          "$ref": "#/$defs/AccumulationCount2"
+        },
+        "flushes": {
+          "$ref": "#/$defs/AccumulationCount2"
+        },
+        "source_reopens": {
+          "$ref": "#/$defs/AccumulationCount2"
+        },
+        "reverified_bytes": {
+          "$ref": "#/$defs/AccumulationCount2"
+        }
+      },
+      "required": [
+        "probe_seconds",
+        "read_seconds",
+        "hash_seconds",
+        "parse_validate_seconds",
+        "serialize_seconds",
+        "parquet_seconds",
+        "flush_sync_seconds",
+        "process_cpu_seconds",
+        "bytes_read",
+        "bytes_written",
+        "physical_read_bytes",
+        "physical_write_bytes",
+        "polls",
+        "flushes",
+        "source_reopens",
+        "reverified_bytes"
+      ],
+      "additionalProperties": false
+    },
+    "ObserverPosition2": {
+      "type": "object",
+      "properties": {
+        "observer_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "stop_operation": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        }
+      },
+      "required": [
+        "observer_id",
+        "stop_operation"
+      ],
+      "additionalProperties": false
+    },
+    "ObserverCostDelta2": {
+      "type": "object",
+      "properties": {
+        "observer_id": {
+          "$ref": "result-common.schema.json#/$defs/Id"
+        },
+        "first_operation": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "stop_operation": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "as_of_monotonic_ns": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "metrics": {
+          "$ref": "#/$defs/CostMetrics2"
+        },
+        "arrow_io_forecast_bytes": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "publication_tail": {
+          "const": "not_included"
+        },
+        "restart_gap": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "observer_id",
+        "first_operation",
+        "stop_operation",
+        "as_of_monotonic_ns",
+        "metrics",
+        "arrow_io_forecast_bytes",
+        "publication_tail",
+        "restart_gap"
+      ],
+      "additionalProperties": false
+    },
+    "ObserverCostRollup2": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "const": "observer_process_completed_operations"
+        },
+        "position": {
+          "$ref": "#/$defs/ObserverPosition2"
+        },
+        "metrics": {
+          "$ref": "#/$defs/CostMetrics2"
+        },
+        "arrow_io_forecast_bytes": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "uncovered_restarts": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "publication_tail": {
+          "const": "not_included"
+        }
+      },
+      "required": [
+        "scope",
+        "position",
+        "metrics",
+        "arrow_io_forecast_bytes",
+        "uncovered_restarts",
+        "publication_tail"
+      ],
+      "additionalProperties": false
+    },
+    "PhaseKey2": {
+      "type": "object",
+      "properties": {
+        "stage": {
+          "$ref": "#/$defs/Label"
+        },
+        "phase": {
+          "$ref": "#/$defs/Label"
+        },
+        "status": {
+          "$ref": "#/$defs/Label"
+        },
+        "task_width": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/PositiveCount"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "representation": {
+          "$ref": "#/$defs/Representation"
+        },
+        "counter_scope": {
+          "const": "process_inclusive_delta_on_end"
+        }
+      },
+      "required": [
+        "stage",
+        "phase",
+        "status",
+        "task_width",
+        "representation",
+        "counter_scope"
+      ],
+      "additionalProperties": false
+    },
+    "PhaseMetrics2": {
+      "type": "object",
+      "properties": {
+        "duration_seconds": {
+          "$ref": "#/$defs/AccumulationFloat2"
+        },
+        "process_cpu_seconds": {
+          "$ref": "#/$defs/AccumulationFloat2"
+        },
+        "allocated_bytes": {
+          "$ref": "#/$defs/AccumulationCount2"
+        },
+        "gc_seconds": {
+          "$ref": "#/$defs/AccumulationFloat2"
+        },
+        "gc_count": {
+          "$ref": "#/$defs/AccumulationCount2"
+        }
+      },
+      "required": [
+        "duration_seconds",
+        "process_cpu_seconds",
+        "allocated_bytes",
+        "gc_seconds",
+        "gc_count"
+      ],
+      "additionalProperties": false
+    },
+    "PhaseValue2": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/PhaseKey2"
+        },
+        "call_count": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "metrics": {
+          "$ref": "#/$defs/PhaseMetrics2"
+        }
+      },
+      "required": [
+        "key",
+        "call_count",
+        "metrics"
+      ],
+      "additionalProperties": false
+    },
+    "PhaseOverflow2": {
+      "type": "object",
+      "properties": {
+        "call_count": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "metrics": {
+          "$ref": "#/$defs/PhaseMetrics2"
+        }
+      },
+      "required": [
+        "call_count",
+        "metrics"
+      ],
+      "additionalProperties": false
+    },
+    "PhaseRollup2": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "const": "accepted_source_rows_across_sources_no_cross_clock_bounds"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PhaseValue2"
+          },
+          "maxItems": 64
+        },
+        "overflow": {
+          "$ref": "#/$defs/PhaseOverflow2"
+        },
+        "incomplete": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "$ref": "#/$defs/Reasons2"
+        }
+      },
+      "required": [
+        "scope",
+        "entries",
+        "overflow",
+        "incomplete",
+        "reasons"
+      ],
+      "additionalProperties": false
+    },
+    "CumulativeCoverage2": {
+      "type": "object",
+      "properties": {
+        "gap_events": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "incomplete": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "$ref": "#/$defs/Reasons2"
+        }
+      },
+      "required": [
+        "gap_events",
+        "incomplete",
+        "reasons"
+      ],
+      "additionalProperties": false
+    },
+    "CumulativeTechnical2": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "const": "enclosing_transport_since_v2_genesis"
+        },
+        "prior_capture": {
+          "enum": [
+            "none",
+            "unimported"
+          ]
+        },
+        "cost": {
+          "$ref": "#/$defs/ObserverCostRollup2"
+        },
+        "phases": {
+          "$ref": "#/$defs/PhaseRollup2"
+        },
+        "coverage": {
+          "$ref": "#/$defs/CumulativeCoverage2"
+        },
+        "max_observed_rss_bytes": {
+          "$ref": "#/$defs/MeasureCount"
+        }
+      },
+      "required": [
+        "scope",
+        "prior_capture",
+        "cost",
+        "phases",
+        "coverage",
+        "max_observed_rss_bytes"
+      ],
+      "additionalProperties": false
+    },
+    "AcceptedExtent2": {
+      "type": "object",
+      "properties": {
+        "source_key": {
+          "$ref": "result-common.schema.json#/$defs/Sha256"
+        },
+        "segment": {
+          "$ref": "#/$defs/SegmentRef"
+        },
+        "first_row": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "stop_row": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        }
+      },
+      "required": [
+        "source_key",
+        "segment",
+        "first_row",
+        "stop_row"
+      ],
+      "additionalProperties": false
+    },
+    "TechnicalArtifact2": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "result-common.schema.json#/$defs/FileRef"
+        },
+        "role": {
+          "enum": [
+            "performance.summary",
+            "performance.window",
+            "performance.full",
+            "performance.provenance"
+          ]
+        },
+        "table": {
+          "enum": [
+            "resources",
+            "spans",
+            "control_events",
+            null
+          ]
+        },
+        "rows": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "accepted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AcceptedExtent2"
+          },
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "ref",
+        "role",
+        "table",
+        "rows",
+        "accepted"
+      ],
+      "additionalProperties": false
+    },
+    "WindowDelta2": {
+      "type": "object",
+      "properties": {
+        "introduced": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TechnicalArtifact2"
+          },
+          "maxItems": 128
+        },
+        "removed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TechnicalArtifact2"
+          },
+          "maxItems": 128
+        },
+        "pending_unlink": {
+          "type": "array",
+          "items": {
+            "$ref": "result-common.schema.json#/$defs/FileRef"
+          },
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "introduced",
+        "removed",
+        "pending_unlink"
+      ],
+      "additionalProperties": false
+    },
+    "RetainedCatalog3": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.telemetry-catalog.v3"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "transport": {
+          "$ref": "#/$defs/Transport"
+        },
+        "generation": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TechnicalArtifact2"
+          },
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "schema",
+        "contract_set",
+        "transport",
+        "generation",
+        "artifacts"
+      ],
+      "additionalProperties": false
+    },
+    "PerformanceIndex3": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "const": "qcl-negf.performance-index.v3"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "transport": {
+          "$ref": "#/$defs/Transport"
+        },
+        "current": {
+          "$ref": "#/$defs/TransactionRef2"
+        },
+        "retained": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TransactionRef2"
+          },
+          "maxItems": 128
+        }
+      },
+      "required": [
+        "schema",
+        "contract_set",
+        "transport",
+        "current",
+        "retained"
+      ],
+      "additionalProperties": false
+    },
+    "Coverage2": {
+      "type": "object",
+      "properties": {
+        "all_observed_sources_consumed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "terminal_tail": {
+          "$ref": "#/$defs/TerminalTail"
+        },
+        "source_closed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capture_error_events": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Gap"
+          },
+          "maxItems": 128
+        },
+        "incomplete": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Text"
+          },
+          "maxItems": 32
+        },
+        "scope": {
+          "const": "accepted_rows_only"
+        },
+        "detail_scope": {
+          "const": "collector_session_local"
+        },
+        "jit_separately_measured": {
+          "const": false
+        },
+        "initialization_includes_possible_compilation": {
+          "const": true
+        },
+        "warmup": {
+          "const": "first observed call per phase/source session; not measured JIT"
+        },
+        "absent_phase": {
+          "const": "not measured, never zero"
+        },
+        "phase_scopes": {
+          "const": "inclusive unless explicitly exclusive; do not sum overlapping scopes"
+        },
+        "process_scope": {
+          "const": "root_julia_process_including_threads"
+        },
+        "descendants_included": {
+          "const": false
+        },
+        "total_scheduler_grant": {
+          "const": "not_measured"
+        },
+        "scientific_acceptance": {
+          "const": "not_assessed"
+        }
+      },
+      "required": [
+        "all_observed_sources_consumed",
+        "terminal_tail",
+        "source_closed",
+        "capture_error_events",
+        "gaps",
+        "incomplete",
+        "reasons",
+        "scope",
+        "detail_scope",
+        "jit_separately_measured",
+        "initialization_includes_possible_compilation",
+        "warmup",
+        "absent_phase",
+        "phase_scopes",
+        "process_scope",
+        "descendants_included",
+        "total_scheduler_grant",
+        "scientific_acceptance"
+      ],
+      "additionalProperties": false
+    },
+    "TelemetryCommit2": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/$defs/CollectorSession"
+        },
+        "transport": {
+          "$ref": "#/$defs/Transport"
+        },
+        "generation": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "published_unix": {
+          "$ref": "#/$defs/Seconds"
+        },
+        "previous": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TransactionRef2"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "summary": {
+          "$ref": "#/$defs/SummaryRef2"
+        },
+        "catalog": {
+          "$ref": "#/$defs/CatalogRef3"
+        },
+        "source_cursors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceCursor"
+          },
+          "maxItems": 16
+        },
+        "accepted_ranges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AcceptedRange"
+          },
+          "maxItems": 128
+        },
+        "schema": {
+          "const": "qcl-negf.telemetry-commit.v2"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "contexts": {
+          "$ref": "#/$defs/ContextRefs2"
+        },
+        "window_delta": {
+          "$ref": "#/$defs/WindowDelta2"
+        },
+        "cost_delta": {
+          "$ref": "#/$defs/ObserverCostDelta2"
+        }
+      },
+      "required": [
+        "session",
+        "transport",
+        "generation",
+        "closed",
+        "published_unix",
+        "previous",
+        "summary",
+        "catalog",
+        "source_cursors",
+        "accepted_ranges",
+        "schema",
+        "contract_set",
+        "contexts",
+        "window_delta",
+        "cost_delta"
+      ],
+      "additionalProperties": false
+    },
+    "TelemetrySummary2": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/$defs/CollectorSession"
+        },
+        "transport": {
+          "$ref": "#/$defs/Transport"
+        },
+        "generation": {
+          "$ref": "result-common.schema.json#/$defs/PositiveCount"
+        },
+        "closed": {
+          "type": "boolean"
+        },
+        "source_cursors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceCursor"
+          },
+          "maxItems": 16
+        },
+        "totals": {
+          "$ref": "#/$defs/Totals"
+        },
+        "rows": {
+          "$ref": "#/$defs/TableCounts"
+        },
+        "max_observed_rss_bytes": {
+          "anyOf": [
+            {
+              "$ref": "result-common.schema.json#/$defs/Count"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cpu_coverage": {
+          "$ref": "#/$defs/CpuCoverage"
+        },
+        "cpu_totals": {
+          "$ref": "#/$defs/CpuTotals"
+        },
+        "span_aggregates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SpanAggregate"
+          },
+          "maxItems": 256
+        },
+        "producer_phase_aggregates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PhaseAggregate"
+          },
+          "maxItems": 256
+        },
+        "control_events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ControlCount"
+          },
+          "maxItems": 128
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage2"
+        },
+        "retention": {
+          "$ref": "#/$defs/Retention"
+        },
+        "observer_self_cost": {
+          "$ref": "#/$defs/ObserverSelfCost"
+        },
+        "recorded_until_monotonic_ns": {
+          "$ref": "result-common.schema.json#/$defs/Count"
+        },
+        "durability": {
+          "$ref": "#/$defs/Durability"
+        },
+        "science_window_policy": {
+          "$ref": "#/$defs/WindowPolicy"
+        },
+        "schema": {
+          "const": "qcl-negf.telemetry-summary.v2"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        },
+        "cumulative": {
+          "$ref": "#/$defs/CumulativeTechnical2"
+        }
+      },
+      "required": [
+        "session",
+        "transport",
+        "generation",
+        "closed",
+        "source_cursors",
+        "totals",
+        "rows",
+        "max_observed_rss_bytes",
+        "cpu_coverage",
+        "cpu_totals",
+        "span_aggregates",
+        "producer_phase_aggregates",
+        "control_events",
+        "coverage",
+        "retention",
+        "observer_self_cost",
+        "recorded_until_monotonic_ns",
+        "durability",
+        "science_window_policy",
+        "schema",
+        "contract_set",
+        "cumulative"
+      ],
+      "additionalProperties": false
+    },
+    "TelemetryPointer2": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "$ref": "#/$defs/CommitRef2"
+        },
+        "schema": {
+          "const": "qcl-negf.telemetry-pointer.v2"
+        },
+        "contract_set": {
+          "const": "qcl-negf.results.v2"
+        }
+      },
+      "required": [
+        "commit",
+        "schema",
+        "contract_set"
+      ],
+      "additionalProperties": false
+    },
+    "EmbeddedCommit2": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/CommitRef2"
+        },
+        "raw_utf8": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "raw_utf8"
+      ],
+      "additionalProperties": false
+    },
+    "EmbeddedSummary2": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "$ref": "#/$defs/SummaryRef2"
+        },
+        "raw_utf8": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "raw_utf8"
+      ],
+      "additionalProperties": false
+    },
+    "TelemetryBinding2": {
+      "type": "object",
+      "properties": {
+        "selected_state": {
+          "$ref": "result-common.schema.json#/$defs/StateRef"
+        },
+        "transport": {
+          "$ref": "#/$defs/Transport"
+        },
+        "source_binding": {
+          "$ref": "#/$defs/EmbeddedSourceBinding"
+        },
+        "commit": {
+          "$ref": "#/$defs/EmbeddedCommit2"
+        },
+        "summary": {
+          "$ref": "#/$defs/EmbeddedSummary2"
+        },
+        "capture_status": {
+          "$ref": "#/$defs/CaptureStatus"
+        },
+        "schema": {
+          "const": "qcl-negf.telemetry-binding.v2"
         },
         "contract_set": {
           "const": "qcl-negf.results.v2"
