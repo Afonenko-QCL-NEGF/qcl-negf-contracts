@@ -823,6 +823,135 @@ its supplied previous-summary context. Caller byte/provenance verification and
 this relation gate remain required; the binding does not manufacture missing
 baseline evidence.
 
+### Explicit retained technical v2
+
+The same schema resource additionally defines separate closed roots
+`qcl-negf.telemetry-{commit,summary,pointer,binding}.v2`,
+`qcl-negf.telemetry-catalog.v3` and `qcl-negf.performance-index.v3`.
+The v1 definitions and default registry values remain unchanged. The registry
+adds `telemetry_envelope_read_versions=[1,2]`,
+`telemetry_catalog_read_versions=[2,3]`, `performance_index_read_versions=[2,3]`
+and `telemetry_retained_write_version=2`. This advertises the explicit retained
+format; the existing writer default stays v1. Contracts does not activate a
+writer, convert old technical roots or implement pruning. Matching Results
+read/export/receive and writer releases are separate dependencies. A future v2
+writer must select a fresh empty technical root explicitly; `prior_capture`
+is `none` or `unimported` and cannot change on resume. Unimported earlier
+observations remain unknown, outside the cumulative scope from v2 genesis.
+Scientific results v2, native schema 5, scientific history, source-binding1,
+producer phase1 and the existing Parquet performance2 tables stay unchanged.
+
+```python
+from qcl_negf_contracts.telemetry import (
+    validate_telemetry_catalog, validate_telemetry_index,
+)
+
+catalog = validate_telemetry_catalog(decoded_catalog,
+    expected_transport=explicit_transport)
+commit = validate_telemetry_commit(decoded_commit, summary=decoded_summary,
+    summary_ref=verified_summary_ref, previous=previous_commit,
+    previous_ref=verified_previous_ref, previous_summary=previous_summary,
+    previous_summary_ref=verified_previous_summary_ref,
+    phase_contexts=verified_phase_contexts, resume_contexts=verified_resume_contexts,
+    catalog=catalog, previous_catalog=decoded_previous_catalog)
+index = validate_telemetry_index(decoded_index,
+    expected_transport=explicit_transport)
+```
+
+Public commit/summary/pointer/binding validators dispatch by the exact declared
+schema. V1 rejects nonnull `catalog` or `previous_catalog` contexts. New
+catalog/index validators validate v3 declarations; legacy catalog2/index2
+readers keep their existing owning path. V2 commit requires current decoded
+catalog and, for a successor, the decoded immediate previous catalog and exact
+commit/summary pair. Genesis is generation1 with null previous. Commit2 has an
+explicit SummaryRef2 and no Baseline. Transport must be explicit and unchanged.
+A collector session change requires a closed predecessor or an explicit crash
+recovery gap. Previous commit contents supply only immediate transition evidence;
+their older references do not promise recursive retention.
+
+`contexts.phase_context_refs` commits exact
+`{publication_ref,segment_ref,retained_publication_ref,retained_segment_ref}`
+quadruples, at most 128, including old physical-completion proofs.
+`contexts.resume_context_refs` commits at most 16 exact `{commit,summary}` v2
+reference pairs. Supplied decoded contexts must match that inventory. Original
+producer references retain their producer-root meaning; retained references
+belong to the caller-established technical root. Current accepted physical
+prefix, adjacency, completion, local aggregates, CPU and cumulative row checks
+remain mandatory. Original whole bytes and Parquet footer rows must be verified
+by the caller using the same open file; a decoded dictionary is no certificate.
+
+Summary2 separates collector-session detail from `cumulative`, whose scope is
+`enclosing_transport_since_v2_genesis`. The old local self-cost, rows, RSS,
+span and source phase aggregates retain their local meaning. Cumulative cost
+has 16 fixed metrics: eight seconds metrics, including process CPU, and eight
+UInt64 count metrics. Each Accumulation stores `known`, `covered`, `unavailable`,
+`overflow`, and bounded normalized `reasons`. Known is only the subtotal of
+covered contributions; zero covered requires null, while an actually observed
+zero remains known. For every cost metric, classified contribution counts equal
+`stop_operation-first_operation`. Same-observer intervals are adjacent across
+collector rotation. A new observer starts at 0 with `restart_gap=true`, carries
+all previous subtotals and increments uncovered restarts. Unknown/overflow and
+gap evidence stay sticky. A zero-width delta has no contributions or forecast;
+`no_observations` cannot accompany completed contributions. Arithmetic overflow
+rejects the dependent update before mutation. `publication_tail=not_included`
+is explicit even on close: work after the transaction freeze belongs to a later
+completed operation and a lost final/crash tail is unknown.
+
+Cumulative phases derive only from this commit's validated accepted rows, using
+normal aggregate calls or diagnostic end projections once. Five fixed metric
+profiles use seconds/seconds/bytes/seconds/count, with separate covered,
+unavailable and overflow calls. Missing profiles are unavailable, never zero.
+Up to 64 existing keys are retained; new unclassified keys contribute to the
+explicit overflow bucket with incomplete reasons. Phase entries are ordered by
+their canonical UTF8 encoded key. Inclusive phase values may overlap; no sum is
+a claimed whole-solver duration and no cross-source monotonic bounds are made.
+Cumulative RSS is the carried maximum of actual RSS/HWM observations, rather
+than a guaranteed peak. Global gaps and normalized reasons survive page rotation.
+
+Catalog3 is a complete bounded retained snapshot, with at most 128 artifacts,
+ordered by `(ref.path,ref.sha256)`, unique paths and a 64 KiB JSON ceiling. It has
+no previous/entries chain. Each artifact has exactly `ref`, `role`, `table`,
+`rows`, `accepted`. Parquet requires a table and exact known footer rows;
+metadata has null table/rows. Only retained original phase segments can carry
+accepted extents. Extents are sorted by source, canonical original segment ref
+and physical row bounds; they are disjoint even through aliased locators.
+Proof-only raw files can have no accepted extents. The transition checks
+`after=(before minus removed) union introduced`; an existing immutable segment
+can extend its accepted descriptor only by exactly the new accepted physical
+delta. Removed extents and Parquet rows increment cumulative omissions, without
+erasing accepted totals. Retained whole bytes count the selected inventory once.
+
+Every successor inventories the exact previous catalog as a metadata artifact
+with role `performance.provenance`, null table/rows and no extents. The current
+catalog cannot contain its own reference. Current and immediate previous
+catalogs remain protected; an older catalog already in authenticated predecessor
+inventory can enter removed and pending-unlink debt. Catalog leaf contents are
+opaque historical descriptors: they do not require the old physical members to
+remain present. Pending debt can name only exact authenticated retired artifacts,
+retired prior.previous metadata/context refs or prior debt, excluding the current
+required closure. Reducing declared debt does not prove unlink success; qualified
+owner reconciliation must establish it. Scientific/source leaves are outside the
+technical pruning domain, regardless of matching basenames or hashes.
+
+Index3 contains current and bounded unique canonical retained transaction pairs;
+canonical pair order is their UTF8 JSON encoding. It provides discovery
+membership, never an owner lease or source authority. Current selection remains
+an explicit exact reference. V2 binding keeps original commit2/summary2 raw UTF8
+and unchanged source-binding1 with the same independently supplied scientific
+origin contexts. It validates embedded bytes, headers and local declarations;
+exact inherited transition equality still needs the commit validator contexts.
+
+V2 supplied metadata shares a 1 MiB/16384-node ceiling; binding keeps the 1 MiB outer
+and aggregate raw ceilings. Cardinality maxima never override that combined
+allowance. Catalog declared/original raw bytes must also satisfy 64 KiB. Caller
+predecode admission, retained closure/copies, actual exclusive writer, no-reuse,
+active read/export/copy pin lifetimes, native RO, publication barrier, physical
+unlink/debt, storage reserve and runtime cost remain separate gates. These pure
+validators perform no filesystem or scientific operation. Complete v2 retained
+export uses current/immediate previous pairs and catalogs, required raw contexts,
+bindings/plan and after membership with an explicit retained-window cutoff;
+historical leaf references do not restore an all-history technical promise.
+
 ### Explicit outward native sources
 
 `outward-result.schema.json` and `qcl_negf_contracts.outward` publish separate
