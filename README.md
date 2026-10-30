@@ -80,6 +80,34 @@ The [qcl-negf](https://github.com/Afonenko-QCL-NEGF/qcl-negf) superproject owns 
 dependency lock. From its root, run `uv sync --locked --all-packages --all-extras --group test`. The
 package remains independently buildable and testable from its native metadata.
 
+## Public model-help View validation
+
+Use the public View boundary to validate finite JSON, its 64 KiB encoded byte budget, the bundled
+offline schema and retained C2 proof relationships together:
+
+```python
+from qcl_negf_contracts.model_help import validate_model_help_view
+
+validate_model_help_view(view, retained={
+    "selection": {"context": selected_context, "release_id": recorded_release_id},
+    "metadata": {"frozen_plan": {"bytes": plan_bytes, "sha256": plan_sha256}},
+})
+```
+
+The caller supplies its authenticated selected context, recorded release and exact retained bytes.
+`retained` uses the same detached owner layout as the documentation bundle boundary, including
+optional source, mapping, snapshot and owning review proofs; it is not a JSON receipt or an implicit
+file reader. This function accepts only `qcl-negf.model-help-view.v1` and returns the same `view`
+object without mutating either input. It requires the optional `validation` dependency when called.
+
+Malformed/nonfinite/oversized inputs, contradictory proofs and missing required proofs raise
+`messages.ContractError` (a `ValueError`), retaining primary causes. The bundle API's
+`DocumentationProofMissing` classification is unchanged and does not apply to this View boundary.
+Missing optional evidence preserves truthful unknowns and independently known retained identities;
+an ordinary plan without a point passport does not acquire invented input values or current-release
+documentation. Target I/O, authenticated child selection and source-review association remain with
+the caller. Format/proof validation does not establish scientific acceptance.
+
 ## Result v2 boundaries
 
 The canonical `scientific-plan.schema.json` retains scientific-plan v2 and transport-contract v2,
