@@ -1373,3 +1373,337 @@ def test_e1_redacted_projection_cannot_fabricate_known_source_or_assignment(muta
                                 "path": "/private/operator/assignment.json"}
     with pytest.raises(ContractError):
         validate(c)
+
+
+# P10 USED: detached contract controls; no capture/ORM/source authority is asserted.
+def no_reference_case():
+    c = case()
+    c["fragment"]["inputs"][0]["reference_value_origin"] = None
+    repack(c)
+    return c
+
+
+def nested_passport_case(*, local_attempt=1, child_attempt=1, capture=False):
+    """Original Runner-shaped passports; their hash is NOT the JSON row digest.
+
+    Values and identity are synthetic independent literals. Original whitespace
+    bytes remain authoritative; no flat Atom configuration is constructed.
+    """
+    c = two_point_index_case()
+    r = c["retained"]
+    plan = json.loads(r["metadata"]["frozen_plan"]["bytes"])
+    plan.update(fingerprint="1" * 64, scientific_fingerprint="d" * 64,
+                model_revision="synthetic-frozen-model", executions=[{
+                    "id": "E-1", "point_ids": ["P-1", "P-2"]}])
+    for i, point in enumerate(plan["points"]):
+        del point["configuration"]
+        point.update(temperature_K=70.0 + i, voltage_per_period_V=0.05 + i * 0.01,
+                     effective_inputs={
+                         "temperature_K": 70.0 + i, "voltage_per_period_V": 0.05 + i * 0.01,
+                         "configuration_hash": str(3 + i) * 64,
+                         "hash_encoding": "qcl-negf-canonical-bytes-v1",
+                         "model_sha256": "2" * 64, "axes_applied": True})
+    payload = (json.dumps(plan, indent=2) + "\n").encode("utf-8")
+    r["metadata"]["frozen_plan"] = {"bytes": payload, "sha256": digest(payload)}
+    r.pop("point_passports")
+    r["snapshot_files"] = {}
+    entries = []
+    for i, point in enumerate(plan["points"]):
+        snap = deepcopy(c["snapshot"])
+        snap["context"].update(plan_fingerprint="1" * 64, point_id=point["id"],
+                               configuration_hash=str(3 + i) * 64, attempt=local_attempt)
+        for leaf in snap["inputs"]:
+            leaf["declared"] = {"status": "unknown", "atom": None}
+        snap["inputs"][0]["used"]["atom"] = atom(0.20 + i * 0.05)
+        record = blob(snap)
+        inventory = {"bytes": len(record["bytes"]), "sha256": record["sha256"]}
+        path = f'result/executions/E-1/{point["id"]}/attempt-{local_attempt}/model-help-inputs.json'
+        r["snapshot_files"][path] = {**record, "inventory": inventory}
+        entries.append({"path": path, **inventory, "execution_id": "E-1", "point_id": point["id"],
+                        "attempt": local_attempt, "status": "valid", "reason": "ok"})
+        if i == 0:
+            c["snapshot"] = snap
+            r["metadata"]["execution_input"] = record
+    c["index"]["entries"] = entries
+    child = {**c["snapshot"]["context"], "attempt": child_attempt,
+             "run_uuid": c["view"]["context"]["run_uuid"],
+             "calcjob_uuid": c["view"]["context"]["calcjob_uuid"]}
+    c["view"]["context"] = deepcopy(child)
+    r["selection"]["context"] = deepcopy(child)
+    if capture:
+        r["selection"]["capture_context"] = deepcopy(c["snapshot"]["context"])
+    receipt = json.loads(r["metadata"]["release_receipt"]["bytes"])
+    receipt["context"] = deepcopy(child)
+    r["metadata"]["release_receipt"] = blob(receipt)
+    item = c["view"]["inputs"][0]
+    item["declared"] = {"status": "unknown", "atom": None, "evidence": None}
+    item["used"] = {"status": "known", "atom": atom(0.20),
+                    "evidence": evidence(r, "execution_input", "/inputs/0/used/atom")}
+    item["value_origin"]["declared"] = unknown_origin("value_unavailable")
+    return c
+
+
+def replace_nested_plan(c, mutate):
+    r = c["retained"]
+    plan = json.loads(r["metadata"]["frozen_plan"]["bytes"])
+    mutate(plan)
+    payload = (json.dumps(plan, indent=2) + "\n").encode("utf-8")
+    r["metadata"]["frozen_plan"] = {"bytes": payload, "sha256": digest(payload)}
+
+
+def test_p10_null_and_mixed_references_keep_full_source_mapping_guards():
+    c = no_reference_case()
+    for path in ("physical.lattice_temperature", "production.energy_chunk"):
+        row = deepcopy(c["fragment"]["inputs"][0])
+        row["path"] = path
+        c["fragment"]["inputs"].append(row)
+    nonnull = deepcopy(case()["fragment"]["inputs"][0])
+    nonnull["path"] = "physical.reference_leaf"
+    c["fragment"]["inputs"].append(nonnull)
+    repack(c)
+    for name in ("bundle", "fragment", "view"):
+        schema_validator("model-help.schema.json").validate(c[name])
+        validate(c, name)
+    # Source validation is still required for leaves without any reference value.
+    c["fragment"]["inputs"][1]["schema_source"]["revision"] = OTHER
+    repack(c)
+    with pytest.raises(ContractError, match="source revision mismatch"):
+        validate(c, "fragment")
+
+
+@pytest.mark.parametrize("phase", ["declared", "used"])
+@pytest.mark.parametrize("status", ["bound", "not_applicable"])
+def test_p10_absent_reference_refuses_attribution_even_with_manufactured_receipt(phase, status):
+    original = case()
+    attributed = resolve(original)  # A complete nonnull fixture has healthy bound proof.
+    assert attributed["status"] == "bound"
+    c = no_reference_case()
+    if status == "not_applicable":
+        attributed = {"status": status, "origin": {"status": status, "kind": status,
+                      "locators": [], "note": "Manufactured explicit inapplicability."},
+                      "binding": None, "reason": status}
+    elif phase == "declared":
+        attributed["binding"]["phase"] = phase
+    c["view"]["inputs"][0]["value_origin"][phase] = attributed
+    schema_validator("model-help.schema.json").validate(c["view"])
+    with pytest.raises(ContractError, match="absent reference"):
+        validate(c)
+
+
+@pytest.mark.parametrize("phase", ["declared", "used"])
+def test_p10_absent_reference_unknown_reason_tracks_actual_phase_availability(phase):
+    c = no_reference_case()
+    validate(c)
+    target = c["view"]["inputs"][0]
+    target["value_origin"][phase] = unknown_origin("value_unavailable")
+    with pytest.raises(ContractError, match="absent reference"):
+        validate(c)
+    target[phase] = {"status": "unknown", "atom": None, "evidence": None}
+    validate(c)
+    target["value_origin"][phase] = unknown_origin("source_unbound")
+    with pytest.raises(ContractError, match="absent reference"):
+        validate(c)
+
+
+def test_p10_nullable_mapping_keeps_nonnull_reference_id_collisions_invalid():
+    c = no_reference_case()
+    for path in ("physical.first_reference", "physical.second_reference"):
+        row = deepcopy(case()["fragment"]["inputs"][0])
+        row["path"] = path
+        c["fragment"]["inputs"].append(row)
+    repack(c)
+    with pytest.raises(ContractError, match="duplicate reference id"):
+        validate(c, "fragment")
+
+
+def test_p10_nonnull_origin_candidate_skips_absent_references_without_losing_proof():
+    c = case()
+    unreferenced = deepcopy(c["fragment"]["inputs"][0])
+    unreferenced.update(path=TEMP, reference_value_origin=None)
+    c["fragment"]["inputs"].insert(0, unreferenced)
+    repack(c)
+    bound = resolve(c)
+    assert bound["status"] == "bound"
+    assert bound["binding"]["reference_id"] == "pilot.ifr-height"
+
+
+def test_p10_nested_original_passport_bytes_accept_unknown_declared_and_complete_index():
+    c = nested_passport_case()
+    before = deepcopy(c)
+    original = c["retained"]["metadata"]["frozen_plan"]["bytes"]
+    assert b'\n  "' in original
+    plan = json.loads(original)
+    assert plan["points"][0]["effective_inputs"]["configuration_hash"] == "3" * 64
+    assert digest(raw(plan["points"][0]["effective_inputs"])) != "3" * 64
+    for name in ("snapshot", "index", "view"):
+        schema_validator("model-help.schema.json").validate(c[name])
+        validate(c, name)
+    assert c == before
+    assert c["view"]["inputs"][0]["declared"] == {"status": "unknown", "atom": None, "evidence": None}
+    assert c["view"]["inputs"][0]["used"]["atom"] == {"kind": "quantity", "value": 0.20, "unit": "nm"}
+
+
+def test_p10_nested_plan_requires_its_fingerprint_instead_of_legacy_byte_digest_fallback():
+    c = nested_passport_case()
+    replace_nested_plan(c, lambda plan: plan.pop("fingerprint"))
+    digest_as_fingerprint = c["retained"]["metadata"]["frozen_plan"]["sha256"]
+    c["snapshot"]["context"]["plan_fingerprint"] = digest_as_fingerprint
+    c["retained"]["selection"]["context"]["plan_fingerprint"] = digest_as_fingerprint
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+@pytest.mark.parametrize("defect", [
+    "null", "list", "missing_encoding", "encoding", "axes_flag", "temperature", "voltage",
+    "axis_boolean", "configuration_hash", "model_sha", "science", "model_revision",
+    "execution_missing", "execution_nonmember", "duplicate_point", "foreign_execution"])
+def test_p10_nested_malformed_passport_cannot_fall_back_to_flat_configuration(defect):
+    c = nested_passport_case()
+    validate(c, "snapshot")
+    def mutate(plan):
+        point = plan["points"][0]
+        passport = point["effective_inputs"]
+        # These counterfeit legacy leaves must never hide a corrupt nested row.
+        point["configuration"] = {PATH: atom()}
+        plan["point"] = {"configuration": {PATH: atom()}}
+        if defect == "null":
+            point["effective_inputs"] = None
+        elif defect == "list":
+            point["effective_inputs"] = []
+        elif defect == "missing_encoding":
+            del passport["hash_encoding"]
+        elif defect == "encoding":
+            passport["hash_encoding"] = "contracts-json"
+        elif defect == "axes_flag":
+            passport["axes_applied"] = False
+        elif defect == "temperature":
+            passport["temperature_K"] = 71.0
+        elif defect == "voltage":
+            passport["voltage_per_period_V"] = 0.06
+        elif defect == "axis_boolean":
+            passport["temperature_K"] = point["temperature_K"] = True
+        elif defect == "configuration_hash":
+            passport["configuration_hash"] = "9" * 64
+        elif defect == "model_sha":
+            passport["model_sha256"] = "unrecorded"
+        elif defect == "science":
+            plan["scientific_fingerprint"] = "e" * 64
+        elif defect == "model_revision":
+            plan["model_revision"] = "other-model"
+        elif defect == "execution_missing":
+            plan["executions"] = []
+        elif defect == "execution_nonmember":
+            plan["executions"][0]["point_ids"] = ["P-2"]
+        elif defect == "duplicate_point":
+            plan["points"].append(deepcopy(point))
+        else:
+            point["execution_id"] = "E-2"
+    replace_nested_plan(c, mutate)
+    with pytest.raises(ContractError):
+        validate(c, "snapshot")
+
+
+def test_p10_nested_index_requires_each_original_point_membership_and_association():
+    c = nested_passport_case()
+    validate(c, "index")
+    c["retained"]["point_passports"] = {
+        ("E-1", "P-2"): evidence(c["retained"], "frozen_plan", "/points/0/effective_inputs")}
+    with pytest.raises(ContractError, match="another frozen leaf"):
+        validate(c, "index")
+    del c["retained"]["point_passports"]
+    replace_nested_plan(c, lambda plan: plan["executions"][0]["point_ids"].pop())
+    with pytest.raises(ContractError):
+        validate(c, "index")
+
+
+@pytest.mark.parametrize("name", ["snapshot", "view"])
+def test_p10_nested_passport_identity_never_supplies_a_declared_atom(name):
+    c = nested_passport_case()
+    validate(c, name)
+    if name == "snapshot":
+        c[name]["inputs"][0]["declared"] = {"status": "known", "atom": atom(0.20)}
+        c["retained"]["metadata"]["execution_input"] = blob(c[name])
+    else:
+        c[name]["inputs"][0]["declared"] = {"status": "known", "atom": atom(0.20),
+            "evidence": evidence(c["retained"], "frozen_plan", "/points/0/effective_inputs")}
+    with pytest.raises(ContractError):
+        validate(c, name)
+
+
+@pytest.mark.parametrize("name", ["snapshot", "index", "view"])
+def test_p10_detached_local_attempt7_preserves_transport_attempt2(name):
+    c = nested_passport_case(local_attempt=7, child_attempt=2, capture=True)
+    before = deepcopy(c)
+    validate(c, name)
+    assert c == before
+    assert c["snapshot"]["context"]["attempt"] == 7
+    assert c["view"]["context"]["attempt"] == 2
+    del c["retained"]["selection"]["capture_context"]
+    c["retained"]["selection"]["native"] = True  # A Boolean grants no provenance authority.
+    with pytest.raises(ContractError, match="local context|child attempt"):
+        validate(c, name)
+
+
+@pytest.mark.parametrize("field,value", [
+    ("plan_fingerprint", "e" * 64), ("scientific_fingerprint", "e" * 64),
+    ("model_revision", "foreign"), ("execution_id", "E-2"), ("point_id", "P-2"),
+    ("configuration_hash", "e" * 64)])
+def test_p10_capture_context_cannot_replace_other_selected_local_fields(field, value):
+    c = nested_passport_case(local_attempt=7, child_attempt=2, capture=True)
+    c["retained"]["selection"]["capture_context"][field] = value
+    with pytest.raises(ContractError, match="capture context"):
+        validate(c)
+
+
+@pytest.mark.parametrize("defect", ["null", "boolean", "missing", "uuid", "authority", "boolean_attempt"])
+def test_p10_capture_context_is_exact_schema_valid_local_context(defect):
+    c = nested_passport_case(local_attempt=7, child_attempt=2, capture=True)
+    selection = c["retained"]["selection"]
+    if defect == "null":
+        selection["capture_context"] = None
+    elif defect == "boolean":
+        selection["capture_context"] = True
+    elif defect == "missing":
+        del selection["capture_context"]["attempt"]
+    elif defect == "uuid":
+        selection["capture_context"]["calcjob_uuid"] = c["view"]["context"]["calcjob_uuid"]
+    elif defect == "authority":
+        selection["capture_context"]["owner_verified"] = True
+    else:
+        selection["capture_context"]["attempt"] = True
+    with pytest.raises(ContractError, match="capture context"):
+        validate(c)
+
+
+def origin_capture_conflict_case():
+    """A healthy old bound proof followed by actual capture13/transport1.
+
+    Keep receipt attempt1 untouched. Rebind only the exact scalar/condition
+    Evidence digests to the newly closed Snapshot bytes, so a stale digest
+    cannot mask the missing receipt-to-capture check.
+    """
+    c = case()
+    bound = resolve(c)
+    assert bound["status"] == "bound"
+    c["snapshot"]["context"]["attempt"] = 13
+    c["retained"]["selection"]["capture_context"] = deepcopy(c["snapshot"]["context"])
+    c["retained"]["metadata"]["execution_input"] = blob(c["snapshot"])
+    c["view"]["inputs"][0]["used"]["evidence"] = evidence(
+        c["retained"], "execution_input", "/inputs/0/used/atom")
+    for proof in (bound["binding"]["value"], *bound["binding"]["conditions"]):
+        if proof["container"] == "execution_input":
+            proof["sha256"] = c["retained"]["metadata"]["execution_input"]["sha256"]
+    c["view"]["inputs"][0]["value_origin"]["used"] = bound
+    return c
+
+
+def test_f1_used_resolver_rejects_receipt_for_transport_instead_of_actual_capture():
+    c = origin_capture_conflict_case()
+    before = deepcopy(c)
+    schema_validator("model-help.schema.json").validate(c["snapshot"])
+    with pytest.raises(ContractError, match="snapshot claim context mismatch"):
+        validate(c, "snapshot")
+    with pytest.raises(ContractError, match="captured context mismatch"):
+        resolve(c)
+    assert c == before

@@ -709,3 +709,36 @@ def test_review_exact_identifier_length_boundaries(validator, name, path, first)
         validator.validate(healthy)
         assert_bad(validator, healthy, path, exact + "\n")
     assert_bad(validator, FACTORIES[name](), path, first + "a" * 128)
+
+
+def test_p10_missing_reference_is_explicit_required_null_not_known_null_or_unknown_origin(validator):
+    absent = fragment()
+    absent["inputs"][0]["reference_value_origin"] = None
+    validator.validate(absent)
+    omitted = deepcopy(absent)
+    del omitted["inputs"][0]["reference_value_origin"]
+    assert not validator.is_valid(omitted)
+    known_null = fragment()
+    known_null["inputs"][0]["reference_value_origin"]["atom"] = {
+        "kind": "null", "value": None, "unit": None}
+    unknown_source = fragment()
+    unknown_source["inputs"][0]["reference_value_origin"]["origin"] = origin("unknown")
+    for value in (known_null, unknown_source):
+        validator.validate(value)
+        assert value["inputs"][0]["reference_value_origin"] is not None
+    for malformed in ({}, False, {"atom": None}):
+        changed = deepcopy(absent)
+        changed["inputs"][0]["reference_value_origin"] = malformed
+        assert not validator.is_valid(changed)
+
+
+def test_p10_multiple_absent_references_do_not_change_nonnull_shape_obligations(validator):
+    healthy = fragment()
+    for path in ("physical.unreferenced_one", "physical.unreferenced_two"):
+        leaf = deepcopy(healthy["inputs"][0])
+        leaf.update(path=path, reference_value_origin=None)
+        healthy["inputs"].append(leaf)
+    validator.validate(healthy)
+    invalid = deepcopy(healthy)
+    del invalid["inputs"][0]["reference_value_origin"]["parameter"]
+    assert not validator.is_valid(invalid)
