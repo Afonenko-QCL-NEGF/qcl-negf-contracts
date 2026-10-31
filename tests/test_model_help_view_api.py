@@ -13,9 +13,12 @@ import sys
 from jsonschema import ValidationError
 import pytest
 
-from qcl_negf_contracts import model_help
+from qcl_negf_contracts import model_help, schema_validator
 from qcl_negf_contracts.messages import ContractError
-from test_model_help_bindings import case
+from test_model_help_bindings import (
+    case, no_reference_case, nested_passport_case, origin_capture_conflict_case,
+    blob, evidence, unknown_origin,
+)
 
 
 def wire(value):
@@ -29,8 +32,12 @@ def unknown_case():
                    plan_fingerprint='a' * 64, scientific_fingerprint='b' * 64,
                    model_revision='synthetic-ordinary-plan', configuration_hash='c' * 64)
     plan = dict(fingerprint='a' * 64, scientific_fingerprint='b' * 64,
-                model_revision='synthetic-ordinary-plan', points=[dict(
-                    id='P-1', execution_id='E-1', effective_inputs={'configuration_hash': 'c' * 64})])
+                model_revision='synthetic-ordinary-plan',
+                executions=[dict(id='E-1', point_ids=['P-1'])], points=[dict(
+                    id='P-1', execution_id='E-1', temperature_K=70.0, voltage_per_period_V=0.05,
+                    effective_inputs=dict(configuration_hash='c' * 64,
+                        hash_encoding='qcl-negf-canonical-bytes-v1', model_sha256='d' * 64,
+                        axes_applied=True, temperature_K=70.0, voltage_per_period_V=0.05))])
     raw = wire(plan)
     document = dict(format='qcl-negf.model-help-view.v1', context=context,
                     binding=dict(status='unknown', reason='source_binding_missing',
@@ -331,3 +338,109 @@ def test_existing_contract_error_object_code_and_primary_cause_are_preserved(hel
     assert caught.value is original
     assert caught.value.code == 'owning_classification'
     assert caught.value.__cause__ is primary
+
+
+def test_p10_public_bundle_and_view_accept_exact_null_reference_bytes_without_mutation():
+    c = no_reference_case()
+    before = deepcopy(c)
+    assert model_help.validate_documentation_bundle(c["bundle"], retained=c["retained"]) is c["bundle"]
+    assert validate(c["view"], c["retained"]) is c["view"]
+    assert c == before
+    assert c["fragment"]["inputs"][0]["reference_value_origin"] is None
+    assert c["view"]["inputs"][0]["used"]["atom"] == dict(kind="quantity", value=0.10, unit="nm")
+    assert c["view"]["inputs"][0]["value_origin"]["used"]["reason"] == "origin_not_recorded"
+
+
+def test_p10_public_view_preserves_trusted_child_and_release_with_local_capture_attempt():
+    c = nested_passport_case(local_attempt=7, child_attempt=2, capture=True)
+    before = deepcopy(c)
+    assert validate(c["view"], c["retained"]) is c["view"]
+    assert c == before
+    receipt = json.loads(c["retained"]["metadata"]["release_receipt"]["bytes"])
+    receipt["context"]["attempt"] = 7
+    payload = wire(receipt)
+    c["retained"]["metadata"]["release_receipt"] = dict(bytes=payload, sha256=hashlib.sha256(payload).hexdigest())
+    with pytest.raises(ContractError, match="another selected child"):
+        validate(c["view"], c["retained"])
+    c = deepcopy(before)
+    c["view"]["context"]["attempt"] = 7
+    with pytest.raises(ContractError, match="View context differs"):
+        validate(c["view"], c["retained"])
+
+
+@pytest.mark.parametrize("name", ["snapshot", "index"])
+def test_p10_retained_snapshot_and_index_require_their_own_public_c1(name):
+    c = nested_passport_case(local_attempt=7, child_attempt=2, capture=True)
+    validator = schema_validator("model-help.schema.json")
+    # Owners must separately qualify these original documents; View C1 is not their C1.
+    validator.validate(c["snapshot"])
+    validator.validate(c["index"])
+    assert validate(c["view"], c["retained"]) is c["view"]
+    broken = deepcopy(c[name])
+    if name == "snapshot":
+        broken["phase"] = "preview"
+    else:
+        broken["entries"][0]["attempt"] = True
+    with pytest.raises(ValidationError):
+        validator.validate(broken)
+
+
+def test_p10_public_nullable_view_retains_phase_and_exact_leaf_evidence_guards():
+    c = no_reference_case()
+    assert validate(c["view"], c["retained"]) is c["view"]
+    for selector in ("/inputs/0/declared/atom", "/inputs/1/used/atom"):
+        candidate = deepcopy(c["view"])
+        candidate["inputs"][0]["used"]["evidence"]["selector"] = selector
+        with pytest.raises(ContractError, match="exact phase and leaf"):
+            validate(candidate, c["retained"])
+
+
+def test_f1_public_bound_used_origin_cannot_bridge_capture_and_transport_attempts():
+    c = origin_capture_conflict_case()
+    before = deepcopy(c)
+    with pytest.raises(ContractError, match="captured context mismatch"):
+        validate(c["view"], c["retained"])
+    assert c == before
+
+
+@pytest.mark.parametrize("explicit_capture", [False, True])
+def test_f1_legacy_same_attempt_bound_origin_stays_valid(explicit_capture):
+    c = case()
+    if explicit_capture:
+        c["retained"]["selection"]["capture_context"] = deepcopy(c["snapshot"]["context"])
+    c["view"]["inputs"][0]["value_origin"]["used"] = model_help._resolve_value_origin(
+        c["reference"], c["claim"], phase="used", retained=c["retained"])
+    before = deepcopy(c)
+    assert c["view"]["inputs"][0]["value_origin"]["used"]["status"] == "bound"
+    assert validate(c["view"], c["retained"]) is c["view"]
+    assert c == before
+
+
+def test_f1_different_capture_attempt_keeps_conservative_unknown_origin_available():
+    c = origin_capture_conflict_case()
+    c["view"]["inputs"][0]["value_origin"]["used"] = unknown_origin()
+    before = deepcopy(c)
+    assert validate(c["view"], c["retained"]) is c["view"]
+    assert c == before
+    assert c["view"]["context"]["attempt"] == 1
+    assert c["snapshot"]["context"]["attempt"] == 13
+
+
+def test_f1_receipt_relabelled_to_capture_cannot_bypass_trusted_child_guard():
+    c = origin_capture_conflict_case()
+    c["claim"]["assignment_receipt"]["attempt"] = 13
+    retained = c["retained"]
+    retained["metadata"]["execution_input"] = blob(c["snapshot"])
+    retained["metadata"]["value_origin_receipt"] = blob({"claims": [c["claim"]]})
+    item = c["view"]["inputs"][0]
+    item["used"]["evidence"] = evidence(retained, "execution_input", "/inputs/0/used/atom")
+    binding = item["value_origin"]["used"]["binding"]
+    for proof in (binding["value"], binding["assignment"], binding["receipt"], *binding["conditions"]):
+        proof["sha256"] = retained["metadata"][proof["container"]]["sha256"]
+    # The relabelled claim now agrees with Snapshot13, but no new known-origin
+    # semantics authorizes replacing the independently trusted child context1.
+    assert model_help._validate_model_help_bindings(c["snapshot"], retained=retained) is c["snapshot"]
+    with pytest.raises(ContractError, match="selected context mismatch"):
+        model_help._resolve_value_origin(c["reference"], c["claim"], phase="used", retained=retained)
+    with pytest.raises(ContractError, match="selected context mismatch"):
+        validate(c["view"], retained)

@@ -8,6 +8,8 @@ exact bytes and relationships; they never import targets, read target files,
 fetch locators, convert units, infer scientific origin, or mutate their inputs.
 The retained argument is the detached owner layout documented by the DOC07 C2
 fixtures, not a serialized receipt, registry, or capture interface.
+Explicit null references extend this validator's v1 branch; producers and
+consumers must select coordinated exact revisions before using that branch.
 """
 from __future__ import annotations
 
@@ -177,6 +179,25 @@ class _Evidence:
         self.retained = retained
         self.selection = retained.get("selection", {})
         self.context = self.selection.get("context", {})
+        self.capture_context = self.context
+        if "capture_context" in self.selection:
+            from jsonschema import ValidationError
+
+            capture = self.selection["capture_context"]
+            encode(capture)  # Detached operands remain finite JSON.
+            validator = schema_validator("model-help.schema.json")
+            local = validator.evolve(schema={
+                "$defs": validator.schema["$defs"], "$ref": "#/$defs/LocalContext"})
+            try:
+                local.validate(capture)
+            except ValidationError as error:
+                raise ContractError("model help: invalid capture context") from error
+            _require(all(_equal(capture[key], self.context.get(key))
+                         for key in _LOCAL_FIELDS if key != "attempt"),
+                     "capture context differs from selected local fields")
+            # This detached association is supplied by the owner after actual
+            # source/child joins; pure Contracts cannot authenticate those joins.
+            self.capture_context = capture
         self.cache = {}
         # A corrupt supplied record is not silently reclassified as absent.
         for name, record in retained.get("metadata", {}).items():
@@ -285,12 +306,14 @@ class _Evidence:
                 "sha256": self.retained["metadata"][container]["sha256"], "selector": selector}
 
     def point_configuration(self, execution_id=None, point_id=None):
-        """Exact frozen passport and pointer, without choosing an endpoint sibling.
+        """Exact frozen configuration and pointer, without selecting a sibling.
 
         Optional point_passports maps (execution_id, point_id) to Evidence into
         the original frozen plan. It is an in-memory owner projection, not a new
         public format. The key, actual point membership, pointer, and bytes must
         all agree; a sibling's matching numeric value cannot substitute.
+        Actual nested passports return None instead of a flat Atom map: their
+        original canonical hash establishes identity, never declared leaf values.
         """
         execution_id = self.context.get("execution_id") if execution_id is None else execution_id
         point_id = self.context.get("point_id") if point_id is None else point_id
@@ -301,8 +324,16 @@ class _Evidence:
             _require((execution_id, point_id) in indexed, "point is not a member of frozen execution")
             position = next(i for i, row in enumerate(points)
                             if row["execution_id"] == execution_id and row["id"] == point_id)
-            expected = self.make_evidence("frozen_plan", f"/points/{position}/configuration")
+            point = indexed[(execution_id, point_id)]
+            nested = "effective_inputs" in point
+            field = "effective_inputs" if nested else "configuration"
+            expected = self.make_evidence("frozen_plan", f"/points/{position}/{field}")
             supplied = self.retained.get("point_passports", {}).get((execution_id, point_id))
+            if nested:
+                if (execution_id, point_id) in self.retained.get("point_passports", {}):
+                    _require(_equal(supplied, expected), "point passport is associated with another frozen leaf")
+                self.nested_passport(plan, point)
+                return None, expected["selector"]
             if supplied is None:
                 raise _MissingProof("point passport association is missing")
             _require(_equal(supplied, expected), "point passport is associated with another frozen leaf")
@@ -316,9 +347,33 @@ class _Evidence:
             raise _MissingProof("frozen point passport is missing")
         return configuration, "/point/configuration"
 
-    def local_context(self, context, *, index_point=False):
+    def nested_passport(self, plan, point):
+        """Check original Runner passport identity/membership without reencoding."""
+        _keyed(plan["points"], "id", "frozen point id")
+        executions = _keyed(plan["executions"], "id", "frozen execution")
+        _require(point["execution_id"] in executions, "point execution is absent from frozen plan")
+        identifiers = executions[point["execution_id"]]["point_ids"]
+        _require(isinstance(identifiers, list) and len(set(identifiers)) == len(identifiers),
+                 "invalid frozen execution point membership")
+        members = [row["id"] for row in plan["points"] if row["execution_id"] == point["execution_id"]]
+        _require(set(identifiers) == set(members), "point is outside frozen execution membership")
+        passport = point["effective_inputs"]
+        _require(isinstance(passport, dict), "nested point passport is not an object")
+        _require(passport.get("hash_encoding") == "qcl-negf-canonical-bytes-v1",
+                 "unsupported nested point passport hash encoding")
+        for key in ("configuration_hash", "model_sha256"):
+            _require(isinstance(passport.get(key), str) and
+                     re.fullmatch(r"[0-9a-f]{64}", passport[key]) is not None,
+                     "invalid nested point passport digest")
+        _require(passport.get("axes_applied") is True, "nested point passport has unapplied axes")
+        for key in ("temperature_K", "voltage_per_period_V"):
+            _require(isinstance(point.get(key), (int, float)) and not isinstance(point[key], bool) and
+                     _equal(point[key], passport.get(key)), "nested point passport axis differs from frozen row")
+
+    def local_context(self, context, *, index_point=False, captured=False):
+        selected = self.capture_context if captured else self.context
         fields = tuple(key for key in _LOCAL_FIELDS if not (index_point and key in {"point_id", "configuration_hash"}))
-        _require(all(_equal(context.get(key), self.context.get(key)) for key in fields),
+        _require(all(_equal(context.get(key), selected.get(key)) for key in fields),
                  "local context differs from selected child")
         try:
             plan = self.metadata("frozen_plan")
@@ -331,10 +386,19 @@ class _Evidence:
         _require(context["plan_fingerprint"] == plan.get("fingerprint", frozen["sha256"]),
                  "frozen plan fingerprint mismatch")
         try:
-            configuration, _ = self.point_configuration(context["execution_id"], context["point_id"])
+            configuration, pointer = self.point_configuration(context["execution_id"], context["point_id"])
         except _MissingProof:
             # Unknown declared leaves do not acquire values from absent passport
             # proof; exact selected context remains an owning input.
+            return
+        if configuration is None:
+            passport = _pointer(plan, pointer)
+            _require(context["plan_fingerprint"] == plan.get("fingerprint"),
+                     "nested frozen plan fingerprint is missing or mismatched")
+            _require(context["configuration_hash"] == passport["configuration_hash"],
+                     "nested point passport configuration hash mismatch")
+            for key in ("scientific_fingerprint", "model_revision"):
+                _require(_equal(context[key], plan[key]), "nested frozen plan identity mismatch")
             return
         _require(context["configuration_hash"] == _hash(encode(configuration)),
                  "declared point passport digest mismatch")
@@ -342,7 +406,7 @@ class _Evidence:
     def snapshot(self):
         snapshot = self.metadata("execution_input")
         _require(snapshot.get("format") == "qcl-negf.model-help-inputs.v1", "unsupported input snapshot")
-        self.local_context(snapshot["context"])
+        self.local_context(snapshot["context"], captured=True)
         _keyed(snapshot["inputs"], "path", "snapshot input path")
         _keyed(snapshot["origin_bindings"], lambda claim: (claim["reference_id"], claim["phase"]),
                "snapshot origin claim")
@@ -351,7 +415,7 @@ class _Evidence:
     def scalar(self, path, phase):
         if phase == "declared":
             configuration, pointer = self.point_configuration()
-            if path not in configuration:
+            if configuration is None or path not in configuration:
                 return None, None
             return configuration[path], self.make_evidence(
                 "frozen_plan", pointer + "/" + _escape(path))
@@ -414,7 +478,8 @@ class _Evidence:
             _require(supplied.get("kind") == "file" and supplied.get("bytes") == self.retained["fragment"]["bytes"],
                      "retained fragment payload mismatch")
         _keyed(fragment["inputs"], "path", "fragment input path")
-        _keyed(fragment["inputs"], lambda item: item["reference_value_origin"]["id"], "reference id")
+        _keyed((item["reference_value_origin"] for item in fragment["inputs"]
+                if item["reference_value_origin"] is not None), "id", "reference id")
         return fragment
 
     def candidate_path(self, reference):
@@ -423,7 +488,8 @@ class _Evidence:
         fragment = self.record("fragment", 32 * 1024)
         _keyed(fragment["inputs"], "path", "fragment input path")
         rows = [item for item in fragment["inputs"]
-                if item["reference_value_origin"]["id"] == reference["id"]]
+                if item["reference_value_origin"] is not None and
+                item["reference_value_origin"]["id"] == reference["id"]]
         _require(len(rows) <= 1, "ambiguous reference id")
         if not rows:
             raise _MissingProof("reference is outside retained fragment")
@@ -505,7 +571,11 @@ def _claim_preflight(reference, claim, phase, session):
         except _MissingProof:
             continue
         if container == "execution_input":
-            session.snapshot()
+            snapshot = session.snapshot()
+            if phase == "used":
+                for field in ("plan_fingerprint", "execution_id", "point_id", "attempt"):
+                    _require(_equal(receipt[field], snapshot["context"][field]),
+                             "origin claim captured context mismatch")
         rows = document.get(key, [])
         indexed = _keyed(rows, lambda item: (item["reference_id"], item["phase"]), "retained origin claim")
         stored = indexed.get((reference["id"], phase))
@@ -715,7 +785,8 @@ def _fragment(document, session, *, payload=None):
              descriptor["sha256"] == _hash(payload),
              "static fragment descriptor binding mismatch")
     _keyed(document["inputs"], "path", "fragment input path")
-    _keyed(document["inputs"], lambda item: item["reference_value_origin"]["id"], "reference id")
+    _keyed((item["reference_value_origin"] for item in document["inputs"]
+            if item["reference_value_origin"] is not None), "id", "reference id")
     _keyed(document["api"], "symbol", "API symbol")
     _keyed(document["equations"], "id", "equation id")
     session.source(document["meaning_source"])
@@ -727,7 +798,8 @@ def _fragment(document, session, *, payload=None):
         _require(equation["id"] in _html_ids(content), "equation identifier is absent from document")
     for item in document["inputs"]:
         session.source(item["schema_source"])
-        _reference(item["reference_value_origin"], session)
+        if item["reference_value_origin"] is not None:
+            _reference(item["reference_value_origin"], session)
         for fact in item["facts"]:
             for source in fact["sources"]:
                 session.source(source)
@@ -778,7 +850,7 @@ def _bundle(document, session):
 
 
 def _snapshot_contents(document, session, *, index_point=False):
-    session.local_context(document["context"], index_point=index_point)
+    session.local_context(document["context"], index_point=index_point, captured=True)
     _keyed(document["inputs"], "path", "snapshot input path")
     _keyed(document["origin_bindings"], lambda item: (item["reference_id"], item["phase"]), "origin claim")
     configuration = None
@@ -787,7 +859,8 @@ def _snapshot_contents(document, session, *, index_point=False):
             if configuration is None:
                 configuration, _ = session.point_configuration(
                     document["context"]["execution_id"], document["context"]["point_id"])
-            _require(item["path"] in configuration and _equal(item["declared"]["atom"], configuration[item["path"]]),
+            _require(configuration is not None and item["path"] in configuration and
+                     _equal(item["declared"]["atom"], configuration[item["path"]]),
                      "snapshot declared Atom differs from frozen point passport")
     for claim in document["origin_bindings"]:
         _keyed(claim["conditions"], "id", "claim condition id")
@@ -806,7 +879,7 @@ def _snapshot(document, session):
 def _index(document, session):
     _require(document["complete"], "incomplete index cannot establish trusted input availability")
     _keyed(document["entries"], "path", "index path")
-    context = session.context
+    context = session.capture_context
     plan = session.metadata("frozen_plan")
     count = len(plan.get("points", [plan.get("point")]))
     _require(len(document["entries"]) <= count, "index exceeds frozen point count")
@@ -1013,6 +1086,13 @@ def _view(document, session):
         reference = mappings[item["path"]]["reference_value_origin"]
         for phase in ("declared", "used"):
             view = item["value_origin"][phase]
+            if reference is None:
+                reason = "origin_not_recorded" if item[phase]["status"] == "known" else "value_unavailable"
+                _require(view["status"] == "unknown" and view["binding"] is None and
+                         view["origin"]["status"] == view["origin"]["kind"] == "unknown" and
+                         not view["origin"]["locators"] and view["reason"] == reason,
+                         "absent reference permits only unknown value origin for its phase")
+                continue
             if view["status"] == "unknown":
                 continue  # Conservative unknowns are never promoted to bound.
             claim = None
@@ -1047,9 +1127,10 @@ def _resolve_value_origin(reference, claim, *, phase, retained):
 def _validate_model_help_bindings(document, *, retained):
     """Check cross-document proof relationships and return the same input object.
 
-    The caller has already performed finite JSON and C1 schema validation. No
-    schema validator is imported here, and no shape-valid status is proof of its
-    source, selected child, last assignment, or complete effective causal chain.
+    The caller has already performed finite JSON and C1 document validation.
+    An optional detached capture_context is checked against LocalContext here.
+    No shape-valid status proves its source, selected child, last assignment,
+    or complete effective causal chain.
     """
     try:
         session = _Evidence(retained)
@@ -1128,6 +1209,9 @@ def validate_model_help_view(document, *, retained):
     never promotes unknowns to bound or erases independent retained identities.
     The caller owns authenticated selection, target IO and review association;
     this function neither captures evidence nor mutates/normalizes its inputs.
+    Original Snapshot/Index C1 and actual source/creator joins remain owning
+    checks. Optional selection.capture_context compares Snapshot local identity;
+    View and release identity continue to use the exact selected child context.
 
     Only model-help-view.v1 is accepted. Invalid finite/C1/C2 data and missing
     required proofs raise ContractError, preserving the primary cause; unlike

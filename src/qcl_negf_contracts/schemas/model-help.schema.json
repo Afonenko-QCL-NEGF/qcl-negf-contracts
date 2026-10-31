@@ -204,7 +204,7 @@
     },
     "FragmentInput": {
       "type": "object", "additionalProperties": false, "required": ["path", "schema_source", "facts", "reference_value_origin"],
-      "properties": {"path": {"$ref": "#/$defs/LeafPath"}, "schema_source": {"$ref": "#/$defs/PointerRef"}, "facts": {"$ref": "#/$defs/Facts"}, "reference_value_origin": {"$ref": "#/$defs/ReferenceValueOrigin"}}
+      "properties": {"path": {"$ref": "#/$defs/LeafPath"}, "schema_source": {"$ref": "#/$defs/PointerRef"}, "facts": {"$ref": "#/$defs/Facts"}, "reference_value_origin": {"anyOf": [{"$ref": "#/$defs/ReferenceValueOrigin"}, {"type": "null"}]}}
     },
     "FragmentApi": {
       "type": "object", "additionalProperties": false, "required": ["symbol", "source", "doc", "facts"],
