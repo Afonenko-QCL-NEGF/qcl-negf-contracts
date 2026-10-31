@@ -71,13 +71,20 @@ def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
     return result
 
 
-def decode(payload: bytes, maximum: int = MAX_MESSAGE_BYTES) -> Object:
+def _decode_json(payload: bytes, maximum: int = MAX_MESSAGE_BYTES) -> JSON:
     if len(payload) > maximum:
         raise ContractError('message exceeds byte budget')
     try:
-        return object_value(json.loads(payload, object_pairs_hook=_unique_object))
+        return validate_json(json.loads(payload, object_pairs_hook=_unique_object))
     except (UnicodeError, json.JSONDecodeError, RecursionError) as error:
         raise ContractError('invalid UTF-8 JSON') from error
+
+
+def decode(payload: bytes, maximum: int = MAX_MESSAGE_BYTES) -> Object:
+    value = _decode_json(payload, maximum)
+    if not isinstance(value, dict):
+        raise ContractError('message must be an object')
+    return value
 
 
 def fingerprint(value: Object) -> str:

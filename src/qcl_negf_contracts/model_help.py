@@ -20,7 +20,7 @@ import re
 from urllib.parse import unquote, urlsplit
 
 from . import schema_validator
-from .messages import ContractError, MAX_MESSAGE_BYTES, MAX_PLAN_BYTES, decode, encode
+from .messages import ContractError, MAX_MESSAGE_BYTES, MAX_PLAN_BYTES, _decode_json, decode, encode
 
 
 _MIB = 1024 * 1024
@@ -278,7 +278,7 @@ class _Evidence:
         if selector["kind"] == "file":
             return payload
         if selector["kind"] == "json_pointer":
-            return _pointer(decode(payload), selector["value"])
+            return _pointer(_decode_json(payload), selector["value"])
         try:
             text = payload.decode("utf-8")
         except UnicodeError as error:

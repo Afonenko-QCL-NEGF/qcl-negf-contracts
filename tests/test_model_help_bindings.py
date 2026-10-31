@@ -1707,3 +1707,101 @@ def test_f1_used_resolver_rejects_receipt_for_transport_instead_of_actual_captur
     with pytest.raises(ContractError, match="captured context mismatch"):
         resolve(c)
     assert c == before
+
+
+def json_source_case(payload, pointer):
+    """Add a reviewed detached JSON source to the complete public bundle fixture."""
+    c = case()
+    retained = c["retained"]
+    path = "docs/help/authored.json"
+    retained["sources"][(COMPONENT, path)] = {"revision": OWNER, "bytes": payload}
+    source = ref(retained["sources"], path, "json_pointer", pointer)
+    retained["input_allowlist"] += ((COMPONENT, path),)
+    retained["selector_allowlist"] += ((COMPONENT, path, "json_pointer", pointer),)
+    retained["public_reviews"] += ({"source": ref(retained["sources"], path),
+        "recipe": c["bundle"]["generator"]["recipes"][0],
+        "receipt": {"bytes": b"review", "sha256": digest(b"review")}},)
+    return c, source
+
+
+@pytest.mark.parametrize("payload,pointer", [
+    (b'[{"inputs":[{"x":1}]}]', '/0/inputs/0'),
+    (b'{"nested":[{"a/b":{"~key":1}}]}', '/nested/0/a~1b/~0key'),
+    (b'42', ''),
+])
+def test_public_bundle_accepts_reviewed_json_source_values(payload, pointer):
+    from qcl_negf_contracts.model_help import validate_documentation_bundle
+    c, source = json_source_case(payload, pointer)
+    before = deepcopy((c["bundle"], c["retained"], source))
+    result = validate_documentation_bundle(c["bundle"], retained=c["retained"], required_sources=[source])
+    assert result is c["bundle"]
+    assert (c["bundle"], c["retained"], source) == before
+
+
+@pytest.mark.parametrize("payload,pointer", [
+    (b'[1]', '/01'), (b'[1]', '/-1'), (b'[1]', '/1'),
+    (b'[1]', '/x'), (b'[1]', '/0/~2'), (b'42', '/0'),
+    (b'\xff', ''), (b'[', ''), (b'[{"x":1,"x":2}]', '/0'),
+    (b'[NaN]', '/0'), (b'[Infinity]', '/0'),
+    (b'[' * 66 + b'0' + b']' * 66, ''),
+    (b' ' * (8 * 1024 * 1024) + b'0', ''),
+])
+def test_public_bundle_rejects_invalid_reviewed_json_source(payload, pointer):
+    from qcl_negf_contracts.model_help import validate_documentation_bundle
+    c, source = json_source_case(payload, pointer)
+    with pytest.raises(ContractError):
+        validate_documentation_bundle(c["bundle"], retained=c["retained"], required_sources=[source])
+
+
+@pytest.mark.parametrize("failure", ["hash", "revision", "allowlist", "selector", "review"])
+def test_public_bundle_checks_source_provenance_before_json_decoding(failure):
+    from qcl_negf_contracts.model_help import DocumentationProofMissing, validate_documentation_bundle
+    c, source = json_source_case(b'not JSON', '')
+    retained = c["retained"]
+    if failure == "hash":
+        source["sha256"] = "0" * 64
+    elif failure == "revision":
+        source["revision"] = OTHER
+    elif failure == "allowlist":
+        retained["input_allowlist"] = tuple(x for x in retained["input_allowlist"] if x != (COMPONENT, source["path"]))
+    elif failure == "selector":
+        retained["selector_allowlist"] = tuple(x for x in retained["selector_allowlist"] if x[1] != source["path"])
+    else:
+        retained["public_reviews"] = tuple(x for x in retained["public_reviews"] if x["source"]["path"] != source["path"])
+    expected = {"hash": "hash mismatch", "revision": "revision mismatch", "allowlist": "input allowlist",
+                "selector": "selector is outside", "review": "proof is missing"}[failure]
+    with pytest.raises((ContractError, DocumentationProofMissing), match=expected):
+        validate_documentation_bundle(c["bundle"], retained=retained, required_sources=[source])
+
+
+@pytest.mark.parametrize("payload", [
+    b'[' * 64 + b'0' + b']' * 64,
+    b' ' * (8 * 1024 * 1024 - 1) + b'0',
+])
+def test_public_bundle_accepts_source_at_json_limits(payload):
+    from qcl_negf_contracts.model_help import validate_documentation_bundle
+    c, source = json_source_case(payload, '')
+    assert validate_documentation_bundle(c["bundle"], retained=c["retained"], required_sources=[source]) is c["bundle"]
+
+
+def test_public_bundle_source_uses_only_retained_bytes_without_executing_or_mutating(monkeypatch):
+    import builtins
+    import os
+    import subprocess
+    from qcl_negf_contracts.model_help import validate_documentation_bundle
+    c, source = json_source_case(b'[{"command":"must never run"}]', '/0/command')
+    before = deepcopy((c["bundle"], c["retained"], source))
+    original_open = builtins.open
+
+    def guarded_open(path, *args, **kwargs):
+        assert not str(path).endswith(source["path"]), "source path opened"
+        return original_open(path, *args, **kwargs)
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("source execution attempted")
+
+    monkeypatch.setattr(builtins, "open", guarded_open)
+    monkeypatch.setattr(os, "system", forbidden)
+    monkeypatch.setattr(subprocess, "Popen", forbidden)
+    assert validate_documentation_bundle(c["bundle"], retained=c["retained"], required_sources=[source]) is c["bundle"]
+    assert (c["bundle"], c["retained"], source) == before
