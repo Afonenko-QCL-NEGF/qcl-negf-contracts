@@ -58,7 +58,7 @@ def test_single_archive_receipt_validates_unbounded_size_and_confined_filename()
 
 
 @pytest.mark.parametrize("payload", [b'{"x":NaN}', b'{"x":Infinity}', b'{"x":1,"x":2}',
-    b'[]', b'{"x":', b'\xff', b'{"x":' + b'[' * 70 + b'0' + b']' * 70 + b'}'])
+    b'[]', b'42', b'null', b'"text"', b'{"x":', b'\xff', b'{"x":' + b'[' * 70 + b'0' + b']' * 70 + b'}'])
 def test_json_boundary_rejects_ambiguous_or_invalid_inputs(payload):
     with pytest.raises(ContractError):
         decode(payload)
