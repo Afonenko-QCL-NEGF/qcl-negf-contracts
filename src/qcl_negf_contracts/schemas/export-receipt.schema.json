@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qcl-negf.invalid/schema/export-receipt.schema.json",
+  "title": "Finalized single archive receipt",
+  "type": "object",
+  "required": [
+    "schema",
+    "contract_set",
+    "transport_schema",
+    "profile",
+    "snapshot_identity",
+    "sha256",
+    "bytes",
+    "filename",
+    "archive"
+  ],
+  "properties": {
+    "schema": {
+      "enum": [
+        "qcl-negf.science-export.v3",
+        "qcl-negf.operational-evidence.v2"
+      ]
+    },
+    "contract_set": {
+      "const": "qcl-negf.results.v1"
+    },
+    "transport_schema": {
+      "const": "qcl-negf.export-archive.v1"
+    },
+    "profile": {
+      "enum": [
+        "science",
+        "full-state",
+        "diagnostic"
+      ]
+    },
+    "snapshot_identity": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "filename": {
+      "type": "string",
+      "pattern": "^[^/\\\\\\x00-\\x1f\\x7f]+\\.tar\\.xz$"
+    },
+    "archive": {
+      "type": "string",
+      "pattern": "^[^/\\\\\\x00-\\x1f\\x7f]+\\.tar\\.xz$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema": {
+            "const": "qcl-negf.operational-evidence.v2"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "profile": {
+            "const": "diagnostic"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "profile": {
+            "enum": [
+              "science",
+              "full-state"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "parts"
+            ]
+          },
+          {
+            "required": [
+              "multipart"
+            ]
+          },
+          {
+            "required": [
+              "part_count"
+            ]
+          },
+          {
+            "required": [
+              "maximum_part_bytes"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
