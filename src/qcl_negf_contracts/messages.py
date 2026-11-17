@@ -75,7 +75,7 @@ def decode(payload: bytes, maximum: int = MAX_MESSAGE_BYTES) -> Object:
     if len(payload) > maximum:
         raise ContractError('message exceeds byte budget')
     try:
-        return object_value(json.loads(payload, object_pairs_hook=_unique_object))
+        return object_value(json.loads(payload.decode('utf-8', 'strict'), object_pairs_hook=_unique_object))
     except (UnicodeError, json.JSONDecodeError, RecursionError) as error:
         raise ContractError('invalid UTF-8 JSON') from error
 

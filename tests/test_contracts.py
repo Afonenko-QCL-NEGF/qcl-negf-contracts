@@ -64,6 +64,36 @@ def test_json_boundary_rejects_ambiguous_or_invalid_inputs(payload):
         decode(payload)
 
 
+@pytest.mark.parametrize("encoding,bom", [
+    ("utf-16-le", b"\xff\xfe"), ("utf-16-be", b"\xfe\xff"),
+    ("utf-32-le", b"\xff\xfe\x00\x00"), ("utf-32-be", b"\x00\x00\xfe\xff"),
+])
+@pytest.mark.parametrize("with_bom", [False, True])
+def test_json_boundary_rejects_utf16_and_utf32(encoding, bom, with_bom):
+    payload = '{"value":1}'.encode(encoding)
+    if with_bom:
+        payload = bom + payload
+    with pytest.raises(ContractError, match="invalid UTF-8 JSON") as caught:
+        decode(payload)
+    assert caught.value.code == "invalid_input"
+
+
+@pytest.mark.parametrize("payload", [b'{"value":"\xff"}', b'{"value":"\xc3"}'])
+def test_json_boundary_rejects_invalid_utf8(payload):
+    with pytest.raises(ContractError, match="invalid UTF-8 JSON") as caught:
+        decode(payload)
+    assert caught.value.code == "invalid_input"
+
+
+def test_json_boundary_accepts_utf8_non_ascii_with_raw_byte_budget():
+    # 15 characters, 18 UTF-8 bytes; the cap applies to the original bytes.
+    payload = b'{"value":"\xce\x94\xd1\x8f\xc3\xa9"}'
+    assert decode(payload, maximum=18) == {"value": "Δяé"}
+    with pytest.raises(ContractError, match="budget") as caught:
+        decode(payload, maximum=17)
+    assert caught.value.code == "invalid_input"
+
+
 def test_json_budget_and_canonical_encoding():
     value = {"unicode": "Δ", "signed": -0.0, "integer": 1}
     assert decode(encode(value)) == value
