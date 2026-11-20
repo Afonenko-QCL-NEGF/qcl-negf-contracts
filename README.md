@@ -1,3 +1,5 @@
+> **Переход QCL NEGF.** В приложении `qcl-negf` доступен раздел [Контракты и проверка результатов](https://github.com/Afonenko-QCL-NEGF/qcl-negf/tree/main/analysis/). Этот репозиторий хранит историю. [Исходная редакция README](https://github.com/Afonenko-QCL-NEGF/qcl-negf-contracts/blob/bd1270d00502120b37377e8522a0bf4eb3926401/README.md).
+
 # QCL-NEGF contracts
 
 Versioned, dependency-free Python contracts and JSON Schema resources shared by the QCL-NEGF scientific runner, AiiDA integration and result tools. This package owns scientific data formats; scheduling and machine configuration belong to their respective services.
